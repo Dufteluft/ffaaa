@@ -15,14 +15,17 @@ end
 -- Event: Lobby erstellen
 RegisterServerEvent('ffa:createLobby')
 AddEventHandler('ffa:createLobby', function(settings)
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local playerId = source
+    local xPlayer = ESX.GetPlayerFromId(playerId)
+    if not xPlayer then return end
+
     local lobbyId = GenerateLobbyId()
     local map = Utils.GetMapById(settings.mapId)
 
     Lobbies[lobbyId] = {
         id = lobbyId,
         name = settings.name,
-        host = source,
+        host = playerId,
         hostName = xPlayer.getName(),
         mapId = settings.mapId,
         mapLabel = map.label,
@@ -43,8 +46,8 @@ AddEventHandler('ffa:createLobby', function(settings)
 
     Utils.Print('Lobby erstellt: ' .. settings.name .. ' von ' .. xPlayer.getName())
 
-    JoinLobby(source, lobbyId)
-    TriggerClientEvent('ffa:lobbyCreated', source, Lobbies[lobbyId])
+    JoinLobby(playerId, lobbyId)
+    TriggerClientEvent('ffa:lobbyCreated', playerId, Lobbies[lobbyId])
 end)
 
 -- Funktion: Spieler tritt einer Lobby bei
@@ -54,6 +57,7 @@ function JoinLobby(playerId, lobbyId)
     if #lobby.players >= lobby.maxPlayers then return false end
 
     local xPlayer = ESX.GetPlayerFromId(playerId)
+    if not xPlayer then return false end
 
     -- Prüfen, ob der Spieler bereits in einer Lobby ist
     if PlayerStates[playerId] and PlayerStates[playerId].lobbyId then
@@ -215,9 +219,10 @@ AddEventHandler('ffa:quickJoin', function(mapId)
         end
     end
 
+    local playerId = source
     if targetLobby then
-        if JoinLobby(source, targetLobby) then
-            TriggerClientEvent('ffa:lobbyJoined', source, Lobbies[targetLobby])
+        if JoinLobby(playerId, targetLobby) then
+            TriggerClientEvent('ffa:lobbyJoined', playerId, Lobbies[targetLobby])
         end
     else
         -- Erstelle Standard-Lobby

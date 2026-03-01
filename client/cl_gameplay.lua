@@ -9,9 +9,9 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     -- UI ausblenden für Fokus aufs Spiel
     SendNUIMessage({ action = 'gameStarting' })
 
-    -- Auf Karte teleportieren und Countdown (5 Sek)
+    -- Auf Karte teleportieren und Countdown (10 Sek)
     TeleportToMap(lobby.mapId)
-    StartCountdown(5)
+    StartCountdown(10)
 
     -- Waffen austeilen
     GiveLoadout(lobby.loadout)
