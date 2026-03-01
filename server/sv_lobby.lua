@@ -209,10 +209,24 @@ end)
 
 -- Event: Lobbyliste für UI abrufen
 RegisterServerEvent('ffa:fetchLobbies')
-AddEventHandler('ffa:fetchLobbies', function()
+AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
+    local filterTab = data and data.tab or 'ffa'
+
     for id, lobby in pairs(Lobbies) do
-        if lobby.status == 'waiting' then
+        local isMatch = false
+        if filterTab == 'ffa' then
+            if lobby.isPersistent then isMatch = true end
+        else
+            if not lobby.isPersistent then isMatch = true end
+        end
+
+        if isMatch then
+            -- Status Bestimmung für UI
+            local displayStatus = 'waiting'
+            if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
+            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
+
             table.insert(list, {
                 id = id,
                 name = lobby.name,
@@ -220,7 +234,10 @@ AddEventHandler('ffa:fetchLobbies', function()
                 playerCount = #lobby.players,
                 maxPlayers = lobby.maxPlayers,
                 mapLabel = lobby.mapLabel,
-                mode = lobby.mode
+                mapId = lobby.mapId,
+                mode = lobby.mode,
+                status = displayStatus,
+                isPersistent = lobby.isPersistent
             })
         end
     end
