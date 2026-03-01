@@ -1,0 +1,141 @@
+-- Event: Spielstart-Vorbereitung (Teleportation, Loadout)
+RegisterNetEvent('ffa:gameStarting')
+AddEventHandler('ffa:gameStarting', function(lobby)
+    currentLobby = lobby
+    playerState.isInGame = true
+    playerState.kills = 0
+    playerState.deaths = 0
+
+    -- UI ausblenden für Fokus aufs Spiel
+    SendNUIMessage({ action = 'gameStarting' })
+
+    -- Auf Karte teleportieren und Countdown (5 Sek)
+    TeleportToMap(lobby.mapId)
+    StartCountdown(5)
+
+    -- Waffen austeilen
+    GiveLoadout(lobby.loadout)
+
+    -- HUD einblenden
+    SendNUIMessage({ action = 'showHUD' })
+    TriggerEvent('ffa:updateHUDStats', 0, 0)
+end)
+
+-- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
+
+-- Funktion: Teilt das gewählte Loadout an den Spieler aus
+function GiveLoadout(loadoutKey)
+    local loadout = Config.WeaponLoadouts[loadoutKey]
+    local ped = PlayerPedId()
+
+    RemoveAllPedWeapons(ped, true)
+    if loadout then
+        for _, weapon in ipairs(loadout) do
+            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+        end
+    end
+end
+
+-- Kill-Erkennung: Prüft ständig auf Tod des Spielers
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if playerState.isInGame then
+            local ped = PlayerPedId()
+            if IsEntityDead(ped) then
+                local killerId = GetPedKiller(ped)
+                local killerServerId = -1
+
+                -- Ermitteln der Server-ID des Killers
+                if IsEntityAPed(killerId) and IsPedAPlayer(killerId) then
+                    killerServerId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(killerId))
+                end
+
+                TriggerServerEvent('ffa:playerKilled', killerServerId)
+
+                -- Kill-Cam und Respawn-Logik ausführen
+                HandleDeath(killerId)
+
+                -- Warten bis Spieler wieder lebt
+                while IsEntityDead(ped) do Citizen.Wait(100) end
+            end
+        end
+    end
+end)
+
+-- Funktion: Behandelt Tod, Kill-Cam und Respawn
+function HandleDeath(killerPed)
+    Citizen.CreateThread(function()
+        local killerCoords = GetEntityCoords(killerPed)
+
+        -- Kill-Cam: Fokus für 3 Sek auf den Mörder
+        local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+        SetCamCoord(cam, GetEntityCoords(PlayerPedId()))
+        PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
+        RenderScriptCams(true, true, 1000, true, true)
+
+        -- Respawn-Dauer aus Lobby-Einstellungen
+        Citizen.Wait(currentLobby.respawnTime * 1000)
+
+        -- Kamera zurücksetzen
+        RenderScriptCams(false, true, 500, true, true)
+        DestroyCam(cam, true)
+
+        -- Wiederbelebung an zufälligem Punkt auf der Map
+        local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
+        local ped = PlayerPedId()
+        NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w, true, false)
+        GiveLoadout(currentLobby.loadout)
+    end)
+end
+
+-- Zuschauer-Modus (Fixiert Kamera auf Zielspieler)
+RegisterNetEvent('ffa:spectatePlayer')
+AddEventHandler('ffa:spectatePlayer', function(targetId)
+    local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
+    if DoesEntityExist(targetPed) then
+        NetworkSetInSpectatorMode(true, targetPed)
+    end
+end)
+
+-- HUD-Aktualisierungen vom Server
+RegisterNetEvent('ffa:updateTimer')
+AddEventHandler('ffa:updateTimer', function(time)
+    SendNUIMessage({ action = 'updateHUD', time = time })
+end)
+
+RegisterNetEvent('ffa:updateHUDStats')
+AddEventHandler('ffa:updateHUDStats', function(kills, deaths)
+    playerState.kills = kills
+    playerState.deaths = deaths
+    SendNUIMessage({
+        action = 'updateHUD',
+        kills = kills,
+        deaths = deaths,
+        mode = currentLobby.mode
+    })
+end)
+
+RegisterNetEvent('ffa:updateTDMScore')
+AddEventHandler('ffa:updateTDMScore', function(blue, red)
+    SendNUIMessage({
+        action = 'updateHUD',
+        scoreBlue = blue,
+        scoreRed = red,
+        mode = currentLobby.mode
+    })
+end)
+
+-- Event: Spielende (Sieg-Anzeige und Sperren)
+RegisterNetEvent('ffa:gameEnded')
+AddEventHandler('ffa:gameEnded', function(data)
+    playerState.isInGame = false
+    FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
+    SendNUIMessage({
+        action = 'showWinner',
+        winnerName = data.winnerName
+    })
+
+    -- Waffen entfernen am Rundenende
+    RemoveAllPedWeapons(PlayerPedId(), true)
+end)

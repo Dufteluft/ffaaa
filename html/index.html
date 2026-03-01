@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FiveM FFA Lobby System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" style="display: none;">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <h1 id="menu-title">FFA LOBBY SYSTEM</h1>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="ffa-lobby" id="tab-ffa">FFA Lobby</button>
+                <button class="tab-btn" data-tab="create-lobby" id="tab-create">Lobby erstellen</button>
+                <button class="tab-btn" data-tab="open-lobbies" id="tab-list">Offene Lobbys</button>
+            </div>
+
+            <!-- Content Areas -->
+            <div class="tab-content active" id="ffa-lobby">
+                <div class="map-grid">
+                    <!-- Predefined maps will be loaded here via JS -->
+                </div>
+            </div>
+
+            <div class="tab-content" id="create-lobby">
+                <div class="form-container">
+                    <div class="input-group">
+                        <label for="lobby-name">Lobby-Name</label>
+                        <input type="text" id="lobby-name" placeholder="Name eingeben...">
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="map-select">Map</label>
+                            <select id="map-select"></select>
+                        </div>
+                        <div class="input-group">
+                            <label for="mode-select">Modus</label>
+                            <select id="mode-select">
+                                <option value="ffa">FFA</option>
+                                <option value="tdm">Team Deathmatch</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="loadout-select">Waffen-Loadout</label>
+                        <select id="loadout-select"></select>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="round-time">Rundenzeit (Min): <span id="round-time-val">15</span></label>
+                            <input type="range" id="round-time" min="5" max="30" step="5" value="15">
+                        </div>
+                        <div class="input-group">
+                            <label for="max-players">Max. Spieler: <span id="max-players-val">16</span></label>
+                            <input type="range" id="max-players" min="2" max="16" step="1" value="16">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="toggle-group">
+                            <label>Fahrzeuge</label>
+                            <input type="checkbox" id="vehicles-allowed">
+                        </div>
+                        <div class="toggle-group">
+                            <label>Friendly Fire</label>
+                            <input type="checkbox" id="friendly-fire">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="respawn-time">Respawn (Sek): <span id="respawn-time-val">5</span></label>
+                            <input type="range" id="respawn-time" min="3" max="10" step="1" value="5">
+                        </div>
+                        <div class="input-group">
+                            <label for="kill-limit">Kill-Limit: <span id="kill-limit-val">30</span></label>
+                            <input type="range" id="kill-limit" min="0" max="50" step="5" value="30">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="primary-btn" id="btn-create-lobby">Lobby erstellen</button>
+                        <button class="secondary-btn" id="btn-cancel">Abbrechen</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="open-lobbies">
+                <div class="lobby-list-container">
+                    <table id="lobby-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Host</th>
+                                <th>Spieler</th>
+                                <th>Map</th>
+                                <th>Modus</th>
+                                <th>Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lobby-list-body">
+                            <!-- Lobbies will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Area / Lobby Screen -->
+        <div id="lobby-waiting-area" class="overlay" style="display: none;">
+            <div class="lobby-card">
+                <h2 id="lobby-card-title">Lobby: <span id="lobby-title">Default</span></h2>
+                <div class="lobby-grid">
+                    <div class="player-list-section">
+                        <h3>Spieler</h3>
+                        <div id="player-list"></div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Einstellungen</h3>
+                        <div id="lobby-info-summary"></div>
+                        <div class="team-selection">
+                            <button class="team-btn" data-team="blue" id="btn-team-blue">Blau</button>
+                            <button class="team-btn" data-team="red" id="btn-team-red">Rot</button>
+                            <button class="team-btn" data-team="spectator" id="btn-team-spec">Zuschauer</button>
+                        </div>
+                        <div class="lobby-chat">
+                            <div id="chat-messages"></div>
+                            <input type="text" id="chat-input" placeholder="Nachricht senden...">
+                        </div>
+                        <div class="lobby-actions">
+                            <button class="primary-btn" id="btn-ready-toggle">Bereit</button>
+                            <button class="primary-btn" id="btn-start-game" style="display: none;">Spiel starten</button>
+                            <button class="secondary-btn" id="btn-leave-lobby">Verlassen</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD -->
+    <div id="game-hud" style="display: none;">
+        <div class="hud-top">
+            <div class="hud-timer" id="hud-timer">15:00</div>
+        </div>
+        <div class="hud-bottom-left">
+            <div class="hud-stats">
+                <div>KILLS: <span id="hud-kills">0</span></div>
+                <div>DEATHS: <span id="hud-deaths">0</span></div>
+                <div>HEALTH: <span id="hud-health">100</span>%</div>
+                <div>ARMOR: <span id="hud-armor">0</span>%</div>
+                <div>AMMO: <span id="hud-ammo">0</span></div>
+            </div>
+        </div>
+        <div class="hud-bottom-right">
+            <div class="hud-team-score" id="hud-team-score" style="display: none;">
+                <span class="score-blue">B: 0</span> | <span class="score-red">R: 0</span>
+            </div>
+        </div>
+        <div id="countdown-overlay" style="display: none;">
+            <div id="countdown-number">3</div>
+        </div>
+    </div>
+
+    <!-- Winner Screen -->
+    <div id="winner-screen" class="overlay" style="display: none;">
+        <div class="winner-card">
+            <h1 id="winner-title">RUNDE BEENDET</h1>
+            <h2 id="winner-name">SPIELER GEWINNT!</h2>
+            <div id="match-stats-table"></div>
+            <div class="btn-group">
+                <button class="primary-btn" id="btn-back-to-lobby">Zurück zur Lobby</button>
+                <button class="secondary-btn" id="btn-back-to-menu">Hauptmenü</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

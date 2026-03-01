@@ -1,0 +1,380 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+body {
+    background-color: transparent;
+    overflow: hidden;
+    color: #fff;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.main-container {
+    width: 900px;
+    height: 650px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #333;
+}
+
+.header {
+    padding: 20px;
+    background: #252525;
+    border-bottom: 2px solid #ff9d00;
+}
+
+.header h1 {
+    font-size: 24px;
+    letter-spacing: 2px;
+}
+
+.tabs {
+    display: flex;
+    background: #252525;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px;
+    background: none;
+    border: none;
+    color: #aaa;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+    color: #fff;
+    background: #333;
+}
+
+.tab-btn.active {
+    color: #fff;
+    border-bottom-color: #ff9d00;
+    background: #333;
+}
+
+.tab-content {
+    flex: 1;
+    padding: 25px;
+    display: none;
+    overflow-y: auto;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Map Grid */
+.map-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.map-card {
+    background: #252525;
+    border-radius: 5px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid #333;
+    transition: 0.3s;
+}
+
+.map-card:hover {
+    border-color: #ff9d00;
+    transform: translateY(-5px);
+}
+
+.map-card h3 {
+    margin-bottom: 10px;
+}
+
+.map-card button {
+    width: 100%;
+}
+
+/* Forms */
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.input-row {
+    display: flex;
+    gap: 15px;
+}
+
+.input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-group label {
+    font-size: 14px;
+    color: #ccc;
+}
+
+input[type="text"], select, input[type="range"] {
+    padding: 10px;
+    background: #252525;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 4px;
+}
+
+input[type="range"] {
+    accent-color: #ff9d00;
+}
+
+.toggle-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #252525;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #444;
+}
+
+.toggle-group label {
+    flex: 1;
+}
+
+/* Buttons */
+.btn-group {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.primary-btn {
+    background: #ff9d00;
+    color: #000;
+}
+
+.primary-btn:hover {
+    background: #e68a00;
+}
+
+.secondary-btn {
+    background: #444;
+    color: #fff;
+}
+
+.secondary-btn:hover {
+    background: #555;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+}
+
+th {
+    background: #252525;
+    color: #aaa;
+    font-size: 14px;
+}
+
+/* Overlay / Lobby Area */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lobby-card {
+    width: 1000px;
+    height: 700px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    border: 1px solid #444;
+    display: flex;
+    flex-direction: column;
+}
+
+.lobby-card h2 {
+    padding: 20px;
+    background: #252525;
+    border-bottom: 2px solid #ff9d00;
+}
+
+.lobby-grid {
+    display: flex;
+    flex: 1;
+}
+
+.player-list-section {
+    width: 300px;
+    border-right: 1px solid #333;
+    padding: 20px;
+}
+
+.settings-section {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.player-item {
+    padding: 10px;
+    background: #252525;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.player-item.ready {
+    border-left: 4px solid #4caf50;
+}
+
+.team-selection {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.team-btn {
+    flex: 1;
+    padding: 10px;
+    background: #333;
+}
+
+.team-btn[data-team="blue"].active { background: #2196f3; }
+.team-btn[data-team="red"].active { background: #f44336; }
+.team-btn[data-team="spectator"].active { background: #9e9e9e; }
+
+.lobby-chat {
+    flex: 1;
+    background: #111;
+    border-radius: 4px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+#chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+#chat-input {
+    background: #222;
+}
+
+/* HUD */
+#game-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.hud-top {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 30px;
+    border-radius: 5px;
+    font-size: 24px;
+    font-weight: bold;
+    border-bottom: 3px solid #ff9d00;
+}
+
+.hud-bottom-left {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.hud-bottom-right {
+    position: absolute;
+    bottom: 50px;
+    right: 50px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 5px;
+}
+
+#countdown-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 150px;
+    font-weight: bold;
+    text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Winner Card */
+.winner-card {
+    background: #1a1a1a;
+    padding: 50px;
+    border-radius: 10px;
+    text-align: center;
+    border: 2px solid #ff9d00;
+    width: 600px;
+}
+
+.winner-card h1 {
+    font-size: 48px;
+    color: #ff9d00;
+    margin-bottom: 20px;
+}
