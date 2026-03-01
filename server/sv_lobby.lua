@@ -203,3 +203,51 @@ end)
 AddEventHandler('playerDropped', function()
     LeaveLobby(source)
 end)
+
+-- Event: Schneller Beitritt (Suche bestehende Lobby oder erstelle neue)
+RegisterServerEvent('ffa:quickJoin')
+AddEventHandler('ffa:quickJoin', function(mapId)
+    local targetLobby = nil
+    for id, lobby in pairs(Lobbies) do
+        if lobby.mapId == mapId and lobby.status == 'waiting' and #lobby.players < lobby.maxPlayers then
+            targetLobby = id
+            break
+        end
+    end
+
+    if targetLobby then
+        if JoinLobby(source, targetLobby) then
+            TriggerClientEvent('ffa:lobbyJoined', source, Lobbies[targetLobby])
+        end
+    else
+        -- Erstelle Standard-Lobby
+        local map = Utils.GetMapById(mapId)
+        local settings = {
+            name = "FFA " .. map.label,
+            mapId = mapId,
+            mode = 'ffa',
+            loadout = 'all',
+            roundTime = 15,
+            maxPlayers = 16,
+            vehiclesAllowed = false,
+            friendlyFire = false,
+            respawnTime = 5,
+            killLimit = 30
+        }
+        TriggerEvent('ffa:createLobby', settings)
+    end
+end)
+
+-- Event: Spieler aus Lobby kicken
+RegisterServerEvent('ffa:kickPlayer')
+AddEventHandler('ffa:kickPlayer', function(targetId)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            LeaveLobby(targetId)
+            -- Dem gekickten Spieler mitteilen
+            TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
+        end
+    end
+end)

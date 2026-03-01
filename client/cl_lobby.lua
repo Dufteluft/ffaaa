@@ -1,13 +1,7 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
-local currentLobby = nil
-local playerState = {
-    kills = 0,
-    deaths = 0,
-    team = 'none',
-    isInGame = false
-}
+-- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
 -- Menü-Steuerung (F5 öffnet/schließt Menü)
 Citizen.CreateThread(function()
@@ -139,5 +133,22 @@ end)
 
 RegisterNUICallback('leaveLobby', function(data, cb)
     TriggerServerEvent('ffa:leaveLobby')
+    cb('ok')
+end)
+
+RegisterNUICallback('quickJoin', function(data, cb)
+    TriggerServerEvent('ffa:quickJoin', data.mapId)
+    cb('ok')
+end)
+
+RegisterNUICallback('kickPlayer', function(data, cb)
+    TriggerServerEvent('ffa:kickPlayer', data.id)
+    cb('ok')
+end)
+
+RegisterNUICallback('closeWinnerScreen', function(data, cb)
+    isMenuOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'close' })
     cb('ok')
 end)

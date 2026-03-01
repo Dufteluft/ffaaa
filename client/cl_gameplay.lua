@@ -64,26 +64,39 @@ Citizen.CreateThread(function()
 end)
 
 -- Funktion: Behandelt Tod, Kill-Cam und Respawn
+-- Funktion: Behandelt Tod, Kill-Cam/Zuschauen und Respawn
 function HandleDeath(killerPed)
     Citizen.CreateThread(function()
         local killerCoords = GetEntityCoords(killerPed)
+        local playerPed = PlayerPedId()
 
         -- Kill-Cam: Fokus für 3 Sek auf den Mörder
         local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-        SetCamCoord(cam, GetEntityCoords(PlayerPedId()))
+        SetCamCoord(cam, GetEntityCoords(playerPed))
         PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
         RenderScriptCams(true, true, 1000, true, true)
 
-        -- Respawn-Dauer aus Lobby-Einstellungen
-        Citizen.Wait(currentLobby.respawnTime * 1000)
+        Wait(3000)
 
-        -- Kamera zurücksetzen
-        RenderScriptCams(false, true, 500, true, true)
-        DestroyCam(cam, true)
+        -- Wenn Respawn noch nicht fällig, wechsle in Zuschauer-Modus
+        if currentLobby.respawnTime > 3 then
+            RenderScriptCams(false, true, 500, true, true)
+            DestroyCam(cam, true)
+
+            -- Automatisch auf Killer oder zufälligen Spieler schauen
+            if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
+                NetworkSetInSpectatorMode(true, killerPed)
+            end
+
+            Wait((currentLobby.respawnTime - 3) * 1000)
+            NetworkSetInSpectatorMode(false, playerPed)
+        else
+            RenderScriptCams(false, true, 500, true, true)
+            DestroyCam(cam, true)
+        end
 
         -- Wiederbelebung an zufälligem Punkt auf der Map
         local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
-        local ped = PlayerPedId()
         NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w, true, false)
         GiveLoadout(currentLobby.loadout)
     end)

@@ -14,7 +14,10 @@ const sounds = {
 function playSound(name) {
     if (sounds[name]) {
         sounds[name].currentTime = 0;
-        sounds[name].play().catch(() => {});
+        // Fehlerbehandlung falls Audio-Dateien fehlen
+        sounds[name].play().catch(e => {
+            console.warn(`Audio ${name} konnte nicht abgespielt werden:`, e.message);
+        });
     }
 }
 

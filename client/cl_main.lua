@@ -1,5 +1,14 @@
 ESX = exports['es_extended']:getSharedObject()
 
+-- Globale Variablen für den Zugriff aus allen Client-Skripten
+playerState = {
+    kills = 0,
+    deaths = 0,
+    team = 'none',
+    isInGame = false
+}
+currentLobby = nil
+
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
     Citizen.CreateThread(function()

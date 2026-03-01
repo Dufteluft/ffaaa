@@ -26,6 +26,15 @@ AddEventHandler('ffa:startGame', function()
             TriggerClientEvent('ffa:gameStarting', pid, lobby)
         end
 
+        -- Team-Synchronisation für alle Spieler in der Lobby
+        local teams = {}
+        for _, pid in ipairs(lobby.players) do
+            teams[pid] = PlayerStates[pid].team
+        end
+        for _, pid in ipairs(lobby.players) do
+            TriggerClientEvent('ffa:syncTeams', pid, teams)
+        end
+
         StartGameTimer(lobbyId)
     end
 end)
