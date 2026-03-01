@@ -10,9 +10,14 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     SendNUIMessage({ action = 'gameStarting' })
     SetNuiFocus(false, false)
 
-    -- Auf Karte teleportieren und Countdown (10 Sek)
+    -- Auf Karte teleportieren und Countdown (nur wenn nicht persistent)
     TeleportToMap(lobby.mapId)
-    StartCountdown(10)
+    if lobby.isPersistent then
+        FreezeEntityPosition(PlayerPedId(), false)
+        SendNUIMessage({ action = 'countdown', seconds = 0 })
+    else
+        StartCountdown(10)
+    end
 
     -- Waffen austeilen
     GiveLoadout(lobby.loadout)

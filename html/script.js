@@ -58,6 +58,13 @@ window.addEventListener('message', (event) => {
         case 'open':
             document.getElementById('app').style.display = 'flex';
             setupInitialData(data.config, data.maps);
+
+            // "FFA verlassen" Button anzeigen wenn im Spiel
+            if (data.isInGame) {
+                document.getElementById('btn-quit-ffa').style.display = 'block';
+            } else {
+                document.getElementById('btn-quit-ffa').style.display = 'none';
+            }
             break;
         case 'close':
             document.getElementById('app').style.display = 'none';
@@ -239,6 +246,12 @@ function renderPlayerList(players) {
 document.getElementById('btn-ready-toggle').addEventListener('click', () => {
     playSound('click');
     fetch(`https://${GetParentResourceName()}/toggleReady`, { method: 'POST' });
+});
+
+document.getElementById('btn-quit-ffa').addEventListener('click', () => {
+    playSound('click');
+    document.getElementById('btn-quit-ffa').style.display = 'none';
+    fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
 });
 
 document.getElementById('btn-start-game').addEventListener('click', () => {

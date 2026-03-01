@@ -41,6 +41,9 @@ end)
 
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
+    local lobby = Lobbies[lobbyId]
+    if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
+
     Citizen.CreateThread(function()
         while Lobbies[lobbyId] and Lobbies[lobbyId].status == 'playing' do
             Citizen.Wait(1000)

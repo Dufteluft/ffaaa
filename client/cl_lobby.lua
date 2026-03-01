@@ -30,7 +30,8 @@ function OpenMainMenu()
     SendNUIMessage({
         action = 'open',
         config = Config,
-        maps = Config.Maps
+        maps = Config.Maps,
+        isInGame = playerState.isInGame
     })
 end
 

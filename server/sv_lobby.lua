@@ -217,6 +217,37 @@ AddEventHandler('playerDropped', function()
     LeaveLobby(source)
 end)
 
+-- Automatische Initialisierung der persistenten Lobbys beim Server-Start
+MySQL.ready(function()
+    Citizen.Wait(1000)
+    for _, map in ipairs(Config.Maps) do
+        local lobbyId = GenerateLobbyId()
+        Lobbies[lobbyId] = {
+            id = lobbyId,
+            name = "FFA " .. map.label,
+            host = -1, -- System Host
+            hostName = "SYSTEM",
+            isPersistent = true,
+            mapId = map.id,
+            mapLabel = map.label,
+            mode = 'ffa',
+            loadout = 'all',
+            roundTime = 0, -- 0 bedeutet unendlich/kein Timer
+            maxPlayers = 32,
+            vehiclesAllowed = false,
+            friendlyFire = false,
+            respawnTime = 3,
+            killLimit = 0,
+            players = {},
+            status = 'playing',
+            timer = 0,
+            scoreBlue = 0,
+            scoreRed = 0
+        }
+        Utils.Print('Persistente FFA Lobby initialisiert: ' .. map.label)
+    end
+end)
+
 -- Event: Schneller Beitritt (Tab 1) - Immer offen, sofortiger Start
 RegisterServerEvent('ffa:quickJoin')
 AddEventHandler('ffa:quickJoin', function(mapId)
