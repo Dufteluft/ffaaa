@@ -27,6 +27,38 @@ function StartCountdown(seconds)
     end)
 end
 
+-- Event: Stellt den Spieler-Status wieder her (nach Verlassen der Lobby)
+RegisterNetEvent('ffa:restoreState')
+AddEventHandler('ffa:restoreState', function(oldCoords)
+    local ped = PlayerPedId()
+
+    playerState.isInGame = false
+    currentLobby = nil
+
+    -- Alle Waffen entfernen
+    RemoveAllPedWeapons(ped, true)
+
+    -- ESX Loadout wiederherstellen (falls vorhanden)
+    TriggerEvent('esx:restoreLoadout')
+
+    -- Zur alten Position teleportieren
+    DoScreenFadeOut(500)
+    while not IsScreenFadedOut() do Wait(0) end
+
+    if oldCoords then
+        SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
+    end
+
+    Wait(500)
+    DoScreenFadeIn(500)
+    FreezeEntityPosition(ped, false)
+
+    -- HUD und Menü ausblenden
+    SendNUIMessage({ action = 'hideHUD' })
+    SendNUIMessage({ action = 'close' })
+    SetNuiFocus(false, false)
+end)
+
 -- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)

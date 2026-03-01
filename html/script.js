@@ -137,13 +137,16 @@ function setupInitialData(config, maps) {
     // Predefined FFA Maps
     const ffaGrid = document.querySelector('.map-grid');
     ffaGrid.innerHTML = '';
-    maps.slice(0, 3).forEach(map => {
+    maps.forEach(map => {
         const card = document.createElement('div');
         card.className = 'map-card';
         card.innerHTML = `
-            <h3>${map.label}</h3>
-            <p>FFA Standard</p>
-            <button class="primary-btn" onclick="quickJoin('${map.id}')">Sofort Beitreten</button>
+            <div class="map-image-placeholder"></div>
+            <div class="map-info">
+                <h3>${map.label}</h3>
+                <p>FFA Standard</p>
+                <button class="primary-btn" onclick="quickJoin('${map.id}')">BEITRETEN</button>
+            </div>
         `;
         ffaGrid.appendChild(card);
     });
@@ -330,14 +333,60 @@ function showWinnerScreen(data) {
     document.getElementById('winner-screen').style.display = 'flex';
     document.getElementById('winner-name').innerText = data.winnerName + " GEWINNT!";
 
-    // Stats table could be rendered here
+    const statsTable = document.getElementById('match-stats-table');
+    let html = `<table><thead><tr><th>Name</th><th>Kills</th><th>Tode</th><th>K/D</th></tr></thead><tbody>`;
+    data.stats.forEach(s => {
+        html += `<tr><td>${s.name}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.kd}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    statsTable.innerHTML = html;
+
+    // Map Voting (nur wenn nicht persistent)
+    if (currentLobby && !currentLobby.isPersistent) {
+        document.getElementById('map-voting-section').style.display = 'block';
+        const voteGrid = document.getElementById('voting-maps-grid');
+        voteGrid.innerHTML = '';
+
+        // 3 Zufällige Maps zur Auswahl
+        // In einer echten Umgebung kämen diese vom Server
+        const maps = ['legion', 'sandyshores', 'airport', 'vinewood', 'port', 'paleto'];
+        const selection = maps.sort(() => 0.5 - Math.random()).slice(0, 3);
+
+        selection.forEach(mapId => {
+            const btn = document.createElement('button');
+            btn.className = 'secondary-btn';
+            btn.innerText = mapId.toUpperCase();
+            btn.onclick = () => {
+                playSound('click');
+                fetch(`https://${GetParentResourceName()}/voteMap`, {
+                    method: 'POST',
+                    body: JSON.stringify({ mapId })
+                });
+                btn.style.borderColor = '#fbc02d';
+            };
+            voteGrid.appendChild(btn);
+        });
+    } else {
+        document.getElementById('map-voting-section').style.display = 'none';
+    }
 }
 
 document.getElementById('btn-back-to-menu').addEventListener('click', () => {
     playSound('click');
     document.getElementById('winner-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    fetch(`https://${GetParentResourceName()}/closeWinnerScreen`, { method: 'POST' });
+    fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
+});
+
+document.getElementById('btn-back-to-lobby').addEventListener('click', () => {
+    playSound('click');
+    document.getElementById('winner-screen').style.display = 'none';
+    if (currentLobby && currentLobby.isPersistent) {
+        // Bei persistenten Lobbys bleiben wir einfach drin
+        fetch(`https://${GetParentResourceName()}/closeUI`, { method: 'POST' });
+    } else {
+        document.getElementById('lobby-waiting-area').style.display = 'flex';
+        fetch(`https://${GetParentResourceName()}/closeWinnerScreen`, { method: 'POST' });
+    }
 });
 
 // Chat Logik

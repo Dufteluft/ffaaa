@@ -163,6 +163,11 @@ RegisterNUICallback('kickPlayer', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('voteMap', function(data, cb)
+    TriggerServerEvent('ffa:voteMap', data.mapId)
+    cb('ok')
+end)
+
 RegisterNUICallback('closeWinnerScreen', function(data, cb)
     isMenuOpen = false
     SetNuiFocus(false, false)

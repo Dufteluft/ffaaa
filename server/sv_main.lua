@@ -12,12 +12,26 @@ AddEventHandler('ffa:startGame', function()
         lobby.status = 'playing'
         lobby.timer = lobby.roundTime * 60
 
-        -- Spieler Teams zuweisen, falls noch nicht gewählt
+        -- Spieler Teams zuweisen (Auto-Balance)
+        local blueCount, redCount = 0, 0
+        -- Zuerst bestehende Wünsche zählen
+        for _, pid in ipairs(lobby.players) do
+            local pState = PlayerStates[pid]
+            if pState.team == 'blue' then blueCount = blueCount + 1
+            elseif pState.team == 'red' then redCount = redCount + 1 end
+        end
+
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
             if lobby.mode == 'tdm' then
-                if pState.team == 'none' or pState.team == 'random' then
-                    pState.team = (math.random(2) == 1) and 'blue' or 'red'
+                if pState.team == 'none' or pState.team == 'random' or pState.team == 'spectator' then
+                    if blueCount <= redCount then
+                        pState.team = 'blue'
+                        blueCount = blueCount + 1
+                    else
+                        pState.team = 'red'
+                        redCount = redCount + 1
+                    end
                 end
             else
                 pState.team = 'ffa'
@@ -100,12 +114,27 @@ function EndGame(lobbyId, reason)
         end
     end
 
+    -- Statistiken sammeln
+    local stats = {}
+    for _, pid in ipairs(lobby.players) do
+        local ps = PlayerStates[pid]
+        if ps then
+            table.insert(stats, {
+                name = ps.name,
+                kills = ps.kills,
+                deaths = ps.deaths,
+                kd = string.format("%.2f", (ps.deaths > 0) and (ps.kills / ps.deaths) or (ps.kills + 0.0))
+            })
+        end
+    end
+    table.sort(stats, function(a, b) return a.kills > b.kills end)
+
     -- Statistiken speichern und Clients informieren
     for _, pid in ipairs(lobby.players) do
         TriggerClientEvent('ffa:gameEnded', pid, {
             winnerName = winnerName,
             reason = reason,
-            stats = {}
+            stats = stats
         })
 
         -- DB-Statistiken aktualisieren
@@ -175,7 +204,26 @@ AddEventHandler('ffa:playerKilled', function(killerId)
 
     -- HUD-Update an alle betroffenen Spieler
     TriggerClientEvent('ffa:updateHUDStats', victim, victimState.kills, victimState.deaths)
-    if killerId ~= -1 and PlayerStates[killerId] then
+    if killerId and killerId ~= -1 and PlayerStates[killerId] then
         TriggerClientEvent('ffa:updateHUDStats', killerId, PlayerStates[killerId].kills, PlayerStates[killerId].deaths)
+    end
+end)
+
+-- Event: Map Voting
+RegisterServerEvent('ffa:voteMap')
+AddEventHandler('ffa:voteMap', function(mapId)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and not lobby.isPersistent then
+            lobby.mapId = mapId
+            local map = Utils.GetMapById(mapId)
+            if map then lobby.mapLabel = map.label end
+
+            -- Informiere Lobby-Chat über den Vote
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+            end
+        end
     end
 end)

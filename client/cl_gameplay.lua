@@ -45,6 +45,48 @@ function GiveLoadout(loadoutKey)
     end
 end
 
+-- Map-Grenzprüfung und Waffen-Validierung
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1000)
+        if playerState.isInGame and currentLobby then
+            local ped = PlayerPedId()
+            local coords = GetEntityCoords(ped)
+            local map = Utils.GetMapById(currentLobby.mapId)
+
+            if map then
+                -- Grenzprüfung
+                local dist = #(coords - map.center)
+                if dist > map.radius then
+                    ESX.ShowNotification('~r~Du verlässt das Kampfgebiet!')
+                    local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
+                    SetEntityCoords(ped, spawn.x, spawn.y, spawn.z)
+                end
+
+                -- Waffen-Validierung
+                local currentWeapon = GetSelectedPedWeapon(ped)
+                if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
+                    local allowed = false
+                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
+                    if loadout then
+                        for _, w in ipairs(loadout) do
+                            if GetHashKey(w.name) == currentWeapon then
+                                allowed = true
+                                break
+                            end
+                        end
+                    end
+
+                    if not allowed then
+                        RemoveWeaponFromPed(ped, currentWeapon)
+                        ESX.ShowNotification('~r~Diese Waffe ist in dieser Lobby nicht erlaubt!')
+                    end
+                end
+            end
+        end
+    end
+end)
+
 -- Kill-Erkennung: Prüft ständig auf Tod des Spielers
 Citizen.CreateThread(function()
     while true do

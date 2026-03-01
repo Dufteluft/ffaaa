@@ -74,14 +74,23 @@ function JoinLobby(playerId, lobbyId)
     end
 
     table.insert(lobby.players, playerId)
+
+    -- Speichere aktuellen Status des Spielers (Position und Routing Bucket)
+    local ped = GetPlayerPed(playerId)
     PlayerStates[playerId] = {
         lobbyId = lobbyId,
         team = 'none',
         ready = (playerId == lobby.host),
         kills = 0,
         deaths = 0,
-        name = xPlayer.getName()
+        name = xPlayer.getName(),
+        oldCoords = GetEntityCoords(ped),
+        oldBucket = GetPlayerRoutingBucket(playerId)
     }
+
+    -- Setze Routing Bucket auf Lobby ID (vermeidet Konflikte zwischen Lobbys)
+    -- Wir nutzen die lobbyId als Bucket, müssen sie aber in eine Zahl umwandeln
+    SetPlayerRoutingBucket(playerId, tonumber(lobbyId))
 
     UpdateLobbyPlayers(lobbyId)
     return true
@@ -105,6 +114,12 @@ function LeaveLobby(playerId)
     local lobbyId = state.lobbyId
     local lobby = Lobbies[lobbyId]
 
+    -- Routing Bucket wiederherstellen
+    SetPlayerRoutingBucket(playerId, state.oldBucket or 0)
+
+    -- Position wiederherstellen und Waffen entfernen (via Client)
+    TriggerClientEvent('ffa:restoreState', playerId, state.oldCoords)
+
     if lobby then
         for i, id in ipairs(lobby.players) do
             if id == playerId then
@@ -113,9 +128,9 @@ function LeaveLobby(playerId)
             end
         end
 
-        if #lobby.players == 0 then
+        if #lobby.players == 0 and not lobby.isPersistent then
             Lobbies[lobbyId] = nil
-        else
+        elseif #lobby.players > 0 then
             -- Wenn der Host geht, wird der nächste Spieler Host
             if playerId == lobby.host then
                 lobby.host = lobby.players[1]
