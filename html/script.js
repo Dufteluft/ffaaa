@@ -87,6 +87,11 @@ window.addEventListener('message', (event) => {
             break;
         case 'showHUD':
             document.getElementById('game-hud').style.display = 'block';
+            if (data.isPersistent) {
+                document.getElementById('hud-timer').style.display = 'none';
+            } else {
+                document.getElementById('hud-timer').style.display = 'block';
+            }
             break;
         case 'updateHUD':
             updateHUD(data);
@@ -288,7 +293,15 @@ setInterval(() => {
 
 // HUD Updates
 function updateHUD(data) {
-    if (data.time) document.getElementById('hud-timer').innerText = data.time;
+    if (data.time) {
+        document.getElementById('hud-timer').innerText = data.time;
+        // Timer verstecken wenn 00:00 (Persistent)
+        if (data.time === '00:00') {
+            document.getElementById('hud-timer').style.display = 'none';
+        } else {
+            document.getElementById('hud-timer').style.display = 'block';
+        }
+    }
     if (data.kills !== undefined) document.getElementById('hud-kills').innerText = data.kills;
     if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
 

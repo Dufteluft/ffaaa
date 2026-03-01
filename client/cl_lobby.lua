@@ -24,7 +24,14 @@ end)
 
 -- Funktion: Hauptmenü öffnen
 function OpenMainMenu()
-    if isMenuOpen then return end
+    if isMenuOpen then
+        -- Menü schließen wenn bereits offen
+        isMenuOpen = false
+        SetNuiFocus(false, false)
+        SendNUIMessage({ action = 'close' })
+        return
+    end
+
     isMenuOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({
@@ -42,6 +49,15 @@ RegisterNUICallback('closeUI', function(data, cb)
     SendNUIMessage({ action = 'close' })
     cb('ok')
 end)
+
+-- Befehl zum Verlassen der FFA Lobby
+RegisterCommand('quitffa', function()
+    if playerState.isInGame then
+        TriggerServerEvent('ffa:leaveLobby')
+    else
+        ESX.ShowNotification('Du bist in keiner FFA Lobby.')
+    end
+end, false)
 
 -- Lobby Events vom Server
 RegisterNetEvent('ffa:lobbyCreated')

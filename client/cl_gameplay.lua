@@ -23,7 +23,10 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     GiveLoadout(lobby.loadout)
 
     -- HUD einblenden
-    SendNUIMessage({ action = 'showHUD' })
+    SendNUIMessage({
+        action = 'showHUD',
+        isPersistent = lobby.isPersistent
+    })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
 
