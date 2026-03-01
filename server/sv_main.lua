@@ -111,6 +111,26 @@ function EndGame(lobbyId, reason)
             local isWin = (winnerName == state.name) or (winnerTeam ~= 'none' and state.team == winnerTeam)
             UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
         end
+
+        -- Wenn persistente Lobby, starte für Spieler nach kurzem Delay neu
+        if lobby.isPersistent then
+            Citizen.CreateThread(function()
+                Citizen.Wait(10000) -- 10 Sekunden Anzeigezeit
+                if PlayerStates[pid] and PlayerStates[pid].lobbyId == lobbyId then
+                    PlayerStates[pid].kills = 0
+                    PlayerStates[pid].deaths = 0
+                    TriggerClientEvent('ffa:gameStarting', pid, lobby)
+                end
+            end)
+        end
+    end
+
+    if lobby.isPersistent then
+        lobby.timer = lobby.roundTime * 60
+        lobby.status = 'playing'
+        lobby.scoreBlue = 0
+        lobby.scoreRed = 0
+        StartGameTimer(lobbyId)
     end
 end
 

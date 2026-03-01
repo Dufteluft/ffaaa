@@ -13,11 +13,10 @@ function GenerateLobbyId()
 end
 
 -- Event: Lobby erstellen
-RegisterServerEvent('ffa:createLobby')
-AddEventHandler('ffa:createLobby', function(settings)
-    local playerId = source
+-- Funktion: Erstellt eine neue Lobby (Intern und via Netzwerk nutzbar)
+function CreateLobby(playerId, settings)
     local xPlayer = ESX.GetPlayerFromId(playerId)
-    if not xPlayer then return end
+    if not xPlayer then return nil end
 
     local lobbyId = GenerateLobbyId()
     local map = Utils.GetMapById(settings.mapId)
@@ -27,6 +26,7 @@ AddEventHandler('ffa:createLobby', function(settings)
         name = settings.name,
         host = playerId,
         hostName = xPlayer.getName(),
+        isPersistent = settings.isPersistent or false,
         mapId = settings.mapId,
         mapLabel = map.label,
         mode = settings.mode,
@@ -47,7 +47,16 @@ AddEventHandler('ffa:createLobby', function(settings)
     Utils.Print('Lobby erstellt: ' .. settings.name .. ' von ' .. xPlayer.getName())
 
     JoinLobby(playerId, lobbyId)
-    TriggerClientEvent('ffa:lobbyCreated', playerId, Lobbies[lobbyId])
+    return lobbyId
+end
+
+-- Event: Lobby erstellen (via NUI)
+RegisterServerEvent('ffa:createLobby')
+AddEventHandler('ffa:createLobby', function(settings)
+    local lobbyId = CreateLobby(source, settings)
+    if lobbyId then
+        TriggerClientEvent('ffa:lobbyCreated', source, Lobbies[lobbyId])
+    end
 end)
 
 -- Funktion: Spieler tritt einer Lobby bei
@@ -208,38 +217,51 @@ AddEventHandler('playerDropped', function()
     LeaveLobby(source)
 end)
 
--- Event: Schneller Beitritt (Suche bestehende Lobby oder erstelle neue)
+-- Event: Schneller Beitritt (Tab 1) - Immer offen, sofortiger Start
 RegisterServerEvent('ffa:quickJoin')
 AddEventHandler('ffa:quickJoin', function(mapId)
-    local targetLobby = nil
+    local playerId = source
+    local targetLobbyId = nil
+
+    -- Suche nach einer bestehenden persistenten Lobby für diese Map
     for id, lobby in pairs(Lobbies) do
-        if lobby.mapId == mapId and lobby.status == 'waiting' and #lobby.players < lobby.maxPlayers then
-            targetLobby = id
+        if lobby.mapId == mapId and lobby.isPersistent then
+            targetLobbyId = id
             break
         end
     end
 
-    local playerId = source
-    if targetLobby then
-        if JoinLobby(playerId, targetLobby) then
-            TriggerClientEvent('ffa:lobbyJoined', playerId, Lobbies[targetLobby])
+    if targetLobbyId then
+        if JoinLobby(playerId, targetLobbyId) then
+            local lobby = Lobbies[targetLobbyId]
+            -- Direkt ins Spiel starten (Wartebereich überspringen)
+            PlayerStates[playerId].team = 'ffa'
+            TriggerClientEvent('ffa:gameStarting', playerId, lobby)
         end
     else
-        -- Erstelle Standard-Lobby
+        -- Erstelle eine neue persistente Lobby
         local map = Utils.GetMapById(mapId)
-        local settings = {
+        local lobbyId = CreateLobby(playerId, {
             name = "FFA " .. map.label,
             mapId = mapId,
             mode = 'ffa',
             loadout = 'all',
-            roundTime = 15,
-            maxPlayers = 16,
+            roundTime = 60, -- Lange Laufzeit für persistente Lobbys
+            maxPlayers = 32,
             vehiclesAllowed = false,
             friendlyFire = false,
-            respawnTime = 5,
-            killLimit = 30
-        }
-        TriggerEvent('ffa:createLobby', settings)
+            respawnTime = 3,
+            killLimit = 0,
+            isPersistent = true
+        })
+
+        if lobbyId then
+            local lobby = Lobbies[lobbyId]
+            lobby.status = 'playing' -- Direkt auf spielend setzen
+            PlayerStates[playerId].team = 'ffa'
+            TriggerClientEvent('ffa:gameStarting', playerId, lobby)
+            StartGameTimer(lobbyId)
+        end
     end
 end)
 

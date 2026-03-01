@@ -8,6 +8,7 @@ AddEventHandler('ffa:gameStarting', function(lobby)
 
     -- UI ausblenden für Fokus aufs Spiel
     SendNUIMessage({ action = 'gameStarting' })
+    SetNuiFocus(false, false)
 
     -- Auf Karte teleportieren und Countdown (10 Sek)
     TeleportToMap(lobby.mapId)
