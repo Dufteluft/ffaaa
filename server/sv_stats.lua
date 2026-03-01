@@ -5,7 +5,7 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
 
     local identifier = xPlayer.getIdentifier()
 
-    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
+    -- Nutzt oxmysql oder mysql-async für die Speicherung
     MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
         ['@id'] = identifier,
         ['@k'] = kills,
@@ -14,10 +14,11 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
     })
 end
 
--- Event: Statistiken für UI abrufen
+-- Event: Statistiken für UI abrufen (Optional für späteres Feature)
 RegisterServerEvent('ffa:getStats')
 AddEventHandler('ffa:getStats', function()
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
@@ -26,7 +27,7 @@ AddEventHandler('ffa:getStats', function()
         ['@id'] = identifier
     }, function(result)
         if result and result[1] then
-            TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+            TriggerClientEvent('ffa:receiveStats', src, result[1])
         end
     end)
 end)
