@@ -169,8 +169,6 @@ RegisterNUICallback('voteMap', function(data, cb)
 end)
 
 RegisterNUICallback('closeWinnerScreen', function(data, cb)
-    isMenuOpen = false
-    SetNuiFocus(false, false)
-    SendNUIMessage({ action = 'close' })
+    TriggerServerEvent('ffa:closeWinnerScreen')
     cb('ok')
 end)
