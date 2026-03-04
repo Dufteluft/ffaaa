@@ -77,14 +77,21 @@ function TeleportToMap(mapId)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD-Updater: Alle 250ms Leben, Rüstung und Munition an NUI senden
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = GetEntityHealth(ped)
+            if health > 0 then health = health - 100 end -- GTA Health Offset
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+            if weapon ~= `WEAPON_UNARMED` then
+                _, ammo = GetAmmoInClip(ped, weapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
@@ -93,6 +100,6 @@ Citizen.CreateThread(function()
                 ammo = ammo
             })
         end
-        Wait(500)
+        Wait(250)
     end
 end)
