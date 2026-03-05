@@ -10,8 +10,12 @@ Citizen.CreateThread(function()
     if Config.MenuKey == 'F1' then key = 288
     elseif Config.MenuKey == 'F2' then key = 289
     elseif Config.MenuKey == 'F3' then key = 170
+    elseif Config.MenuKey == 'F4' then key = 166 -- FiveM default for F4 is often different, but here we use 166 (F5) as fallback if not matched
     elseif Config.MenuKey == 'F5' then key = 166
     elseif Config.MenuKey == 'F6' then key = 167
+    elseif Config.MenuKey == 'F7' then key = 168
+    elseif Config.MenuKey == 'F9' then key = 56
+    elseif Config.MenuKey == 'F10' then key = 57
     end
 
     while true do

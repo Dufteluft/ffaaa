@@ -31,12 +31,12 @@ function CreateLobby(playerId, settings)
         mapLabel = map.label,
         mode = settings.mode,
         loadout = settings.loadout,
-        roundTime = settings.roundTime,
-        maxPlayers = settings.maxPlayers,
-        vehiclesAllowed = settings.vehiclesAllowed,
-        friendlyFire = settings.friendlyFire,
-        respawnTime = settings.respawnTime,
-        killLimit = settings.killLimit,
+        roundTime = settings.roundTime or Config.DefaultSettings.roundTime,
+        maxPlayers = settings.maxPlayers or Config.DefaultSettings.maxPlayers,
+        vehiclesAllowed = settings.vehiclesAllowed or false,
+        friendlyFire = settings.friendlyFire or false,
+        respawnTime = settings.respawnTime or Config.DefaultSettings.respawnTime,
+        killLimit = settings.killLimit or Config.DefaultSettings.killLimit,
         players = {},
         status = 'waiting',
         timer = settings.roundTime * 60,
@@ -99,10 +99,21 @@ end
 -- Event: Lobby beitreten
 RegisterServerEvent('ffa:joinLobby')
 AddEventHandler('ffa:joinLobby', function(lobbyId)
+    local lobby = Lobbies[lobbyId]
+    if not lobby then
+        TriggerClientEvent('esx:showNotification', source, 'Lobby existiert nicht.')
+        return
+    end
+
+    if #lobby.players >= lobby.maxPlayers then
+        TriggerClientEvent('esx:showNotification', source, 'Lobby ist bereits voll.')
+        return
+    end
+
     if JoinLobby(source, lobbyId) then
         TriggerClientEvent('ffa:lobbyJoined', source, Lobbies[lobbyId])
     else
-        -- Nachricht an Spieler: Lobby voll oder existiert nicht
+        TriggerClientEvent('esx:showNotification', source, 'Beitritt fehlgeschlagen.')
     end
 end)
 
@@ -217,7 +228,7 @@ AddEventHandler('ffa:fetchLobbies', function(data)
         local isMatch = false
         if filterTab == 'ffa' then
             if lobby.isPersistent then isMatch = true end
-        else
+        elseif filterTab == 'custom' then
             if not lobby.isPersistent then isMatch = true end
         end
 

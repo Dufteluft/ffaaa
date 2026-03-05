@@ -90,7 +90,8 @@ Citizen.CreateThread(function()
                 action = 'updateHUDDetails',
                 health = health,
                 armor = armor,
-                ammo = ammo
+                ammo = ammo,
+                roundTime = currentLobby.timer or 0
             })
         end
         Wait(500)

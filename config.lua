@@ -1,10 +1,10 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
     respawnTime = 5, -- seconds
     killLimit = 30,
@@ -42,6 +42,7 @@ Config.WeaponLoadouts = {
     }
 }
 
+-- Definition der verfügbaren Karten
 Config.Maps = {
     {
         id = 'legion',
@@ -120,9 +121,9 @@ Config.Maps = {
 Config.Locales = {
     ['de'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
-        ['tab_ffa'] = 'FFA Lobby',
-        ['tab_create'] = 'Lobby erstellen',
-        ['tab_list'] = 'Offene Lobbys',
+        ['tab_ffa'] = 'FFA LOBBY',
+        ['tab_create'] = 'LOBBY ERSTELLEN',
+        ['tab_list'] = 'OFFENE LOBBYS',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
@@ -151,13 +152,16 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['no_lobbies'] = 'KEINE PASSENDEN LOBBYS GEFUNDEN',
+        ['full'] = 'VOLL',
+        ['spectate'] = 'ZUSCHAUEN'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
-        ['tab_ffa'] = 'FFA Lobby',
-        ['tab_create'] = 'Create Lobby',
-        ['tab_list'] = 'Open Lobbies',
+        ['tab_ffa'] = 'FFA LOBBY',
+        ['tab_create'] = 'CREATE LOBBY',
+        ['tab_list'] = 'OPEN LOBBIES',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
@@ -186,7 +190,10 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['no_lobbies'] = 'NO MATCHING LOBBIES FOUND',
+        ['full'] = 'FULL',
+        ['spectate'] = 'SPECTATE'
     }
 }
 
