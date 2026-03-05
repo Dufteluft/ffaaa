@@ -15,8 +15,9 @@
             <header class="main-header">
                 <h1 class="header-title">GTA V FREE-FOR-ALL LOBBY FINDER</h1>
                 <nav class="nav-tabs">
-                    <button class="tab-btn active" data-tab="ffa">FFA</button>
-                    <button class="tab-btn" data-tab="lobby">LOBBY</button>
+                    <button class="tab-btn active" data-tab="ffa">FFA LOBBY</button>
+                    <button class="tab-btn" data-tab="create">LOBBY ERSTELLEN</button>
+                    <button class="tab-btn" data-tab="list">OFFENE LOBBYS</button>
                 </nav>
             </header>
 
@@ -56,60 +57,77 @@
                         </select>
                     </div>
 
-                    <button class="create-btn" id="open-create-modal">CREATE LOBBY</button>
+                    <button class="create-btn" id="open-create-modal">SPIELER-STATS</button>
                 </aside>
 
-                <!-- Main Content: Lobby List -->
+                <!-- Main Content: Views -->
                 <main class="lobby-browser">
-                    <div class="lobby-list" id="lobby-list-container">
-                        <!-- Entries will be injected here -->
+                    <!-- Tab 1 & 3: Lobby Browser List -->
+                    <div id="lobby-list-view" class="tab-view active">
+                        <div class="lobby-list" id="lobby-list-container">
+                            <!-- Entries will be injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Create Lobby Form -->
+                    <div id="lobby-create-view" class="tab-view" style="display: none;">
+                        <div class="create-form-container">
+                            <h2 class="view-title">LOBBY ERSTELLEN</h2>
+                            <div class="form-grid">
+                                <div class="input-group full-width">
+                                    <label>LOBBY NAME</label>
+                                    <input type="text" id="lobby-name" placeholder="NAME EINGEBEN...">
+                                </div>
+                                <div class="input-group">
+                                    <label>MAP AUSWAHL</label>
+                                    <select id="map-select"></select>
+                                </div>
+                                <div class="input-group">
+                                    <label>SPIELMODUS</label>
+                                    <select id="mode-select">
+                                        <option value="ffa">FFA (ALLE GEGEN ALLE)</option>
+                                        <option value="tdm">TEAM DEATHMATCH</option>
+                                    </select>
+                                </div>
+                                <div class="input-group full-width">
+                                    <label>WAFFEN-LOADOUT</label>
+                                    <select id="loadout-select"></select>
+                                </div>
+                                <div class="input-group">
+                                    <label>RUNDENZEIT: <span id="round-time-val">15</span> MIN</label>
+                                    <input type="range" id="round-time" min="5" max="30" step="5" value="15">
+                                </div>
+                                <div class="input-group">
+                                    <label>MAX. SPIELER: <span id="max-players-val">16</span></label>
+                                    <input type="range" id="max-players" min="2" max="32" step="1" value="16">
+                                </div>
+                                <div class="input-group">
+                                    <label>RESPAWN-ZEIT: <span id="respawn-time-val">5</span> SEK</label>
+                                    <input type="range" id="respawn-time" min="3" max="10" step="1" value="5">
+                                </div>
+                                <div class="input-group">
+                                    <label>KILL-LIMIT: <span id="kill-limit-val">30</span></label>
+                                    <input type="range" id="kill-limit" min="0" max="50" step="5" value="30">
+                                </div>
+                                <div class="toggle-group">
+                                    <div class="toggle-item">
+                                        <label>FAHRZEUGE ERLAUBT</label>
+                                        <input type="checkbox" id="vehicles-allowed">
+                                    </div>
+                                    <div class="toggle-item">
+                                        <label>FREUNDLICHES FEUER</label>
+                                        <input type="checkbox" id="friendly-fire">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="confirm-btn" id="btn-create-lobby">LOBBY ERSTELLEN</button>
+                                <button class="cancel-btn" id="btn-cancel-create">ABBRECHEN</button>
+                            </div>
+                        </div>
                     </div>
                 </main>
             </div>
-        </div>
-
-        <!-- Create Lobby Modal (Hidden by default) -->
-        <div id="create-lobby-modal" class="overlay" style="display: none;">
-             <div class="modal-content">
-                <h2>CREATE CUSTOM LOBBY</h2>
-                <div class="form-container">
-                    <div class="input-group">
-                        <label>LOBBY NAME</label>
-                        <input type="text" id="lobby-name" placeholder="ENTER NAME...">
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>MAP</label>
-                            <select id="map-select"></select>
-                        </div>
-                        <div class="input-group">
-                            <label>MODE</label>
-                            <select id="mode-select">
-                                <option value="ffa">FFA</option>
-                                <option value="tdm">TEAM DEATHMATCH</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <label>LOADOUT</label>
-                        <select id="loadout-select"></select>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>TIME (MIN): <span id="round-time-val">15</span></label>
-                            <input type="range" id="round-time" min="5" max="30" step="5" value="15">
-                        </div>
-                        <div class="input-group">
-                            <label>MAX PLAYERS: <span id="max-players-val">16</span></label>
-                            <input type="range" id="max-players" min="2" max="32" step="1" value="16">
-                        </div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="confirm-btn" id="btn-create-lobby">CREATE</button>
-                        <button class="cancel-btn" id="btn-close-modal">CANCEL</button>
-                    </div>
-                </div>
-             </div>
         </div>
 
         <!-- Waiting Area / Lobby Screen -->

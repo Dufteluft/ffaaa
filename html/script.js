@@ -24,33 +24,48 @@ function playSound(name) {
 }
 
 // Tab Switching
+// Filter Event Listeners
+document.getElementById('filter-maps').addEventListener('change', fetchLobbies);
+document.getElementById('filter-weapons').addEventListener('change', fetchLobbies);
+document.getElementById('filter-players').addEventListener('change', fetchLobbies);
+document.getElementById('filter-time').addEventListener('change', fetchLobbies);
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         if (btn.dataset.tab === currentTab) return;
         playSound('click');
+
+        // UI Tabs
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
+        // View Visibility
+        currentTab = btn.dataset.tab;
+        document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
 
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
+        if (currentTab === 'create') {
+            document.getElementById('lobby-create-view').classList.add('active');
+            document.getElementById('lobby-create-view').style.display = 'block';
+            document.getElementById('lobby-list-view').style.display = 'none';
+        } else {
+            document.getElementById('lobby-list-view').classList.add('active');
+            document.getElementById('lobby-list-view').style.display = 'block';
+            document.getElementById('lobby-create-view').style.display = 'none';
             fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
+        }
     });
 });
 
-// Modal Controls
+// Stats Button (Formerly open-create-modal)
 document.getElementById('open-create-modal').addEventListener('click', () => {
     playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
+    // Implement stats display or notification
+    fetch(`https://${GetParentResourceName()}/getStats`, { method: 'POST' });
 });
 
-document.getElementById('btn-close-modal').addEventListener('click', () => {
+document.getElementById('btn-cancel-create').addEventListener('click', () => {
     playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
+    document.querySelector('button[data-tab="ffa"]').click();
 });
 
 // Slider Sync
@@ -65,6 +80,8 @@ const setupSlider = (id) => {
 };
 setupSlider('round-time');
 setupSlider('max-players');
+setupSlider('respawn-time');
+setupSlider('kill-limit');
 
 // NUI Message Handling
 window.addEventListener('message', (event) => {
@@ -127,9 +144,14 @@ function setupInitialData(config, maps) {
 }
 
 function fetchLobbies() {
+    if (currentTab === 'create') return;
+
+    // We send 'ffa' or 'custom' (for open lobbies tab)
+    const filterType = currentTab === 'ffa' ? 'ffa' : 'custom';
+
     fetch(`https://${GetParentResourceName()}/fetchLobbies`, {
         method: 'POST',
-        body: JSON.stringify({ tab: currentTab })
+        body: JSON.stringify({ tab: filterType })
     });
 }
 
@@ -137,7 +159,22 @@ function renderLobbyList(lobbies) {
     const container = document.getElementById('lobby-list-container');
     container.innerHTML = '';
 
-    lobbies.forEach((lobby, index) => {
+    // Filter Logic
+    const filterMap = document.getElementById('filter-maps').value;
+    const filterPlayer = document.getElementById('filter-players').value;
+
+    const filtered = lobbies.filter(lobby => {
+        if (filterMap !== 'all' && lobby.mapId !== filterMap) return false;
+        if (filterPlayer === 'not-full' && lobby.playerCount >= lobby.maxPlayers) return false;
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<div class="no-lobbies">KEINE PASSENDEN LOBBYS GEFUNDEN</div>';
+        return;
+    }
+
+    filtered.forEach((lobby, index) => {
         const item = document.createElement('div');
         item.className = 'lobby-item';
         item.style.animationDelay = `${index * 0.05}s`;
@@ -217,6 +254,10 @@ document.getElementById('btn-create-lobby').addEventListener('click', () => {
         loadout: document.getElementById('loadout-select').value,
         roundTime: parseInt(document.getElementById('round-time').value),
         maxPlayers: parseInt(document.getElementById('max-players').value),
+        respawnTime: parseInt(document.getElementById('respawn-time').value),
+        killLimit: parseInt(document.getElementById('kill-limit').value),
+        vehiclesAllowed: document.getElementById('vehicles-allowed').checked,
+        friendlyFire: document.getElementById('friendly-fire').checked
     };
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
@@ -334,9 +375,10 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
-// Auto-Refresh
+// Auto-Refresh (only for 'list' tab aka Open Lobbies)
 setInterval(() => {
     if (document.getElementById('app').style.display === 'flex' &&
+        currentTab === 'list' &&
         document.getElementById('lobby-waiting-area').style.display === 'none' &&
         document.getElementById('winner-screen').style.display === 'none') {
         fetchLobbies();
