@@ -1,12 +1,12 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -127,12 +115,12 @@ Config.Locales = {
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
+        ['round_time'] = 'Rundenzeit',
         ['max_players'] = 'Max. Spieler',
         ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
         ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
-        ['kill_limit'] = 'Kill-Limit zum Sieg',
+        ['respawn_time'] = 'Respawn-Zeit',
+        ['kill_limit'] = 'Kill-Limit',
         ['btn_create'] = 'Lobby erstellen',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
@@ -151,7 +139,29 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Leben',
+        ['armor'] = 'Rüstung',
+        ['ammo'] = 'Munition',
+        ['time_left'] = 'Zeit übrig',
+        ['no_lobbies'] = 'Keine Lobbys gefunden.',
+        ['lobby_full'] = 'Lobby ist voll!',
+        ['joining'] = 'Trete bei...',
+        ['starting'] = 'Startet...',
+        ['round_starting'] = 'Runde startet in 10 Sekunden',
+        ['area_warning'] = 'Du verlässt das Kampfgebiet!',
+        ['weapon_prohibited'] = 'Diese Waffe ist hier verboten!',
+        ['all_maps'] = 'ALLE MAPS',
+        ['lobby_full_btn'] = 'VOLL',
+        ['quick_join_btn'] = 'SOFORT-START',
+        ['countdown_prepare'] = 'BEREITMACHEN!',
+        ['btn_back_to_lobby'] = 'ZURÜCK ZUR LOBBY',
+        ['btn_back_to_menu'] = 'HAUPTMENÜ',
+        ['draw'] = 'UNENTSCHIEDEN',
+        ['time_up'] = 'Zeit abgelaufen',
+        ['kill_limit_reached'] = 'Kill-Limit erreicht',
+        ['kicked'] = 'Du wurdest aus der Lobby gekickt.',
+        ['map_changed'] = 'Map wurde geändert auf: %s'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -162,12 +172,12 @@ Config.Locales = {
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
+        ['round_time'] = 'Round Time',
         ['max_players'] = 'Max Players',
         ['vehicles_allowed'] = 'Vehicles Allowed',
         ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
-        ['kill_limit'] = 'Kill Limit to Win',
+        ['respawn_time'] = 'Respawn Time',
+        ['kill_limit'] = 'Kill Limit',
         ['btn_create'] = 'Create Lobby',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',
@@ -186,7 +196,29 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Health',
+        ['armor'] = 'Armor',
+        ['ammo'] = 'Ammo',
+        ['time_left'] = 'Time Left',
+        ['no_lobbies'] = 'No lobbies found.',
+        ['lobby_full'] = 'Lobby is full!',
+        ['joining'] = 'Joining...',
+        ['starting'] = 'Starting...',
+        ['round_starting'] = 'Round starting in 10 seconds',
+        ['area_warning'] = 'You are leaving the combat area!',
+        ['weapon_prohibited'] = 'This weapon is prohibited here!',
+        ['all_maps'] = 'ALL MAPS',
+        ['lobby_full_btn'] = 'FULL',
+        ['quick_join_btn'] = 'QUICK JOIN',
+        ['countdown_prepare'] = 'GET READY!',
+        ['btn_back_to_lobby'] = 'BACK TO LOBBY',
+        ['btn_back_to_menu'] = 'MAIN MENU',
+        ['draw'] = 'DRAW',
+        ['time_up'] = 'Time is up',
+        ['kill_limit_reached'] = 'Kill limit reached',
+        ['kicked'] = 'You were kicked from the lobby.',
+        ['map_changed'] = 'Map changed to: %s'
     }
 }
 
