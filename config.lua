@@ -1,12 +1,12 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Standard-Taste für das Hauptmenü (F1, F2, F3, F5, F6)
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -151,7 +139,15 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'LEBEN',
+        ['armor'] = 'RÜSTUNG',
+        ['ammo'] = 'MUNITION',
+        ['time'] = 'ZEIT',
+        ['not_enough_players'] = 'Nicht genügend Spieler zum Starten!',
+        ['kicked_message'] = 'Du wurdest aus der Lobby gekickt.',
+        ['leaving_zone'] = 'Du verlässt das Kampfgebiet!',
+        ['weapon_not_allowed'] = 'Diese Waffe ist in dieser Lobby nicht erlaubt!'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -186,7 +182,15 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'HEALTH',
+        ['armor'] = 'ARMOR',
+        ['ammo'] = 'AMMO',
+        ['time'] = 'TIME',
+        ['not_enough_players'] = 'Not enough players to start!',
+        ['kicked_message'] = 'You have been kicked from the lobby.',
+        ['leaving_zone'] = 'You are leaving the combat zone!',
+        ['weapon_not_allowed'] = 'This weapon is not allowed in this lobby!'
     }
 }
 
