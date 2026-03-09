@@ -25,23 +25,21 @@ end)
 -- Anti-Teamkill: Verhindert Schaden an Teammitgliedern
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        Citizen.Wait(100)
         if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
             local playerPed = PlayerPedId()
+            local myTeamGroup = (playerState.team == 'blue') and `BLUE_TEAM` or `RED_TEAM`
 
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
+            -- Alle anderen Spieler loopen und Schaden deaktivieren, wenn im gleichen Team
+            for _, player in ipairs(GetActivePlayers()) do
+                local targetPed = GetPlayerPed(player)
+                if targetPed ~= playerPed then
+                    local targetTeam = GetPedRelationshipGroupHash(targetPed)
+                    if targetTeam == myTeamGroup then
+                        SetEntityNoCollisionEntity(playerPed, targetPed, true) -- Optional: Kollision auch deaktivieren
+                        SetCanAttackFriendly(playerPed, false, false)
+                    end
+                end
             end
         end
     end

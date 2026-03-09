@@ -398,28 +398,115 @@ select:hover {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* Form Elements In Modal */
-.modal-content h2 {
-    margin-bottom: 30px;
+/* Create Lobby View */
+#create-lobby-view {
+    padding: 40px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.create-form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.view-title {
     font-family: 'Impact', sans-serif;
+    font-size: 32px;
+    margin-bottom: 30px;
     letter-spacing: 1px;
 }
 
-.input-group { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
-.input-group label { font-size: 11px; font-weight: 900; color: var(--text-muted); }
-input[type="text"], input[type="range"] {
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.full-width {
+    grid-column: span 2;
+}
+
+.input-group label {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+input[type="text"],
+input[type="range"],
+select {
     background: var(--surface);
     border: 1px solid var(--border);
     color: #fff;
     padding: 12px;
     border-radius: 4px;
+    outline: none;
 }
 
-.input-row { display: flex; gap: 20px; }
+.toggle-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+    background: var(--surface);
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
 
-.btn-group { display: flex; gap: 15px; margin-top: 30px; }
-.confirm-btn { flex: 1; background: var(--success); color: #000; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
-.cancel-btn { flex: 1; background: #333; color: #fff; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
+.toggle-group label {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+}
+
+.form-actions {
+    display: flex;
+    gap: 20px;
+    margin-top: 40px;
+}
+
+.confirm-btn {
+    flex: 2;
+    background: var(--primary);
+    color: #000;
+    border: none;
+    padding: 15px;
+    font-weight: 900;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.confirm-btn:hover {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.cancel-btn {
+    flex: 1;
+    background: #333;
+    color: #fff;
+    border: none;
+    padding: 15px;
+    font-weight: 900;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
@@ -442,6 +529,41 @@ input[type="text"], input[type="range"] {
 .lobby-grid { flex: 1; display: flex; overflow: hidden; }
 .player-list-section { width: 350px; border-right: 1px solid var(--border); padding: 30px; overflow-y: auto; }
 .settings-section { flex: 1; padding: 30px; display: flex; flex-direction: column; }
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.setting-item {
+    background: rgba(255,255,255,0.02);
+    padding: 12px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.setting-item span:first-child {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--text-muted);
+}
+
+.setting-item span:last-child {
+    font-weight: 700;
+}
+
+.setting-item select, .setting-item input {
+    background: #111;
+    border: 1px solid var(--border);
+    color: #fff;
+    padding: 5px;
+    border-radius: 3px;
+    font-size: 12px;
+}
 
 .player-item {
     background: var(--surface);
@@ -481,3 +603,236 @@ input[type="text"], input[type="range"] {
 }
 #winner-title { font-size: 60px; font-family: 'Impact'; margin-bottom: 10px; }
 #winner-name { font-size: 32px; color: var(--primary); margin-bottom: 40px; }
+
+.map-voting-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+}
+
+.map-voting-section h3 {
+    font-size: 14px;
+    margin-bottom: 15px;
+    color: var(--text-muted);
+}
+
+.map-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.map-vote-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.map-vote-item img {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 2px;
+}
+
+.map-vote-item span {
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.map-vote-item:hover {
+    background: var(--surface-hover);
+}
+
+.map-vote-item.active {
+    border-color: var(--primary);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+#match-stats-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+#match-stats-table th {
+    text-align: left;
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+#match-stats-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    font-weight: 700;
+}
+
+/* In-Game HUD */
+#game-hud {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    padding: 40px;
+}
+
+.hud-top-right {
+    position: absolute;
+    top: 40px; right: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 15px;
+}
+
+.hud-stat-box {
+    background: rgba(15, 20, 30, 0.85);
+    padding: 10px 20px;
+    border-radius: 4px;
+    border-right: 4px solid var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 24px;
+    font-weight: 900;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.hud-score-row {
+    display: flex;
+    gap: 10px;
+}
+
+.score-box {
+    background: rgba(15, 20, 30, 0.85);
+    padding: 10px 20px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+
+.score-box.blue { border-bottom: 3px solid #2196f3; }
+.score-box.red { border-bottom: 3px solid #f44336; }
+
+.score-box .label { font-size: 10px; font-weight: 900; color: var(--text-muted); }
+.score-box span:not(.label) { font-size: 20px; font-weight: 900; }
+
+.hud-bottom-right {
+    position: absolute;
+    bottom: 40px; right: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 15px;
+    width: 300px;
+}
+
+.hud-player-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat-item {
+    text-align: right;
+}
+
+.stat-item .label {
+    display: block;
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--text-muted);
+}
+
+.stat-item span:not(.label) {
+    font-size: 28px;
+    font-weight: 900;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.hud-weapon-info {
+    text-align: right;
+}
+
+.ammo-count {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.ammo-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-left: 5px;
+}
+
+.hud-bars {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bar-container {
+    height: 10px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.bar-fill {
+    height: 100%;
+    width: 100%;
+    transition: width 0.3s ease-out;
+}
+
+.health .bar-fill { background: linear-gradient(90deg, #2e7d32, #4caf50); }
+.armor .bar-fill { background: linear-gradient(90deg, #1565c0, #2196f3); }
+
+.bar-container i {
+    position: absolute;
+    left: 8px;
+    font-size: 8px;
+    color: rgba(255,255,255,0.8);
+}
+
+/* Countdown Overlay */
+#countdown-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    animation: pulse 1s infinite;
+}
+
+.countdown-number {
+    font-size: 120px;
+    font-family: 'Impact';
+    color: var(--primary);
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+}
+
+.countdown-label {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 5px;
+}
+
+@keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.05); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}

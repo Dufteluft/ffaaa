@@ -4,23 +4,12 @@ local isMenuOpen = false
 -- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
 -- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
+-- Menü-Steuerung via RegisterKeyMapping (ermöglicht Rebinds in GTA Einstellungen)
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
 
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
+RegisterKeyMapping('openffamenu', 'FFA Lobby System öffnen', 'keyboard', Config.MenuKey)
 
 -- Funktion: Hauptmenü öffnen
 function OpenMainMenu()
@@ -83,6 +72,15 @@ AddEventHandler('ffa:updateLobbyPlayers', function(players)
     SendNUIMessage({
         action = 'updateLobbyPlayers',
         players = players
+    })
+end)
+
+RegisterNetEvent('ffa:updateLobbyData')
+AddEventHandler('ffa:updateLobbyData', function(lobby)
+    currentLobby = lobby
+    SendNUIMessage({
+        action = 'updateLobbyData',
+        lobby = lobby
     })
 end)
 
@@ -160,6 +158,16 @@ end)
 
 RegisterNUICallback('kickPlayer', function(data, cb)
     TriggerServerEvent('ffa:kickPlayer', data.id)
+    cb('ok')
+end)
+
+RegisterNUICallback('updateSettings', function(data, cb)
+    TriggerServerEvent('ffa:updateSettings', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('closeLobby', function(data, cb)
+    TriggerServerEvent('ffa:closeLobby')
     cb('ok')
 end)
 
