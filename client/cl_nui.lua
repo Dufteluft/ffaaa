@@ -1,69 +1,90 @@
--- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(5000)
-        if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
-            local playerPed = PlayerPedId()
-            local coords = GetEntityCoords(playerPed)
-            local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
+ESX = exports['es_extended']:getSharedObject()
 
-            if vehicle == 0 then
-                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 15.0, 0.0)
-                local model = `zentorno`
-                RequestModel(model)
-                while not HasModelLoaded(model) do Wait(10) end
+local isMenuOpen = false
 
-                local veh = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
-                SetVehicleOnGroundProperly(veh)
-                SetEntityAsMissionEntity(veh, true, true)
-                SetModelAsNoLongerNeeded(model)
-            end
-        end
+-- Key Mapping for the menu
+RegisterKeyMapping('openffamenu', 'Open FFA Lobby Menu', 'keyboard', Config.MenuKey)
+
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
+
+function OpenMainMenu()
+    if isMenuOpen then
+        isMenuOpen = false
+        SetNuiFocus(false, false)
+        SendNUIMessage({ action = 'close' })
+        return
     end
+
+    isMenuOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        action = 'open',
+        config = Config,
+        maps = Config.Maps,
+        isInGame = playerState.isInGame
+    })
+end
+
+RegisterNUICallback('closeUI', function(data, cb)
+    isMenuOpen = false
+    SetNuiFocus(false, false)
+    cb('ok')
 end)
 
--- Anti-Teamkill: Verhindert Schaden an Teammitgliedern
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
-            local playerPed = PlayerPedId()
-
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
-        end
-    end
+RegisterNUICallback('createLobby', function(data, cb)
+    TriggerServerEvent('ffa:createLobby', data)
+    cb('ok')
 end)
 
--- Native Anti-Teamkill via Relationship Groups
-RegisterNetEvent('ffa:syncTeams')
-AddEventHandler('ffa:syncTeams', function(teams)
-    local myTeam = teams[GetPlayerServerId(PlayerId())]
-    if not myTeam then return end
+RegisterNUICallback('joinLobby', function(data, cb)
+    TriggerServerEvent('ffa:joinLobby', data.lobbyId)
+    cb('ok')
+end)
 
-    AddRelationshipGroup('BLUE_TEAM')
-    AddRelationshipGroup('RED_TEAM')
+RegisterNUICallback('fetchLobbies', function(data, cb)
+    TriggerServerEvent('ffa:fetchLobbies', data)
+    cb('ok')
+end)
 
-    if myTeam == 'blue' then
-        SetPedRelationshipGroupHash(PlayerPedId(), `BLUE_TEAM`)
-    elseif myTeam == 'red' then
-        SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
-    end
+RegisterNUICallback('toggleReady', function(data, cb)
+    TriggerServerEvent('ffa:toggleReady')
+    cb('ok')
+end)
 
-    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`) -- 1 = Like
-    SetRelationshipBetweenGroups(1, `RED_TEAM`, `RED_TEAM`)
-    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`) -- 5 = Hate
-    SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`)
+RegisterNUICallback('setTeam', function(data, cb)
+    TriggerServerEvent('ffa:setTeam', data.team)
+    cb('ok')
+end)
+
+RegisterNUICallback('startGame', function(data, cb)
+    TriggerServerEvent('ffa:startGame')
+    cb('ok')
+end)
+
+RegisterNUICallback('leaveLobby', function(data, cb)
+    TriggerServerEvent('ffa:leaveLobby')
+    cb('ok')
+end)
+
+RegisterNUICallback('kickPlayer', function(data, cb)
+    TriggerServerEvent('ffa:kickPlayer', data.id)
+    cb('ok')
+end)
+
+RegisterNUICallback('sendLobbyChat', function(data, cb)
+    TriggerServerEvent('ffa:sendLobbyChat', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('voteMap', function(data, cb)
+    TriggerServerEvent('ffa:voteMap', data.mapId)
+    cb('ok')
+end)
+
+RegisterNUICallback('closeWinnerScreen', function(data, cb)
+    isMenuOpen = false
+    SetNuiFocus(false, false)
+    cb('ok')
 end)
