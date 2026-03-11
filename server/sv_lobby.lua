@@ -179,13 +179,57 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
+        if not lobby then return end
         for _, pid in ipairs(lobby.players) do
             TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
         end
     end
 end)
 
-RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
+-- Event: Lobby-Einstellungen aktualisieren
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.mapId = settings.mapId or lobby.mapId
+            local map = Utils.GetMapById(lobby.mapId)
+            lobby.mapLabel = map.label
+            lobby.mode = settings.mode or lobby.mode
+            lobby.loadout = settings.loadout or lobby.loadout
+            lobby.roundTime = settings.roundTime or lobby.roundTime
+            lobby.maxPlayers = settings.maxPlayers or lobby.maxPlayers
+            lobby.vehiclesAllowed = settings.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire
+            lobby.respawnTime = settings.respawnTime or lobby.respawnTime
+            lobby.killLimit = settings.killLimit or lobby.killLimit
+
+            -- Alle Spieler informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:lobbyJoined', pid, lobby) -- Nutzt gleichen Event für UI Refresh
+            end
+        end
+    end
+end)
+
+-- Event: Lobby schließen
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            local players = {}
+            for _, pid in ipairs(lobby.players) do table.insert(players, pid) end
+
+            for _, pid in ipairs(players) do
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+                LeaveLobby(pid)
+            end
+        end
+    end
+end)
 
 -- Event: Bereit-Status umschalten
 RegisterServerEvent('ffa:toggleReady')
