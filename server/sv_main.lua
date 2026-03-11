@@ -209,20 +209,72 @@ AddEventHandler('ffa:playerKilled', function(killerId)
     end
 end)
 
+-- Map Voting State
+LobbyVotes = {} -- [lobbyId] = { [playerId] = mapId }
+
 -- Event: Map Voting
 RegisterServerEvent('ffa:voteMap')
 AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
-        local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
-            local map = Utils.GetMapById(mapId)
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby then
+            if not LobbyVotes[lobbyId] then LobbyVotes[lobbyId] = {} end
+            LobbyVotes[lobbyId][source] = mapId
+
+            -- Zähle Stimmen
+            local voteCounts = {}
+            for _, mId in pairs(LobbyVotes[lobbyId]) do
+                voteCounts[mId] = (voteCounts[mId] or 0) + 1
+            end
+
+            -- Synchronisiere Votes mit allen Spielern in der Lobby
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:updateVotes', pid, { votes = voteCounts })
+            end
+        end
+    end
+end)
+
+-- Event: Winner Screen schließen (Zurück zur Lobby)
+RegisterNetEvent('ffa:closeWinnerScreen')
+AddEventHandler('ffa:closeWinnerScreen', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby and lobby.host == source then
+            -- Ermittle Map-Favoriten
+            local winnerMap = lobby.mapId
+            if LobbyVotes[lobbyId] then
+                local counts = {}
+                local maxVotes = -1
+                for _, mId in pairs(LobbyVotes[lobbyId]) do
+                    counts[mId] = (counts[mId] or 0) + 1
+                    if counts[mId] > maxVotes then
+                        maxVotes = counts[mId]
+                        winnerMap = mId
+                    end
+                end
+            end
+
+            -- Update Lobby Map
+            lobby.mapId = winnerMap
+            local map = Utils.GetMapById(winnerMap)
             if map then lobby.mapLabel = map.label end
 
-            -- Informiere Lobby-Chat über den Vote
+            -- Reset Stats & Votes
+            LobbyVotes[lobbyId] = nil
+            lobby.status = 'waiting'
+            lobby.scoreBlue = 0
+            lobby.scoreRed = 0
+
             for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                local ps = PlayerStates[pid]
+                ps.kills = 0
+                ps.deaths = 0
+                TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
             end
         end
     end

@@ -33,14 +33,18 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadoutKeys)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    local keys = type(loadoutKeys) == 'table' and loadoutKeys or {loadoutKeys}
+
+    for _, key in ipairs(keys) do
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,14 +71,19 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local keys = type(currentLobby.loadout) == 'table' and currentLobby.loadout or {currentLobby.loadout}
+
+                    for _, key in ipairs(keys) do
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
+                        if allowed then break end
                     end
 
                     if not allowed then
@@ -162,6 +171,18 @@ AddEventHandler('ffa:spectatePlayer', function(targetId)
     end
 end)
 
+-- Anti-Teamkill Logic
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1000)
+        if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' then
+            local friendlyFire = currentLobby.friendlyFire or false
+            NetworkSetFriendlyFireOption(friendlyFire)
+            SetCanAttackFriendly(PlayerPedId(), friendlyFire, false)
+        end
+    end
+end)
+
 -- HUD-Aktualisierungen vom Server
 RegisterNetEvent('ffa:updateTimer')
 AddEventHandler('ffa:updateTimer', function(time)
@@ -197,7 +218,8 @@ AddEventHandler('ffa:gameEnded', function(data)
     FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
     -- Waffen entfernen am Rundenende
