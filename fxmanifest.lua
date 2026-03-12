@@ -13,13 +13,12 @@ shared_scripts {
 
 client_scripts {
     'client/cl_main.lua',
-    'client/cl_lobby.lua',
     'client/cl_gameplay.lua',
     'client/cl_nui.lua'
 }
 
 server_scripts {
-    '@mysql-async/lib/MySQL.lua', -- Standard for many ESX setups, or use oxmysql
+    '@mysql-async/lib/MySQL.lua',
     'server/sv_main.lua',
     'server/sv_lobby.lua',
     'server/sv_stats.lua'
