@@ -49,6 +49,14 @@ AddEventHandler('ffa:startGame', function()
             TriggerClientEvent('ffa:syncTeams', pid, teams)
         end
 
+        -- Zurücksetzen der Scores bei Spielstart
+        lobby.scoreBlue = 0
+        lobby.scoreRed = 0
+        for _, pid in ipairs(lobby.players) do
+            PlayerStates[pid].kills = 0
+            PlayerStates[pid].deaths = 0
+        end
+
         StartGameTimer(lobbyId)
     end
 end)
@@ -211,7 +219,8 @@ end)
 
 -- Event: Map Voting
 RegisterServerEvent('ffa:voteMap')
-AddEventHandler('ffa:voteMap', function(mapId)
+AddEventHandler('ffa:voteMap', function(data)
+    local mapId = data.mapId
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
@@ -223,6 +232,7 @@ AddEventHandler('ffa:voteMap', function(mapId)
             -- Informiere Lobby-Chat über den Vote
             for _, pid in ipairs(lobby.players) do
                 TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                TriggerClientEvent('ffa:updateSettings', pid, lobby)
             end
         end
     end

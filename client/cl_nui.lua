@@ -25,24 +25,13 @@ end)
 -- Anti-Teamkill: Verhindert Schaden an Teammitgliedern
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
-        if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
-            local playerPed = PlayerPedId()
-
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
+        Citizen.Wait(1000)
+        if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' then
+            local friendlyFire = currentLobby.friendlyFire or false
+            NetworkSetFriendlyFireOption(friendlyFire)
+            SetCanAttackFriendly(PlayerPedId(), friendlyFire, false)
+        else
+            NetworkSetFriendlyFireOption(true)
         end
     end
 end)
