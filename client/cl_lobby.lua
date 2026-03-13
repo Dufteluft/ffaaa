@@ -50,6 +50,22 @@ RegisterNUICallback('closeUI', function(data, cb)
     cb('ok')
 end)
 
+RegisterNetEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    if currentLobby and currentLobby.id == settings.id then
+        currentLobby = settings
+        SendNUIMessage({
+            action = 'lobbyJoined', -- Re-using this to update the UI
+            lobby = settings
+        })
+    end
+end)
+
+RegisterNUICallback('closeLobby', function(data, cb)
+    TriggerServerEvent('ffa:closeLobby')
+    cb('ok')
+end)
+
 -- Befehl zum Verlassen der FFA Lobby
 RegisterCommand('quitffa', function()
     if playerState.isInGame then

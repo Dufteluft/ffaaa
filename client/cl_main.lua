@@ -13,6 +13,7 @@ currentLobby = nil
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
+            if not playerState.isInGame then return end
             SendNUIMessage({
                 action = 'countdown',
                 seconds = seconds
@@ -80,17 +81,31 @@ end
 -- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
 Citizen.CreateThread(function()
     while true do
-        if playerState and playerState.isInGame then
+        if playerState and playerState.isInGame and currentLobby then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = (GetEntityHealth(ped) - 100)
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local weaponHash = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weaponHash)
+            local _, totalAmmo = GetAmmoInPedWeapon(ped, weaponHash)
+
+            local weaponLabel = "WAFFE"
+            local loadout = Config.WeaponLoadouts[currentLobby.loadout]
+            if loadout then
+                for _, w in ipairs(loadout) do
+                    if GetHashKey(w.name) == weaponHash then
+                        weaponLabel = w.label
+                        break
+                    end
+                end
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
                 health = health,
                 armor = armor,
-                ammo = ammo
+                ammo = string.format("%d/%d", ammo, totalAmmo - ammo),
+                weapon = weaponLabel
             })
         end
         Wait(500)

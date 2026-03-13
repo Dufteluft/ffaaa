@@ -330,7 +330,8 @@ end)
 
 -- Event: Spieler aus Lobby kicken
 RegisterServerEvent('ffa:kickPlayer')
-AddEventHandler('ffa:kickPlayer', function(targetId)
+AddEventHandler('ffa:kickPlayer', function(data)
+    local targetId = data.id
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
@@ -338,6 +339,28 @@ AddEventHandler('ffa:kickPlayer', function(targetId)
             LeaveLobby(targetId)
             -- Dem gekickten Spieler mitteilen
             TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
+        end
+    end
+end)
+
+-- Event: Lobby schließen
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            local playersToKick = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(playersToKick, pid)
+            end
+
+            for _, pid in ipairs(playersToKick) do
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+                LeaveLobby(pid)
+            end
+
+            Lobbies[state.lobbyId] = nil
         end
     end
 end)
