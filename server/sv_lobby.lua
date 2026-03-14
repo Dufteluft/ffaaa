@@ -185,6 +185,30 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     end
 end)
 
+-- Event: Lobby schließen (durch Host)
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            -- Alle Spieler informieren und entfernen
+            local players = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(players, pid)
+            end
+
+            for _, pid in ipairs(players) do
+                TriggerClientEvent('esx:showNotification', pid, 'Lobby wurde vom Host geschlossen.')
+                LeaveLobby(pid)
+            end
+
+            Lobbies[lobbyId] = nil
+        end
+    end
+end)
+
 RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
 
 -- Event: Bereit-Status umschalten
@@ -217,7 +241,7 @@ AddEventHandler('ffa:fetchLobbies', function(data)
         local isMatch = false
         if filterTab == 'ffa' then
             if lobby.isPersistent then isMatch = true end
-        else
+        elseif filterTab == 'list' then
             if not lobby.isPersistent then isMatch = true end
         end
 
