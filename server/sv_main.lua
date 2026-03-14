@@ -162,7 +162,19 @@ function EndGame(lobbyId, reason)
         lobby.status = 'playing'
         lobby.scoreBlue = 0
         lobby.scoreRed = 0
+        lobby.votes = {} -- Reset votes for next round
         StartGameTimer(lobbyId)
+    else
+        lobby.status = 'waiting'
+        lobby.votes = {}
+        for _, pid in ipairs(lobby.players) do
+            local ps = PlayerStates[pid]
+            if ps then
+                ps.ready = (pid == lobby.host)
+                ps.kills = 0
+                ps.deaths = 0
+            end
+        end
     end
 end
 
@@ -215,14 +227,30 @@ AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
-            local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
+        if lobby then
+            if not lobby.votes then lobby.votes = {} end
+            lobby.votes[source] = mapId
 
-            -- Informiere Lobby-Chat über den Vote
-            for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+            -- Zähle Votes
+            local voteCounts = {}
+            for pid, mid in pairs(lobby.votes) do
+                voteCounts[mid] = (voteCounts[mid] or 0) + 1
+            end
+
+            -- Finde Map mit meisten Votes
+            local maxVotes = -1
+            local nextMap = lobby.mapId
+            for mid, count in pairs(voteCounts) do
+                if count > maxVotes then
+                    maxVotes = count
+                    nextMap = mid
+                end
+            end
+
+            if nextMap ~= lobby.mapId then
+                lobby.mapId = nextMap
+                local map = Utils.GetMapById(nextMap)
+                if map then lobby.mapLabel = map.label end
             end
         end
     end
