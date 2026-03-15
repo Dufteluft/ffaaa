@@ -92,6 +92,12 @@ function JoinLobby(playerId, lobbyId)
     -- Wir nutzen die lobbyId als Bucket, müssen sie aber in eine Zahl umwandeln
     SetPlayerRoutingBucket(playerId, tonumber(lobbyId))
 
+    -- Reset stats if joining a persistent lobby that is already active
+    if lobby.isPersistent and lobby.status == 'playing' then
+        PlayerStates[playerId].kills = 0
+        PlayerStates[playerId].deaths = 0
+    end
+
     UpdateLobbyPlayers(lobbyId)
     return true
 end
@@ -208,7 +214,7 @@ AddEventHandler('ffa:setTeam', function(team)
 end)
 
 -- Event: Lobbyliste für UI abrufen
-RegisterServerEvent('ffa:fetchLobbies')
+RegisterNetEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
     local filterTab = data and data.tab or 'ffa'
@@ -264,7 +270,7 @@ MySQL.ready(function()
             mapLabel = map.label,
             mode = 'ffa',
             loadout = 'all',
-            roundTime = 0, -- 0 bedeutet unendlich/kein Timer
+            roundTime = 15, -- Default 15 min for persistent
             maxPlayers = 32,
             vehiclesAllowed = false,
             friendlyFire = false,
@@ -272,11 +278,12 @@ MySQL.ready(function()
             killLimit = 0,
             players = {},
             status = 'playing',
-            timer = 0,
+            timer = 15 * 60,
             scoreBlue = 0,
             scoreRed = 0
         }
         Utils.Print('Persistente FFA Lobby initialisiert: ' .. map.label)
+        StartGameTimer(lobbyId)
     end
 end)
 
@@ -330,7 +337,8 @@ end)
 
 -- Event: Spieler aus Lobby kicken
 RegisterServerEvent('ffa:kickPlayer')
-AddEventHandler('ffa:kickPlayer', function(targetId)
+AddEventHandler('ffa:kickPlayer', function(data)
+    local targetId = data.id
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
@@ -338,6 +346,56 @@ AddEventHandler('ffa:kickPlayer', function(targetId)
             LeaveLobby(targetId)
             -- Dem gekickten Spieler mitteilen
             TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
+        end
+    end
+end)
+
+-- Event: Lobby schließen
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            -- Alle Spieler entfernen
+            local players = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(players, pid)
+            end
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+            end
+        end
+    end
+end)
+
+-- Event: Einstellungen aktualisieren (vor Start)
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source and lobby.status == 'waiting' then
+            local map = Utils.GetMapById(settings.mapId)
+            lobby.name = settings.name
+            lobby.mapId = settings.mapId
+            lobby.mapLabel = map.label
+            lobby.mode = settings.mode
+            lobby.loadout = settings.loadout
+            lobby.roundTime = settings.roundTime
+            lobby.maxPlayers = settings.maxPlayers
+            lobby.vehiclesAllowed = settings.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire
+            lobby.respawnTime = settings.respawnTime
+            lobby.killLimit = settings.killLimit
+            lobby.timer = settings.roundTime * 60
+
+            -- Alle Spieler informieren
+            UpdateLobbyPlayers(state.lobbyId)
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:lobbyUpdated', pid, lobby)
+            end
         end
     end
 end)
