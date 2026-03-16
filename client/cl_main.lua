@@ -38,7 +38,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen (via Event)
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -53,13 +53,16 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
 
+    -- Zuschauer-Modus beenden falls aktiv
+    NetworkSetInSpectatorMode(false, ped)
+
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
     SendNUIMessage({ action = 'close' })
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler mit Screen-Fade
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -83,8 +86,14 @@ Citizen.CreateThread(function()
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
+            if health < 0 then health = 0 end
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+            if weapon ~= `WEAPON_UNARMED` then
+                _, ammo = GetAmmoInClip(ped, weapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',

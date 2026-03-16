@@ -1,12 +1,12 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standard-Taste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -127,12 +115,12 @@ Config.Locales = {
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
+        ['round_time'] = 'Rundenzeit',
         ['max_players'] = 'Max. Spieler',
-        ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
-        ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
-        ['kill_limit'] = 'Kill-Limit zum Sieg',
+        ['vehicles_allowed'] = 'Fahrzeuge',
+        ['friendly_fire'] = 'Friendly Fire',
+        ['respawn_time'] = 'Respawn-Zeit',
+        ['kill_limit'] = 'Kill-Limit',
         ['btn_create'] = 'Lobby erstellen',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
@@ -162,12 +150,12 @@ Config.Locales = {
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
+        ['round_time'] = 'Round Time',
         ['max_players'] = 'Max Players',
-        ['vehicles_allowed'] = 'Vehicles Allowed',
+        ['vehicles_allowed'] = 'Vehicles',
         ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
-        ['kill_limit'] = 'Kill Limit to Win',
+        ['respawn_time'] = 'Respawn Time',
+        ['kill_limit'] = 'Kill Limit',
         ['btn_create'] = 'Create Lobby',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',
