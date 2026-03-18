@@ -52,6 +52,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    NetworkSetInSpectatorMode(false, ped)
 
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
@@ -82,13 +83,24 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- In GTA ist 100 meist "Tod" bei Spielern (ESX Standard)
+            local healthPercent = math.floor(((health - 100) / (maxHealth - 100)) * 100)
+            if healthPercent < 0 then healthPercent = 0 end
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+
+            if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
+                _, ammo = GetAmmoInClip(ped, currentWeapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })

@@ -9,7 +9,8 @@ Config.DefaultSettings = {
     respawnTime = 5, -- seconds
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    vehicleModel = `zentorno`
 }
 
 Config.WeaponLoadouts = {

@@ -1,20 +1,21 @@
 -- Event: Spielstart (nur durch Host)
 RegisterServerEvent('ffa:startGame')
 AddEventHandler('ffa:startGame', function()
-    local state = PlayerStates[source]
+    local src = source
+    local state = PlayerStates[src]
     if not state then return end
 
     local lobbyId = state.lobbyId
     local lobby = Lobbies[lobbyId]
 
-    -- Mindestens 2 Spieler erforderlich (hier 1 für Tests)
-    if lobby and lobby.host == source and #lobby.players >= 1 then
+    if lobby and lobby.host == src and #lobby.players >= 2 then
         lobby.status = 'playing'
         lobby.timer = lobby.roundTime * 60
+        lobby.scoreBlue = 0
+        lobby.scoreRed = 0
 
-        -- Spieler Teams zuweisen (Auto-Balance)
+        -- Spieler Teams zuweisen (Auto-Balance für TDM)
         local blueCount, redCount = 0, 0
-        -- Zuerst bestehende Wünsche zählen
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
             if pState.team == 'blue' then blueCount = blueCount + 1
@@ -23,6 +24,9 @@ AddEventHandler('ffa:startGame', function()
 
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
+            pState.kills = 0
+            pState.deaths = 0
+
             if lobby.mode == 'tdm' then
                 if pState.team == 'none' or pState.team == 'random' or pState.team == 'spectator' then
                     if blueCount <= redCount then
@@ -40,23 +44,26 @@ AddEventHandler('ffa:startGame', function()
             TriggerClientEvent('ffa:gameStarting', pid, lobby)
         end
 
-        -- Team-Synchronisation für alle Spieler in der Lobby
+        -- Team-Synchronisation
         local teams = {}
         for _, pid in ipairs(lobby.players) do
             teams[pid] = PlayerStates[pid].team
         end
         for _, pid in ipairs(lobby.players) do
             TriggerClientEvent('ffa:syncTeams', pid, teams)
+            TriggerClientEvent('ffa:updateTDMScore', pid, 0, 0)
         end
 
         StartGameTimer(lobbyId)
+    else
+        TriggerClientEvent('esx:showNotification', src, 'Mindestens 2 Spieler erforderlich!')
     end
 end)
 
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
     local lobby = Lobbies[lobbyId]
-    if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
+    if not lobby then return end
 
     Citizen.CreateThread(function()
         while Lobbies[lobbyId] and Lobbies[lobbyId].status == 'playing' do
@@ -72,10 +79,11 @@ function StartGameTimer(lobbyId)
             end
 
             -- Timer mit Clients synchronisieren
+            local mins = math.floor(lobby.timer / 60)
+            local secs = lobby.timer % 60
+            local timeStr = string.format('%02d:%02d', mins, secs)
             for _, pid in ipairs(lobby.players) do
-                local mins = math.floor(lobby.timer / 60)
-                local secs = lobby.timer % 60
-                TriggerClientEvent('ffa:updateTimer', pid, string.format('%02d:%02d', mins, secs))
+                TriggerClientEvent('ffa:updateTimer', pid, timeStr)
             end
         end
     end)
@@ -84,7 +92,7 @@ end
 -- Funktion: Spiel beenden und Sieger ermitteln
 function EndGame(lobbyId, reason)
     local lobby = Lobbies[lobbyId]
-    if not lobby then return end
+    if not lobby or lobby.status == 'ended' then return end
 
     lobby.status = 'ended'
 
@@ -92,7 +100,6 @@ function EndGame(lobbyId, reason)
     local maxKills = -1
     local winnerTeam = 'none'
 
-    -- Sieg-Logik für TDM
     if lobby.mode == 'tdm' then
         if lobby.scoreBlue > lobby.scoreRed then
             winnerName = _U('team_blue')
@@ -103,13 +110,12 @@ function EndGame(lobbyId, reason)
         else
             winnerName = 'Unentschieden'
         end
-    -- Sieg-Logik für FFA
     else
         for _, pid in ipairs(lobby.players) do
-            local state = PlayerStates[pid]
-            if state and state.kills > maxKills then
-                maxKills = state.kills
-                winnerName = state.name
+            local ps = PlayerStates[pid]
+            if ps and ps.kills > maxKills then
+                maxKills = ps.kills
+                winnerName = ps.name
             end
         end
     end
@@ -129,7 +135,6 @@ function EndGame(lobbyId, reason)
     end
     table.sort(stats, function(a, b) return a.kills > b.kills end)
 
-    -- Statistiken speichern und Clients informieren
     for _, pid in ipairs(lobby.players) do
         TriggerClientEvent('ffa:gameEnded', pid, {
             winnerName = winnerName,
@@ -137,17 +142,15 @@ function EndGame(lobbyId, reason)
             stats = stats
         })
 
-        -- DB-Statistiken aktualisieren
         local state = PlayerStates[pid]
         if state then
             local isWin = (winnerName == state.name) or (winnerTeam ~= 'none' and state.team == winnerTeam)
             UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
         end
 
-        -- Wenn persistente Lobby, starte für Spieler nach kurzem Delay neu
         if lobby.isPersistent then
             Citizen.CreateThread(function()
-                Citizen.Wait(10000) -- 10 Sekunden Anzeigezeit
+                Citizen.Wait(10000) -- 10 Sek Anzeigezeit
                 if PlayerStates[pid] and PlayerStates[pid].lobbyId == lobbyId then
                     PlayerStates[pid].kills = 0
                     PlayerStates[pid].deaths = 0
@@ -158,6 +161,7 @@ function EndGame(lobbyId, reason)
     end
 
     if lobby.isPersistent then
+        Citizen.Wait(10000)
         lobby.timer = lobby.roundTime * 60
         lobby.status = 'playing'
         lobby.scoreBlue = 0
@@ -179,13 +183,11 @@ AddEventHandler('ffa:playerKilled', function(killerId)
 
     victimState.deaths = victimState.deaths + 1
 
-    -- Killer-Statistiken aktualisieren
     if killerId and killerId ~= -1 and killerId ~= victim then
         local killerState = PlayerStates[killerId]
         if killerState then
             killerState.kills = killerState.kills + 1
 
-            -- TDM Score-Sync
             if lobby.mode == 'tdm' then
                 if killerState.team == 'blue' then lobby.scoreBlue = lobby.scoreBlue + 1
                 elseif killerState.team == 'red' then lobby.scoreRed = lobby.scoreRed + 1 end
@@ -195,14 +197,12 @@ AddEventHandler('ffa:playerKilled', function(killerId)
                 end
             end
 
-            -- Kill-Limit Prüfung
             if lobby.killLimit > 0 and killerState.kills >= lobby.killLimit then
                 EndGame(lobbyId, 'Kill-Limit erreicht')
             end
         end
     end
 
-    -- HUD-Update an alle betroffenen Spieler
     TriggerClientEvent('ffa:updateHUDStats', victim, victimState.kills, victimState.deaths)
     if killerId and killerId ~= -1 and PlayerStates[killerId] then
         TriggerClientEvent('ffa:updateHUDStats', killerId, PlayerStates[killerId].kills, PlayerStates[killerId].deaths)
@@ -220,7 +220,6 @@ AddEventHandler('ffa:voteMap', function(mapId)
             local map = Utils.GetMapById(mapId)
             if map then lobby.mapLabel = map.label end
 
-            -- Informiere Lobby-Chat über den Vote
             for _, pid in ipairs(lobby.players) do
                 TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
             end
