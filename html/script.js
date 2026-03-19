@@ -2,12 +2,10 @@ let currentLobby = null;
 let isHost = false;
 let myPlayerId = null;
 let currentTab = 'ffa';
-
-// Maps and Config from Server
-let serverMaps = [];
 let serverConfig = {};
+let serverMaps = [];
 
-// Audio setup
+// Audio Setup
 const sounds = {
     click: new Audio('assets/click.mp3'),
     join: new Audio('assets/join.mp3'),
@@ -23,50 +21,7 @@ function playSound(name) {
     }
 }
 
-// Tab Switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (btn.dataset.tab === currentTab) return;
-        playSound('click');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
-
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
-            fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
-    });
-});
-
-// Modal Controls
-document.getElementById('open-create-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
-});
-
-// Slider Sync
-const setupSlider = (id) => {
-    const slider = document.getElementById(id);
-    const span = document.getElementById(id + '-val');
-    if (slider && span) {
-        slider.addEventListener('input', () => {
-            span.innerText = slider.value;
-        });
-    }
-};
-setupSlider('round-time');
-setupSlider('max-players');
-
-// NUI Message Handling
+// Initialisierung bei Nachrichten vom Client
 window.addEventListener('message', (event) => {
     const data = event.data;
 
@@ -74,7 +29,7 @@ window.addEventListener('message', (event) => {
         case 'open':
             document.getElementById('app').style.display = 'flex';
             setupInitialData(data.config, data.maps);
-            fetchLobbies();
+            switchTab(currentTab);
             break;
         case 'close':
             document.getElementById('app').style.display = 'none';
@@ -84,21 +39,35 @@ window.addEventListener('message', (event) => {
             break;
         case 'lobbyCreated':
         case 'lobbyJoined':
-            document.getElementById('create-lobby-modal').style.display = 'none';
-            showLobbyArea(data.lobby, data.action === 'lobbyCreated');
+            showLobbyWaitingArea(data.lobby, data.action === 'lobbyCreated');
             break;
         case 'updateLobbyPlayers':
             renderPlayerList(data.players);
             break;
         case 'gameStarting':
             document.getElementById('app').style.display = 'none';
-            document.getElementById('lobby-waiting-area').style.display = 'none';
+            document.getElementById('lobby-waiting-view').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('hud-container').style.display = 'flex';
+            break;
+        case 'hideHUD':
+            document.getElementById('hud-container').style.display = 'none';
+            break;
+        case 'updateHUD':
+            updateHUD(data);
+            break;
+        case 'updateHUDDetails':
+            updateHUDDetails(data);
+            break;
+        case 'countdown':
+            showCountdown(data.seconds);
             break;
         case 'showWinner':
             showWinnerScreen(data);
+            break;
+        case 'addChatMessage':
+            addChatMessage(data.name, data.message);
             break;
     }
 });
@@ -107,32 +76,86 @@ function setupInitialData(config, maps) {
     serverConfig = config;
     serverMaps = maps;
 
-    const mapSelect = document.getElementById('map-select');
-    mapSelect.innerHTML = '';
-    maps.forEach(map => {
-        const opt = document.createElement('option');
-        opt.value = map.id;
-        opt.innerText = map.label.toUpperCase();
-        mapSelect.appendChild(opt);
+    // Lokalisierung anwenden
+    const locale = config.Locales[config.Locale];
+    for (let key in locale) {
+        const elements = document.querySelectorAll(`#l-${key.replace(/_/g, '-')}, .l-${key.replace(/_/g, '-')}`);
+        elements.forEach(el => {
+            if (el.tagName === 'INPUT' && el.placeholder) {
+                el.placeholder = locale[key];
+            } else {
+                el.innerText = locale[key].toUpperCase();
+            }
+        });
+    }
+
+    // Map-Dropdowns füllen
+    const mapSelects = [document.getElementById('create-map-select'), document.getElementById('filter-maps')];
+    mapSelects.forEach(select => {
+        if (!select) return;
+        // Behalte die erste Option ("ALLE MAPS") bei Filtern
+        const firstOption = select.id.includes('filter') ? select.options[0] : null;
+        select.innerHTML = '';
+        if (firstOption) select.appendChild(firstOption);
+
+        maps.forEach(map => {
+            const opt = document.createElement('option');
+            opt.value = map.id;
+            opt.innerText = map.label.toUpperCase();
+            select.appendChild(opt);
+        });
     });
 
-    const loadoutSelect = document.getElementById('loadout-select');
-    loadoutSelect.innerHTML = '';
+    // Waffen-Grid füllen (Multi-Select)
+    const weaponGrid = document.getElementById('create-weapon-grid');
+    weaponGrid.innerHTML = '';
     for (let key in config.WeaponLoadouts) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = key.toUpperCase();
-        loadoutSelect.appendChild(opt);
+        const label = document.createElement('label');
+        label.className = 'weapon-checkbox';
+        label.innerHTML = `
+            <input type="checkbox" name="weapon-loadout" value="${key}">
+            <span>${config.WeaponLoadouts[key][0].label.toUpperCase()}</span>
+            <i class="fa-solid fa-circle-check"></i>
+        `;
+        label.addEventListener('click', () => {
+            label.classList.toggle('active', label.querySelector('input').checked);
+        });
+        weaponGrid.appendChild(label);
     }
 }
 
-function fetchLobbies() {
+// Tab-Steuerung
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        playSound('click');
+        switchTab(btn.dataset.tab);
+    });
+});
+
+function switchTab(tabId) {
+    currentTab = tabId;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+
+    const sidebar = document.getElementById('sidebar-filters');
+    sidebar.style.display = (tabId === 'create') ? 'none' : 'flex';
+
+    if (tabId === 'create') {
+        document.getElementById('create-lobby-view').classList.add('active');
+    } else {
+        document.getElementById('lobby-list-view').classList.add('active');
+        fetchLobbies(tabId);
+    }
+}
+
+function fetchLobbies(tab) {
     fetch(`https://${GetParentResourceName()}/fetchLobbies`, {
         method: 'POST',
-        body: JSON.stringify({ tab: currentTab })
+        body: JSON.stringify({ tab: tab || currentTab })
     });
 }
 
+// Lobby Liste rendern
 function renderLobbyList(lobbies) {
     const container = document.getElementById('lobby-list-container');
     container.innerHTML = '';
@@ -140,83 +163,68 @@ function renderLobbyList(lobbies) {
     lobbies.forEach((lobby, index) => {
         const item = document.createElement('div');
         item.className = 'lobby-item';
-        item.style.animationDelay = `${index * 0.05}s`;
+        item.style.animation = `slideIn 0.3s forwards ${index * 0.05}s`;
 
         const playerCount = lobby.playerCount || 0;
         const maxPlayers = lobby.maxPlayers || 16;
         const percent = (playerCount / maxPlayers) * 100;
+        const radius = 28;
+        const circ = 2 * Math.PI * radius;
+        const offset = circ - (percent / 100) * circ;
 
-        let status = lobby.status || 'waiting';
-        let strokeColor = '#00ff88'; // Success
-        if (status === 'joining') strokeColor = '#00d4ff'; // Primary
-        else if (percent > 80) strokeColor = '#ff9500'; // Warning
-
-        const radius = 25;
-        const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (percent / 100) * circumference;
-
-        // Simplified Map Image URLs (using placeholders for now)
-        const mapImg = lobby.mapImage || `https://via.placeholder.com/140x80/0f1419/ffffff?text=${lobby.mapLabel}`;
+        let strokeColor = '#00ff88';
+        if (percent > 80) strokeColor = '#ff9500';
+        if (lobby.status === 'ACTIVE') strokeColor = '#00d4ff';
 
         item.innerHTML = `
             <div class="lobby-map-preview">
-                <img src="${mapImg}" alt="${lobby.mapLabel}">
+                <img src="https://via.placeholder.com/160x90/0f1419/ffffff?text=${lobby.mapLabel}" alt="Map">
             </div>
             <div class="lobby-info-main">
-                <div class="match-type">${lobby.mode === 'tdm' ? 'Team Deathmatch' : 'Free-for-All'}</div>
-                <div class="map-name-row">
-                    <i class="fa-solid fa-location-dot"></i> ${lobby.mapLabel}
-                </div>
+                <div class="match-type">${lobby.name}</div>
+                <div class="map-name-row"><i class="fa-solid fa-location-dot"></i> ${lobby.mapLabel} | ${lobby.mode.toUpperCase()}</div>
             </div>
             <div class="player-counter-wrapper">
                 <svg class="player-counter-svg">
-                    <circle class="circle-bg" cx="30" cy="30" r="${radius}"></circle>
-                    <circle class="circle-progress" cx="30" cy="30" r="${radius}"
-                        style="stroke: ${strokeColor}; stroke-dasharray: ${circumference}; stroke-dashoffset: ${offset};">
-                    </circle>
+                    <circle class="circle-bg" cx="32.5" cy="32.5" r="${radius}"></circle>
+                    <circle class="circle-progress" cx="32.5" cy="32.5" r="${radius}"
+                        style="stroke: ${strokeColor}; stroke-dasharray: ${circ}; stroke-dashoffset: ${offset};"></circle>
                 </svg>
                 <div class="player-count-text">${playerCount}/${maxPlayers}</div>
             </div>
-            <div class="mode-icon">
-                <i class="fa-solid fa-user"></i>
-            </div>
-            <div class="status-badge status-${status.toLowerCase()}">${status}</div>
+            <div class="status-badge status-${lobby.status.toLowerCase()}">${lobby.status}</div>
             <div class="action-area">
-                ${renderActionButton(lobby)}
+                <button class="action-btn btn-join" onclick="joinLobby('${lobby.id}')">${lobby.status === 'ACTIVE' ? 'ZUSCHAUEN' : 'BEITRETEN'}</button>
             </div>
         `;
         container.appendChild(item);
     });
 }
 
-function renderActionButton(lobby) {
-    if (lobby.playerCount >= lobby.maxPlayers) {
-        return `<button class="action-btn btn-disabled" disabled>FULL</button>`;
-    }
-    if (lobby.status === 'ACTIVE') {
-        return `<button class="action-btn btn-spectate" onclick="joinLobby('${lobby.id}', true)">SPECTATE</button>`;
-    }
-    const pulsingClass = lobby.status === 'joining' ? 'pulsing' : '';
-    return `<button class="action-btn btn-join ${pulsingClass}" onclick="joinLobby('${lobby.id}')">JOIN</button>`;
-}
-
-function joinLobby(lobbyId, isSpectator = false) {
+function joinLobby(lobbyId) {
     playSound('click');
     fetch(`https://${GetParentResourceName()}/joinLobby`, {
         method: 'POST',
-        body: JSON.stringify({ lobbyId, isSpectator })
+        body: JSON.stringify({ lobbyId })
     });
 }
 
-document.getElementById('btn-create-lobby').addEventListener('click', () => {
+// Lobby Erstellen Event
+document.getElementById('btn-submit-create').addEventListener('click', () => {
     playSound('click');
+    const selectedWeapons = Array.from(document.querySelectorAll('input[name="weapon-loadout"]:checked')).map(i => i.value);
+
     const settings = {
-        name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
-        mapId: document.getElementById('map-select').value,
-        mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
-        roundTime: parseInt(document.getElementById('round-time').value),
-        maxPlayers: parseInt(document.getElementById('max-players').value),
+        name: document.getElementById('create-lobby-name').value || 'CUSTOM LOBBY',
+        mapId: document.getElementById('create-map-select').value,
+        mode: document.getElementById('create-mode-select').value,
+        loadout: selectedWeapons.length > 0 ? selectedWeapons : ['all'],
+        roundTime: parseInt(document.getElementById('create-round-time').value),
+        maxPlayers: parseInt(document.getElementById('create-max-players').value),
+        vehiclesAllowed: document.getElementById('create-vehicles').checked,
+        friendlyFire: document.getElementById('create-ff').checked,
+        respawnTime: parseInt(document.getElementById('create-respawn-time').value),
+        killLimit: parseInt(document.getElementById('create-kill-limit').value)
     };
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
@@ -225,54 +233,82 @@ document.getElementById('btn-create-lobby').addEventListener('click', () => {
     });
 });
 
-function showLobbyArea(lobby, asHost) {
+document.getElementById('btn-cancel-create').addEventListener('click', () => {
+    playSound('click');
+    switchTab('ffa');
+});
+
+// Slider Sync
+const setupSliderSync = (sliderId, valId) => {
+    const s = document.getElementById(sliderId);
+    const v = document.getElementById(valId);
+    s.addEventListener('input', () => v.innerText = s.value);
+};
+setupSliderSync('create-round-time', 'val-round-time');
+setupSliderSync('create-max-players', 'val-max-players');
+setupSliderSync('create-respawn-time', 'val-respawn-time');
+setupSliderSync('create-kill-limit', 'val-kill-limit');
+
+// Wartebereich Logik
+function showLobbyWaitingArea(lobby, asHost) {
     currentLobby = lobby;
     isHost = asHost;
     playSound('join');
 
-    document.getElementById('lobby-title').innerText = lobby.name.toUpperCase();
-    document.getElementById('lobby-waiting-area').style.display = 'flex';
-    document.getElementById('btn-start-game').style.display = asHost ? 'block' : 'none';
+    document.getElementById('waiting-lobby-name').innerText = lobby.name.toUpperCase();
+    document.getElementById('waiting-map-name').innerText = lobby.mapLabel.toUpperCase();
+    document.getElementById('waiting-mode-name').innerText = lobby.mode.toUpperCase();
+    document.getElementById('waiting-round-time').innerText = lobby.roundTime + " MIN";
 
-    document.getElementById('lobby-info-summary').innerHTML = `
-        <p>MAP: ${lobby.mapLabel}</p>
-        <p>MODE: ${lobby.mode.toUpperCase()}</p>
-        <p>TIME: ${lobby.roundTime} MIN</p>
-    `;
+    document.getElementById('lobby-waiting-view').style.display = 'flex';
+    document.getElementById('btn-lobby-start').style.display = asHost ? 'block' : 'none';
+
+    // Team-Selector nur bei TDM relevant (optional anzeigen)
+    document.getElementById('team-selector').style.display = (lobby.mode === 'tdm') ? 'flex' : 'none';
 }
 
 function renderPlayerList(players) {
-    const list = document.getElementById('player-list');
+    const list = document.getElementById('waiting-player-list');
     list.innerHTML = '';
+    document.getElementById('waiting-player-count').innerText = players.length;
+
     players.forEach(p => {
         const div = document.createElement('div');
         div.className = `player-item ${p.ready ? 'ready' : ''}`;
         div.innerHTML = `
-            <span>${p.name.toUpperCase()} ${p.isHost ? '(HOST)' : ''}</span>
-            <span>${p.team.toUpperCase()}</span>
-            ${isHost && !p.isHost ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')"><i class="fa-solid fa-xmark"></i></button>` : ''}
+            <div class="player-name-box">
+                <span class="player-name">${p.name.toUpperCase()}</span>
+                ${p.isHost ? '<span class="player-host-tag">HOST</span>' : ''}
+            </div>
+            <div class="player-team-tag">${p.team.toUpperCase()}</div>
+            ${isHost && !p.isHost ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')"><i class="fa-solid fa-circle-xmark"></i></button>` : ''}
         `;
         list.appendChild(div);
     });
 
     if (isHost) {
-        document.getElementById('btn-start-game').disabled = players.length < (currentLobby.minPlayers || 2);
+        document.getElementById('btn-lobby-start').disabled = (players.length < 2);
     }
 }
 
-document.getElementById('btn-ready-toggle').addEventListener('click', () => {
+function kickPlayer(id) {
+    playSound('click');
+    fetch(`https://${GetParentResourceName()}/kickPlayer`, { method: 'POST', body: JSON.stringify({ id }) });
+}
+
+document.getElementById('btn-lobby-ready').addEventListener('click', () => {
     playSound('click');
     fetch(`https://${GetParentResourceName()}/toggleReady`, { method: 'POST' });
 });
 
-document.getElementById('btn-start-game').addEventListener('click', () => {
+document.getElementById('btn-lobby-start').addEventListener('click', () => {
     playSound('start');
     fetch(`https://${GetParentResourceName()}/startGame`, { method: 'POST' });
 });
 
-document.getElementById('btn-leave-lobby').addEventListener('click', () => {
+document.getElementById('btn-lobby-leave').addEventListener('click', () => {
     playSound('click');
-    document.getElementById('lobby-waiting-area').style.display = 'none';
+    document.getElementById('lobby-waiting-view').style.display = 'none';
     fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
 });
 
@@ -281,53 +317,117 @@ document.querySelectorAll('.team-btn').forEach(btn => {
         playSound('click');
         document.querySelectorAll('.team-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        fetch(`https://${GetParentResourceName()}/setTeam`, {
-            method: 'POST',
-            body: JSON.stringify({ team: btn.dataset.team })
-        });
+        fetch(`https://${GetParentResourceName()}/setTeam`, { method: 'POST', body: JSON.stringify({ team: btn.dataset.team }) });
     });
 });
 
-document.getElementById('chat-input').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        const msg = e.target.value;
-        if (msg.trim().length > 0) {
-            fetch(`https://${GetParentResourceName()}/sendLobbyChat`, {
-                method: 'POST',
-                body: JSON.stringify({ message: msg })
-            });
-            e.target.value = '';
-        }
+// Chat
+const chatInput = document.getElementById('lobby-chat-input');
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && chatInput.value.trim() !== '') {
+        fetch(`https://${GetParentResourceName()}/sendLobbyChat`, { method: 'POST', body: JSON.stringify({ message: chatInput.value }) });
+        chatInput.value = '';
+    }
+});
+document.getElementById('btn-send-chat').addEventListener('click', () => {
+    if (chatInput.value.trim() !== '') {
+        fetch(`https://${GetParentResourceName()}/sendLobbyChat`, { method: 'POST', body: JSON.stringify({ message: chatInput.value }) });
+        chatInput.value = '';
     }
 });
 
-function showWinnerScreen(data) {
-    playSound('win');
-    document.getElementById('winner-screen').style.display = 'flex';
-    document.getElementById('winner-name').innerText = data.winnerName.toUpperCase() + " WINS!";
-
-    const statsTable = document.getElementById('match-stats-table');
-    let html = `<table><thead><tr><th>NAME</th><th>KILLS</th><th>DEATHS</th><th>K/D</th></tr></thead><tbody>`;
-    data.stats.forEach(s => {
-        html += `<tr><td>${s.name.toUpperCase()}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.kd}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-    statsTable.innerHTML = html;
+function addChatMessage(name, message) {
+    const container = document.getElementById('lobby-chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'chat-msg';
+    msg.innerHTML = `<span class="name">${name.toUpperCase()}:</span><span class="text">${message}</span>`;
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
 }
 
-document.getElementById('btn-back-to-menu').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('winner-screen').style.display = 'none';
-    fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
-});
+// HUD Updates
+function updateHUD(data) {
+    if (data.time) document.getElementById('hud-timer').innerText = data.time;
+    if (data.kills !== undefined) document.getElementById('hud-kills').innerText = data.kills;
+    if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
 
-document.getElementById('btn-back-to-lobby').addEventListener('click', () => {
+    if (data.mode === 'tdm') {
+        document.getElementById('hud-tdm-scores').style.display = 'flex';
+        if (data.scoreBlue !== undefined) document.getElementById('hud-score-blue').innerText = data.scoreBlue;
+        if (data.scoreRed !== undefined) document.getElementById('hud-score-red').innerText = data.scoreRed;
+    } else {
+        document.getElementById('hud-tdm-scores').style.display = 'none';
+    }
+
+    if (data.kills > parseInt(document.getElementById('hud-kills').innerText)) {
+        playSound('kill');
+    }
+}
+
+function updateHUDDetails(data) {
+    document.getElementById('hud-health-fill').style.width = data.health + '%';
+    document.getElementById('hud-armor-fill').style.width = data.armor + '%';
+    document.getElementById('hud-ammo').innerText = data.ammo;
+}
+
+function showCountdown(seconds) {
+    const el = document.getElementById('countdown-display');
+    const num = document.getElementById('countdown-number');
+    if (seconds > 0) {
+        el.style.display = 'block';
+        num.innerText = seconds;
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+// Winner Screen
+function showWinnerScreen(data) {
+    playSound('win');
+    document.getElementById('winner-view').style.display = 'flex';
+    document.getElementById('winner-name').innerText = data.winnerName.toUpperCase();
+
+    const body = document.getElementById('winner-stats-body');
+    body.innerHTML = '';
+    data.stats.forEach(s => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${s.name.toUpperCase()}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.kd}</td>`;
+        body.appendChild(row);
+    });
+
+    // Map Voting Grid
+    const voteGrid = document.getElementById('vote-map-grid');
+    voteGrid.innerHTML = '';
+    serverMaps.slice(0, 3).forEach(map => {
+        const div = document.createElement('div');
+        div.className = 'vote-item';
+        div.innerHTML = `
+            <div class="vote-img"><img src="https://via.placeholder.com/200x100/0f1419/ffffff?text=${map.label}" alt="Map"></div>
+            <div class="vote-label">${map.label}</div>
+        `;
+        div.onclick = () => {
+            document.querySelectorAll('.vote-item').forEach(i => i.classList.remove('active'));
+            div.classList.add('active');
+            fetch(`https://${GetParentResourceName()}/voteMap`, { method: 'POST', body: JSON.stringify({ mapId: map.id }) });
+        };
+        voteGrid.appendChild(div);
+    });
+}
+
+document.getElementById('btn-winner-back').addEventListener('click', () => {
     playSound('click');
-    document.getElementById('winner-screen').style.display = 'none';
-    document.getElementById('lobby-waiting-area').style.display = 'flex';
+    document.getElementById('winner-view').style.display = 'none';
+    document.getElementById('lobby-waiting-view').style.display = 'flex';
     fetch(`https://${GetParentResourceName()}/closeWinnerScreen`, { method: 'POST' });
 });
 
+document.getElementById('btn-winner-menu').addEventListener('click', () => {
+    playSound('click');
+    document.getElementById('winner-view').style.display = 'none';
+    fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
+});
+
+// Close UI on ESC
 window.addEventListener('keyup', (e) => {
     if (e.key === 'Escape') {
         fetch(`https://${GetParentResourceName()}/closeUI`, { method: 'POST' });
@@ -337,8 +437,9 @@ window.addEventListener('keyup', (e) => {
 // Auto-Refresh
 setInterval(() => {
     if (document.getElementById('app').style.display === 'flex' &&
-        document.getElementById('lobby-waiting-area').style.display === 'none' &&
-        document.getElementById('winner-screen').style.display === 'none') {
+        document.getElementById('lobby-waiting-view').style.display === 'none' &&
+        document.getElementById('winner-view').style.display === 'none' &&
+        currentTab !== 'create') {
         fetchLobbies();
     }
 }, 5000);
