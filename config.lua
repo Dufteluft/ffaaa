@@ -1,7 +1,7 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Default key for the main menu (F1, F2, F3, F5, F6 supported in cl_lobby.lua)
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -151,7 +139,13 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['quit_command_info'] = 'Du bist in keiner FFA Lobby.',
+        ['out_of_bounds'] = 'Du verlässt das Kampfgebiet!',
+        ['weapon_not_allowed'] = 'Diese Waffe ist in dieser Lobby nicht erlaubt!',
+        ['lobby_full'] = 'Die Lobby ist voll.',
+        ['lobby_not_found'] = 'Lobby wurde nicht gefunden.',
+        ['system_msg_map_changed'] = 'Die Map wurde auf %s geändert.'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -186,7 +180,13 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['quit_command_info'] = 'You are not in an FFA lobby.',
+        ['out_of_bounds'] = 'You are leaving the combat area!',
+        ['weapon_not_allowed'] = 'This weapon is not allowed in this lobby!',
+        ['lobby_full'] = 'The lobby is full.',
+        ['lobby_not_found'] = 'Lobby not found.',
+        ['system_msg_map_changed'] = 'The map has been changed to %s.'
     }
 }
 
