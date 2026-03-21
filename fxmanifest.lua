@@ -7,19 +7,18 @@ author 'Jules'
 
 shared_scripts {
     '@es_extended/imports.lua',
-    'config.lua',
+    'shared/sh_config.lua',
     'shared/sh_utils.lua'
 }
 
 client_scripts {
     'client/cl_main.lua',
     'client/cl_lobby.lua',
-    'client/cl_gameplay.lua',
-    'client/cl_nui.lua'
+    'client/cl_gameplay.lua'
 }
 
 server_scripts {
-    '@mysql-async/lib/MySQL.lua', -- Standard for many ESX setups, or use oxmysql
+    '@oxmysql/lib/MySQL.lua',
     'server/sv_main.lua',
     'server/sv_lobby.lua',
     'server/sv_stats.lua'
