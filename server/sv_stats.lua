@@ -5,13 +5,17 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
 
     local identifier = xPlayer.getIdentifier()
 
-    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
+    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung in einer einzigen Query
     MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
         ['@id'] = identifier,
         ['@k'] = kills,
         ['@d'] = deaths,
         ['@w'] = isWin and 1 or 0
-    })
+    }, function(rowsChanged)
+        if rowsChanged > 0 then
+            Utils.Print('Statistiken aktualisiert für ' .. xPlayer.getName())
+        end
+    end)
 end
 
 -- Event: Statistiken für UI abrufen
