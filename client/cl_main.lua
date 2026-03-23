@@ -12,18 +12,16 @@ currentLobby = nil
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
-        while seconds >= 0 do
+        while seconds > 0 do
             SendNUIMessage({
                 action = 'countdown',
                 seconds = seconds
             })
-            if seconds == 0 then
-                -- Spieler nach Countdown freigeben
-                FreezeEntityPosition(PlayerPedId(), false)
-            end
             Citizen.Wait(1000)
             seconds = seconds - 1
         end
+        SendNUIMessage({ action = 'countdown', seconds = 0 })
+        FreezeEntityPosition(PlayerPedId(), false)
     end)
 end
 
@@ -38,7 +36,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -82,13 +80,24 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local currentHealth = GetEntityHealth(ped)
+
+            -- Normalisierung der Gesundheit (0-100)
+            local healthPercent = 0
+            if maxHealth > 100 then
+                healthPercent = math.floor(((currentHealth - 100) / (maxHealth - 100)) * 100)
+            else
+                healthPercent = math.floor((currentHealth / maxHealth) * 100)
+            end
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, currentWeapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = math.max(0, healthPercent),
                 armor = armor,
                 ammo = ammo
             })
