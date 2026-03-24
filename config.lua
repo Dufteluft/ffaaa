@@ -1,12 +1,12 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standard-Taste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -138,20 +126,26 @@ Config.Locales = {
         ['btn_join'] = 'Beitreten',
         ['btn_ready'] = 'Bereit',
         ['btn_start'] = 'Spiel starten',
-        ['btn_leave'] = 'Lobby verlassen',
+        ['btn_leave'] = 'Verlassen',
         ['btn_kick'] = 'Kicken',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
-        ['spectator'] = 'Zuschauer',
         ['random'] = 'Zufall',
         ['waiting_for_players'] = 'Warte auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
-        ['winner'] = 'Gewinner: %s',
-        ['kills'] = 'Kills',
-        ['deaths'] = 'Tode',
-        ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['wins_text'] = 'GEWINNT!',
+        ['kills_hud'] = 'KILLS',
+        ['deaths_hud'] = 'TODE',
+        ['blue_score_label'] = 'BLAU',
+        ['red_score_label'] = 'ROT',
+        ['th_name'] = 'NAME',
+        ['th_kills'] = 'KILLS',
+        ['th_deaths'] = 'TODE',
+        ['th_kd'] = 'K/D',
+        ['vote_map'] = 'NÄCHSTE MAP WÄHLEN',
+        ['players_title'] = 'SPIELER',
+        ['settings_title'] = 'EINSTELLUNGEN'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -173,20 +167,26 @@ Config.Locales = {
         ['btn_join'] = 'Join',
         ['btn_ready'] = 'Ready',
         ['btn_start'] = 'Start Game',
-        ['btn_leave'] = 'Leave Lobby',
+        ['btn_leave'] = 'Leave',
         ['btn_kick'] = 'Kick',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
-        ['spectator'] = 'Spectator',
         ['random'] = 'Random',
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
-        ['winner'] = 'Winner: %s',
-        ['kills'] = 'Kills',
-        ['deaths'] = 'Deaths',
-        ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['wins_text'] = 'WINS!',
+        ['kills_hud'] = 'KILLS',
+        ['deaths_hud'] = 'DEATHS',
+        ['blue_score_label'] = 'BLUE',
+        ['red_score_label'] = 'RED',
+        ['th_name'] = 'NAME',
+        ['th_kills'] = 'KILLS',
+        ['th_deaths'] = 'DEATHS',
+        ['th_kd'] = 'K/D',
+        ['vote_map'] = 'VOTE FOR NEXT MAP',
+        ['players_title'] = 'PLAYERS',
+        ['settings_title'] = 'SETTINGS'
     }
 }
 
