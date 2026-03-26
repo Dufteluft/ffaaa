@@ -4,6 +4,9 @@ Config.Locale = 'de' -- 'de' or 'en'
 Config.MenuKey = 'F5' -- Default key for the main menu
 
 Config.DefaultSettings = {
+    mode = 'ffa',
+    mapId = 'legion',
+    loadout = {'pistol'},
     roundTime = 15, -- minutes
     maxPlayers = 16,
     respawnTime = 5, -- seconds
@@ -13,33 +16,11 @@ Config.DefaultSettings = {
 }
 
 Config.WeaponLoadouts = {
-    ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
-    },
-    ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
-    },
-    ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
-    },
-    ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
-    },
-    ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
-    },
-    ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
-    }
+    ['pistol'] = { label = 'Pistole', weapons = { { name = 'WEAPON_PISTOL', ammo = 250 }, { name = 'WEAPON_COMBATPISTOL', ammo = 250 } } },
+    ['smg'] = { label = 'SMG', weapons = { { name = 'WEAPON_SMG', ammo = 250 }, { name = 'WEAPON_COMBATMG', ammo = 250 } } },
+    ['assault'] = { label = 'Sturmgewehr', weapons = { { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 }, { name = 'WEAPON_CARBINERIFLE', ammo = 250 } } },
+    ['sniper'] = { label = 'Scharfschützengewehr', weapons = { { name = 'WEAPON_SNIPERRIFLE', ammo = 50 }, { name = 'WEAPON_HEAVYSNIPER', ammo = 50 } } },
+    ['shotgun'] = { label = 'Pump-Action', weapons = { { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 }, { name = 'WEAPON_SAWNOFFSHOTGUN', ammo = 50 } } }
 }
 
 Config.Maps = {
@@ -151,7 +132,27 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Leben',
+        ['armor'] = 'Rüstung',
+        ['ammo'] = 'Munition',
+        ['time_left'] = 'Verbleibende Zeit',
+        ['no_lobbies'] = 'Keine Lobbys gefunden',
+        ['lobby_full'] = 'Lobby ist voll',
+        ['min_players_req'] = 'Mindestens 2 Spieler erforderlich',
+        ['map_voting'] = 'Map Voting',
+        ['vote_next_map'] = 'Wähle die nächste Map',
+        ['back_to_lobby'] = 'Zurück zur Lobby',
+        ['back_to_menu'] = 'Hauptmenü',
+        ['close_lobby'] = 'Lobby schließen',
+        ['settings_updated'] = 'Einstellungen aktualisiert',
+        ['player_kicked'] = 'Spieler gekickt',
+        ['player_joined'] = '%s ist beigetreten',
+        ['player_left'] = '%s hat verlassen',
+        ['not_enough_players'] = 'Nicht genug Spieler zum Starten!',
+        ['out_of_bounds'] = 'Du verlässt das Kampfgebiet!',
+        ['weapon_not_allowed'] = 'Diese Waffe ist in dieser Lobby nicht erlaubt!',
+        ['winner_suffix'] = 'GEWINNT!'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -186,7 +187,27 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Health',
+        ['armor'] = 'Armor',
+        ['ammo'] = 'Ammo',
+        ['time_left'] = 'Time Left',
+        ['no_lobbies'] = 'No lobbies found',
+        ['lobby_full'] = 'Lobby is full',
+        ['min_players_req'] = 'At least 2 players required',
+        ['map_voting'] = 'Map Voting',
+        ['vote_next_map'] = 'Vote for the next map',
+        ['back_to_lobby'] = 'Back to Lobby',
+        ['back_to_menu'] = 'Main Menu',
+        ['close_lobby'] = 'Close Lobby',
+        ['settings_updated'] = 'Settings updated',
+        ['player_kicked'] = 'Player kicked',
+        ['player_joined'] = '%s joined',
+        ['player_left'] = '%s left',
+        ['not_enough_players'] = 'Not enough players to start!',
+        ['out_of_bounds'] = 'You are leaving the combat area!',
+        ['weapon_not_allowed'] = 'This weapon is not allowed in this lobby!',
+        ['winner_suffix'] = 'WINS!'
     }
 }
 
