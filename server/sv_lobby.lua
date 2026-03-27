@@ -185,6 +185,61 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     end
 end)
 
+-- Event: Lobby schließen (nur durch Host)
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            -- Alle Spieler aus der Lobby entfernen
+            local players = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(players, pid)
+            end
+
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+            end
+
+            Lobbies[lobbyId] = nil
+        end
+    end
+end)
+
+-- Event: Lobby-Einstellungen aktualisieren (nur durch Host)
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source and lobby.status == 'waiting' then
+            local map = Utils.GetMapById(settings.mapId)
+            if map then
+                lobby.mapId = settings.mapId
+                lobby.mapLabel = map.label
+            end
+
+            lobby.mode = settings.mode or lobby.mode
+            lobby.roundTime = settings.roundTime or lobby.roundTime
+            lobby.maxPlayers = settings.maxPlayers or lobby.maxPlayers
+            lobby.loadout = settings.loadout or lobby.loadout
+            lobby.vehiclesAllowed = settings.vehiclesAllowed ~= nil and settings.vehiclesAllowed or lobby.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire ~= nil and settings.friendlyFire or lobby.friendlyFire
+            lobby.respawnTime = settings.respawnTime or lobby.respawnTime
+            lobby.killLimit = settings.killLimit or lobby.killLimit
+
+            -- Alle Spieler in der Lobby informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
+                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Lobby-Einstellungen wurden aktualisiert.')
+            end
+        end
+    end
+end)
+
 RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
 
 -- Event: Bereit-Status umschalten
@@ -212,6 +267,7 @@ RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
     local filterTab = data and data.tab or 'ffa'
+    local filters = data and data.filters or {}
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
@@ -221,11 +277,19 @@ AddEventHandler('ffa:fetchLobbies', function(data)
             if not lobby.isPersistent then isMatch = true end
         end
 
+        -- Filter anwenden
+        if isMatch and filters.mapId and filters.mapId ~= 'all' and lobby.mapId ~= filters.mapId then
+            isMatch = false
+        end
+
+        if isMatch and filters.capacity == 'not-full' and #lobby.players >= lobby.maxPlayers then
+            isMatch = false
+        end
+
         if isMatch then
             -- Status Bestimmung für UI
             local displayStatus = 'waiting'
             if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
 
             table.insert(list, {
                 id = id,

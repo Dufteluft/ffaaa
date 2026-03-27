@@ -11,6 +11,9 @@ AddEventHandler('ffa:startGame', function()
     if lobby and lobby.host == source and #lobby.players >= 1 then
         lobby.status = 'playing'
         lobby.timer = lobby.roundTime * 60
+        lobby.scoreBlue = 0
+        lobby.scoreRed = 0
+        lobby.votes = {}
 
         -- Spieler Teams zuweisen (Auto-Balance)
         local blueCount, redCount = 0, 0
@@ -37,6 +40,8 @@ AddEventHandler('ffa:startGame', function()
                 pState.team = 'ffa'
             end
 
+            pState.kills = 0
+            pState.deaths = 0
             TriggerClientEvent('ffa:gameStarting', pid, lobby)
         end
 
@@ -214,16 +219,67 @@ RegisterServerEvent('ffa:voteMap')
 AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
-        local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
-            local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby and lobby.status == 'ended' then
+            if not lobby.votes then lobby.votes = {} end
+            lobby.votes[source] = mapId
 
-            -- Informiere Lobby-Chat über den Vote
+            -- Vote-Counts berechnen
+            local counts = {}
+            for pid, mid in pairs(lobby.votes) do
+                counts[mid] = (counts[mid] or 0) + 1
+            end
+
+            -- An alle Clients senden (optional für UI-Sync)
             for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                -- TriggerClientEvent('ffa:updateVotes', pid, counts)
             end
         end
+    end
+end)
+
+-- Event: UI schließt Winner Screen / Weiter Button
+RegisterServerEvent('ffa:closeWinnerScreen')
+AddEventHandler('ffa:closeWinnerScreen', function()
+    local src = source
+    local state = PlayerStates[src]
+    if not state or not state.lobbyId then return end
+
+    local lobbyId = state.lobbyId
+    local lobby = Lobbies[lobbyId]
+    if not lobby or lobby.status ~= 'ended' then return end
+
+    -- Wenn Host klickt, wird die Map basierend auf Votes geändert und Lobby zurückgesetzt
+    if lobby.host == src then
+        local counts = {}
+        local winnerMap = lobby.mapId
+        local maxVotes = 0
+
+        if lobby.votes then
+            for pid, mid in pairs(lobby.votes) do
+                counts[mid] = (counts[mid] or 0) + 1
+                if counts[mid] > maxVotes then
+                    maxVotes = counts[mid]
+                    winnerMap = mid
+                end
+            end
+        end
+
+        local map = Utils.GetMapById(winnerMap)
+        lobby.mapId = winnerMap
+        lobby.mapLabel = map.label
+        lobby.status = 'waiting'
+        lobby.votes = {}
+
+        for _, pid in ipairs(lobby.players) do
+            local ps = PlayerStates[pid]
+            if ps then
+                ps.ready = (pid == lobby.host)
+                ps.kills = 0
+                ps.deaths = 0
+            end
+        end
+        UpdateLobbyPlayers(lobbyId)
     end
 end)
