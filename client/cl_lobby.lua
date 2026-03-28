@@ -98,13 +98,18 @@ RegisterNUICallback('createLobby', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('updateSettings', function(data, cb)
+    TriggerServerEvent('ffa:updateSettings', data)
+    cb('ok')
+end)
+
 RegisterNUICallback('joinLobby', function(data, cb)
     TriggerServerEvent('ffa:joinLobby', data.lobbyId)
     cb('ok')
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
