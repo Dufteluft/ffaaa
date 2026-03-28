@@ -1,7 +1,7 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Default key for the main menu (can be changed in GTA settings too)
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -140,18 +128,33 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_close_lobby'] = 'Lobby schließen',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
+        ['team_none'] = 'Kein Team',
         ['spectator'] = 'Zuschauer',
         ['random'] = 'Zufall',
         ['waiting_for_players'] = 'Warte auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
-        ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Leben',
+        ['armor'] = 'Rüstung',
+        ['ammo'] = 'Munition',
+        ['time_left'] = 'Zeit',
+        ['player_name'] = 'Name',
+        ['all_weapons'] = 'Alle Waffen',
+        ['pistols'] = 'Pistolen',
+        ['smgs'] = 'SMGs',
+        ['assault_rifles'] = 'Sturmgewehre',
+        ['snipers'] = 'Sniper',
+        ['shotguns'] = 'Schrotflinten',
+        ['ffa_mode'] = 'Alle gegen Alle',
+        ['tdm_mode'] = 'Team Deathmatch'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -175,18 +178,33 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_close_lobby'] = 'Close Lobby',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
+        ['team_none'] = 'No Team',
         ['spectator'] = 'Spectator',
         ['random'] = 'Random',
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
-        ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Health',
+        ['armor'] = 'Armor',
+        ['ammo'] = 'Ammo',
+        ['time_left'] = 'Time',
+        ['player_name'] = 'Name',
+        ['all_weapons'] = 'All Weapons',
+        ['pistols'] = 'Pistols',
+        ['smgs'] = 'SMGs',
+        ['assault_rifles'] = 'Assault Rifles',
+        ['snipers'] = 'Snipers',
+        ['shotguns'] = 'Shotguns',
+        ['ffa_mode'] = 'Free For All',
+        ['tdm_mode'] = 'Team Deathmatch'
     }
 }
 
