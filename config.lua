@@ -1,17 +1,18 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standard-Taste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
 }
 
+-- Definierte Waffen-Kategorien für das Loadout
 Config.WeaponLoadouts = {
     ['pistol'] = {
         { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
@@ -42,6 +43,7 @@ Config.WeaponLoadouts = {
     }
 }
 
+-- Verfügbare Maps
 Config.Maps = {
     {
         id = 'legion',
@@ -147,11 +149,14 @@ Config.Locales = {
         ['waiting_for_players'] = 'Warte auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
-        ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players_title'] = 'SPIELER',
+        ['settings_title'] = 'EINSTELLUNGEN',
+        ['vote_next_map'] = 'NÄCHSTE MAP WÄHLEN'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -182,11 +187,14 @@ Config.Locales = {
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
-        ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players_title'] = 'PLAYERS',
+        ['settings_title'] = 'SETTINGS',
+        ['vote_next_map'] = 'VOTE NEXT MAP'
     }
 }
 

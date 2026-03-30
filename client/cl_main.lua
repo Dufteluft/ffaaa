@@ -9,7 +9,7 @@ playerState = {
 }
 currentLobby = nil
 
--- Globaler Countdown-Handler für alle Spieler
+-- Globaler Countdown-Handler
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
@@ -18,8 +18,8 @@ function StartCountdown(seconds)
                 seconds = seconds
             })
             if seconds == 0 then
-                -- Spieler nach Countdown freigeben
                 FreezeEntityPosition(PlayerPedId(), false)
+                break
             end
             Citizen.Wait(1000)
             seconds = seconds - 1
@@ -38,7 +38,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -52,6 +52,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    NetworkSetInSpectatorMode(false, ped)
 
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
@@ -59,7 +60,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -73,22 +74,27 @@ function TeleportToMap(mapId)
 
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        FreezeEntityPosition(ped, true)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD Loop: Aktualisiert Leben, Rüstung, Munition
 Citizen.CreateThread(function()
     while true do
-        if playerState and playerState.isInGame then
+        if playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = GetEntityHealth(ped)
+            local maxHealth = GetEntityMaxHealth(ped)
             local armor = GetPedArmour(ped)
+
+            -- Prozentberechnung für HUD
+            local healthPercent = math.floor((health / maxHealth) * 100)
+
             local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })
