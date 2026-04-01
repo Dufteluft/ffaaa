@@ -13,33 +13,12 @@ Config.DefaultSettings = {
 }
 
 Config.WeaponLoadouts = {
-    ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
-    },
-    ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
-    },
-    ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
-    },
-    ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
-    },
-    ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
-    },
-    ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
-    }
+    ['pistol'] = { label = 'Pistole', weapons = { { name = 'WEAPON_PISTOL', ammo = 250 }, { name = 'WEAPON_COMBATPISTOL', ammo = 250 } } },
+    ['smg'] = { label = 'SMG', weapons = { { name = 'WEAPON_SMG', ammo = 250 }, { name = 'WEAPON_COMBATMG', ammo = 250 } } },
+    ['assault'] = { label = 'Sturmgewehr', weapons = { { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 }, { name = 'WEAPON_CARBINERIFLE', ammo = 250 } } },
+    ['sniper'] = { label = 'Scharfschütze', weapons = { { name = 'WEAPON_SNIPERRIFLE', ammo = 50 }, { name = 'WEAPON_HEAVYSNIPER', ammo = 50 } } },
+    ['shotgun'] = { label = 'Schrotflinte', weapons = { { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 }, { name = 'WEAPON_SAWNOFFSHOTGUN', ammo = 50 } } },
+    ['all'] = { label = 'Alle Waffen', weapons = { { name = 'WEAPON_PISTOL', ammo = 250 }, { name = 'WEAPON_SMG', ammo = 250 }, { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 }, { name = 'WEAPON_SNIPERRIFLE', ammo = 50 }, { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 } } }
 }
 
 Config.Maps = {
@@ -129,7 +108,7 @@ Config.Locales = {
         ['loadout_select'] = 'Waffen-Loadout',
         ['round_time'] = 'Rundenzeit (Min)',
         ['max_players'] = 'Max. Spieler',
-        ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
+        ['vehicles_allowed'] = 'Fahrzeuge erlaubt?',
         ['friendly_fire'] = 'Freundliches Feuer',
         ['respawn_time'] = 'Respawn-Zeit (Sek)',
         ['kill_limit'] = 'Kill-Limit zum Sieg',
@@ -140,6 +119,7 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_close_lobby'] = 'Lobby schließen',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -148,10 +128,22 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = ' GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Leben',
+        ['armor'] = 'Rüstung',
+        ['ammo'] = 'Munition',
+        ['time_left'] = 'Zeit',
+        ['player_list'] = 'Spieler',
+        ['lobby_settings'] = 'Einstellungen',
+        ['ffa_mode'] = 'Alle gegen Alle',
+        ['tdm_mode'] = 'Team Deathmatch',
+        ['out_of_bounds'] = 'Du verlässt das Kampfgebiet!',
+        ['weapon_not_allowed'] = 'Diese Waffe ist hier nicht erlaubt!',
+        ['not_enough_players'] = 'Nicht genügend Spieler zum Starten!'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -164,7 +156,7 @@ Config.Locales = {
         ['loadout_select'] = 'Weapon Loadout',
         ['round_time'] = 'Round Time (Min)',
         ['max_players'] = 'Max Players',
-        ['vehicles_allowed'] = 'Vehicles Allowed',
+        ['vehicles_allowed'] = 'Vehicles Allowed?',
         ['friendly_fire'] = 'Friendly Fire',
         ['respawn_time'] = 'Respawn Time (Sec)',
         ['kill_limit'] = 'Kill Limit to Win',
@@ -175,6 +167,7 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_close_lobby'] = 'Close Lobby',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -183,10 +176,22 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = ' WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Health',
+        ['armor'] = 'Armor',
+        ['ammo'] = 'Ammo',
+        ['time_left'] = 'Time',
+        ['player_list'] = 'Player List',
+        ['lobby_settings'] = 'Lobby Settings',
+        ['ffa_mode'] = 'Free For All',
+        ['tdm_mode'] = 'Team Deathmatch',
+        ['out_of_bounds'] = 'You are leaving the combat zone!',
+        ['weapon_not_allowed'] = 'This weapon is not allowed here!',
+        ['not_enough_players'] = 'Not enough players to start!'
     }
 }
 
