@@ -4,7 +4,7 @@ AddEventHandler('ffa:startGame', function()
     local state = PlayerStates[source]
     if not state then return end
 
-    local lobbyId = state.lobbyId
+    local lobbyId = tostring(state.lobbyId)
     local lobby = Lobbies[lobbyId]
 
     -- Mindestens 2 Spieler erforderlich (hier 1 für Tests)
@@ -55,6 +55,7 @@ end)
 
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
+    lobbyId = tostring(lobbyId)
     local lobby = Lobbies[lobbyId]
     if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
 
@@ -83,6 +84,7 @@ end
 
 -- Funktion: Spiel beenden und Sieger ermitteln
 function EndGame(lobbyId, reason)
+    lobbyId = tostring(lobbyId)
     local lobby = Lobbies[lobbyId]
     if not lobby then return end
 
@@ -173,7 +175,7 @@ AddEventHandler('ffa:playerKilled', function(killerId)
     local victimState = PlayerStates[victim]
     if not victimState then return end
 
-    local lobbyId = victimState.lobbyId
+    local lobbyId = tostring(victimState.lobbyId)
     local lobby = Lobbies[lobbyId]
     if not lobby then return end
 
@@ -211,7 +213,8 @@ end)
 
 -- Event: Map Voting
 RegisterServerEvent('ffa:voteMap')
-AddEventHandler('ffa:voteMap', function(mapId)
+AddEventHandler('ffa:voteMap', function(data)
+    local mapId = type(data) == 'table' and data.mapId or data
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
