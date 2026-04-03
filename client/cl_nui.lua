@@ -1,22 +1,34 @@
 -- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
 Citizen.CreateThread(function()
+    local lastVehicle = 0
     while true do
         Citizen.Wait(5000)
         if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
             local playerPed = PlayerPedId()
             local coords = GetEntityCoords(playerPed)
-            local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
 
-            if vehicle == 0 then
-                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 15.0, 0.0)
-                local model = `zentorno`
-                RequestModel(model)
-                while not HasModelLoaded(model) do Wait(10) end
+            -- Prüfen ob Spieler bereits in einem Fahrzeug sitzt oder ein Fahrzeug in der Nähe ist
+            if not IsPedInAnyVehicle(playerPed, false) then
+                local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
 
-                local veh = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
-                SetVehicleOnGroundProperly(veh)
-                SetEntityAsMissionEntity(veh, true, true)
-                SetModelAsNoLongerNeeded(model)
+                if vehicle == 0 then
+                    -- Vorheriges Fahrzeug löschen um Spam zu vermeiden
+                    if lastVehicle ~= 0 and DoesEntityExist(lastVehicle) then
+                        DeleteVehicle(lastVehicle)
+                    end
+
+                    local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                    local model = `zentorno`
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(10) end
+
+                    lastVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                    SetVehicleOnGroundProperly(lastVehicle)
+                    SetEntityAsMissionEntity(lastVehicle, true, true)
+                    SetModelAsNoLongerNeeded(model)
+
+                    ESX.ShowNotification('Ein Fahrzeug wurde für dich bereitgestellt.')
+                end
             end
         end
     end
@@ -27,22 +39,12 @@ Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
         if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
-            local playerPed = PlayerPedId()
-
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
+            -- FiveM Native Anti-Teamkill (zuverlässiger als Relationship Groups allein)
+            NetworkSetFriendlyFireOption(false)
+            SetCanAttackFriendly(PlayerPedId(), false, false)
+        else
+            NetworkSetFriendlyFireOption(true)
+            SetCanAttackFriendly(PlayerPedId(), true, false)
         end
     end
 end)
