@@ -417,6 +417,72 @@ input[type="text"], input[type="range"] {
 
 .input-row { display: flex; gap: 20px; }
 
+.loadout-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    background: var(--surface);
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.loadout-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.loadout-item input {
+    cursor: pointer;
+}
+
+/* Custom Toggle Switch */
+.toggle-group {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    padding: 12px 15px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider-toggle {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #333;
+    transition: .4s;
+    border-radius: 22px;
+}
+
+.slider-toggle:before {
+    position: absolute;
+    content: "";
+    height: 16px; width: 16px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider-toggle { background-color: var(--primary); }
+input:checked + .slider-toggle:before { transform: translateX(22px); }
+
 .btn-group { display: flex; gap: 15px; margin-top: 30px; }
 .confirm-btn { flex: 1; background: var(--success); color: #000; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 .cancel-btn { flex: 1; background: #333; color: #fff; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
@@ -470,14 +536,157 @@ input[type="text"], input[type="range"] {
 .start-btn { background: var(--success); color: #000; border: none; padding: 12px 25px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 .leave-btn { background: var(--danger); color: #fff; border: none; padding: 12px 25px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 
+/* HUD Styles */
+#game-hud {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.hud-top {
+    position: absolute;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.hud-timer {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--primary);
+    font-size: 20px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.hud-scores {
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.8);
+    padding: 5px 20px;
+    border-radius: 4px;
+    gap: 20px;
+}
+
+.score-team { display: flex; align-items: center; gap: 10px; }
+.score-team label { font-size: 11px; font-weight: 900; color: var(--text-muted); }
+.score-val { font-size: 24px; font-weight: 900; }
+.score-team.blue .score-val { color: #2196f3; }
+.score-team.red .score-val { color: #f44336; }
+.score-divider { font-size: 20px; font-weight: 900; opacity: 0.5; }
+
+.hud-bottom {
+    position: absolute;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+    padding: 20px 50px;
+    border-radius: 8px;
+}
+
+.hud-player-stats { display: flex; gap: 30px; }
+.stat-item { display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 900; }
+.stat-item i { font-size: 18px; color: var(--primary); }
+
+.hud-vitals { width: 300px; display: flex; flex-direction: column; gap: 8px; }
+.vital-row { display: flex; align-items: center; gap: 10px; }
+.vital-row i { width: 20px; text-align: center; font-size: 14px; }
+.vital-row i.fa-heart { color: var(--danger); }
+.vital-row i.fa-shield-halved { color: var(--primary); }
+
+.progress-bar-bg { flex: 1; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; }
+.progress-bar { height: 100%; transition: width 0.3s ease; }
+.progress-bar.health { background: var(--danger); box-shadow: 0 0 10px rgba(255, 68, 68, 0.4); }
+.progress-bar.armor { background: var(--primary); box-shadow: 0 0 10px rgba(0, 212, 255, 0.4); }
+
+.hud-weapon { display: flex; align-items: center; gap: 15px; }
+.ammo-count { font-size: 36px; font-weight: 900; font-family: 'Impact'; }
+.hud-weapon i { font-size: 28px; color: var(--text-muted); }
+
 /* Winner Card */
 .winner-card {
     background: var(--bg-main);
-    padding: 60px;
+    padding: 40px 60px;
     border-radius: 12px;
     text-align: center;
     border: 2px solid var(--primary);
     box-shadow: 0 0 50px rgba(0, 212, 255, 0.3);
+    width: 1000px;
+    max-height: 90vh;
+    overflow-y: auto;
 }
-#winner-title { font-size: 60px; font-family: 'Impact'; margin-bottom: 10px; }
-#winner-name { font-size: 32px; color: var(--primary); margin-bottom: 40px; }
+#winner-title { font-size: 50px; font-family: 'Impact'; margin-bottom: 5px; letter-spacing: 2px; }
+#winner-name { font-size: 28px; color: var(--primary); margin-bottom: 30px; font-weight: 900; }
+
+.winner-content-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 40px;
+    margin-bottom: 30px;
+}
+
+#match-stats-table {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 10px; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+td { padding: 12px 10px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.02); }
+
+.map-voting-section {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.voting-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.vote-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+    position: relative;
+    overflow: hidden;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.vote-item:hover { border-color: var(--primary); background: var(--surface-hover); }
+.vote-item.active { border-color: var(--success); background: rgba(0, 255, 136, 0.1); }
+
+.vote-label { font-weight: 900; font-size: 14px; text-transform: uppercase; z-index: 1; }
+.vote-count {
+    position: absolute;
+    top: 5px; right: 5px;
+    background: var(--primary);
+    color: #000;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 10px;
+}

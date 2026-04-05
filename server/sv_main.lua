@@ -83,10 +83,12 @@ end
 
 -- Funktion: Spiel beenden und Sieger ermitteln
 function EndGame(lobbyId, reason)
-    local lobby = Lobbies[lobbyId]
+    local lobbyIdStr = tostring(lobbyId)
+    local lobby = Lobbies[lobbyIdStr]
     if not lobby then return end
 
     lobby.status = 'ended'
+    lobby.votes = {}
 
     local winnerName = 'Niemand'
     local maxKills = -1
@@ -129,41 +131,58 @@ function EndGame(lobbyId, reason)
     end
     table.sort(stats, function(a, b) return a.kills > b.kills end)
 
-    -- Statistiken speichern und Clients informieren
+    -- Clients informieren und Statistiken speichern
     for _, pid in ipairs(lobby.players) do
         TriggerClientEvent('ffa:gameEnded', pid, {
             winnerName = winnerName,
             reason = reason,
-            stats = stats
+            stats = stats,
+            votes = lobby.votes
         })
 
-        -- DB-Statistiken aktualisieren
         local state = PlayerStates[pid]
         if state then
             local isWin = (winnerName == state.name) or (winnerTeam ~= 'none' and state.team == winnerTeam)
             UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
         end
-
-        -- Wenn persistente Lobby, starte für Spieler nach kurzem Delay neu
-        if lobby.isPersistent then
-            Citizen.CreateThread(function()
-                Citizen.Wait(10000) -- 10 Sekunden Anzeigezeit
-                if PlayerStates[pid] and PlayerStates[pid].lobbyId == lobbyId then
-                    PlayerStates[pid].kills = 0
-                    PlayerStates[pid].deaths = 0
-                    TriggerClientEvent('ffa:gameStarting', pid, lobby)
-                end
-            end)
-        end
     end
 
-    if lobby.isPersistent then
-        lobby.timer = lobby.roundTime * 60
+    -- Map Voting Phase (10 Sekunden)
+    Citizen.CreateThread(function()
+        Citizen.Wait(10000)
+
+        -- Gewinner-Map ermitteln
+        local nextMapId = lobby.mapId
+        local maxVotes = -1
+        for mapId, count in pairs(lobby.votes) do
+            if count > maxVotes then
+                maxVotes = count
+                nextMapId = mapId
+            end
+        end
+
+        local map = Utils.GetMapById(nextMapId)
+        lobby.mapId = nextMapId
+        lobby.mapLabel = map.label
+
+        -- Reset Lobby für neue Runde
         lobby.status = 'playing'
+        lobby.timer = lobby.roundTime * 60
         lobby.scoreBlue = 0
         lobby.scoreRed = 0
-        StartGameTimer(lobbyId)
-    end
+        lobby.votes = {}
+
+        for _, pid in ipairs(lobby.players) do
+            local ps = PlayerStates[pid]
+            if ps then
+                ps.kills = 0
+                ps.deaths = 0
+                TriggerClientEvent('ffa:gameStarting', pid, lobby)
+            end
+        end
+
+        StartGameTimer(lobbyIdStr)
+    end)
 end
 
 -- Event: Spieler wurde getötet
@@ -209,20 +228,27 @@ AddEventHandler('ffa:playerKilled', function(killerId)
     end
 end)
 
--- Event: Map Voting
+-- Event: Map Voting (Post-Match)
 RegisterServerEvent('ffa:voteMap')
 AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
-        local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
-            local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
+        local lobby = Lobbies[tostring(state.lobbyId)]
+        if lobby and lobby.status == 'ended' then
+            lobby.votes = lobby.votes or {}
+            -- Vorherigen Vote entfernen? (Einfachheitshalber erlauben wir nur einen Vote)
+            if not state.votedMap then
+                lobby.votes[mapId] = (lobby.votes[mapId] or 0) + 1
+                state.votedMap = mapId
+            elseif state.votedMap ~= mapId then
+                lobby.votes[state.votedMap] = lobby.votes[state.votedMap] - 1
+                lobby.votes[mapId] = (lobby.votes[mapId] or 0) + 1
+                state.votedMap = mapId
+            end
 
-            -- Informiere Lobby-Chat über den Vote
+            -- Update an alle Spieler senden
             for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                TriggerClientEvent('ffa:updateVotes', pid, lobby.votes)
             end
         end
     end

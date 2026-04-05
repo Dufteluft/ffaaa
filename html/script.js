@@ -27,6 +27,12 @@ function playSound(name) {
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         if (btn.dataset.tab === currentTab) return;
+
+        if (btn.dataset.tab === 'create') {
+            document.getElementById('open-create-modal').click();
+            return;
+        }
+
         playSound('click');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -65,6 +71,8 @@ const setupSlider = (id) => {
 };
 setupSlider('round-time');
 setupSlider('max-players');
+setupSlider('respawn-time');
+setupSlider('kill-limit');
 
 // NUI Message Handling
 window.addEventListener('message', (event) => {
@@ -95,10 +103,33 @@ window.addEventListener('message', (event) => {
             document.getElementById('lobby-waiting-area').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('game-hud').style.display = 'block';
+            document.getElementById('hud-scores-tdm').style.display = data.mode === 'tdm' ? 'flex' : 'none';
+            break;
+        case 'hideHUD':
+            document.getElementById('game-hud').style.display = 'none';
+            break;
+        case 'updateHUD':
+            if (data.time) document.getElementById('hud-time').innerText = data.time;
+            if (data.kills !== undefined) {
+                const oldKills = parseInt(document.getElementById('hud-kills').innerText);
+                if (data.kills > oldKills) playSound('kill');
+                document.getElementById('hud-kills').innerText = data.kills;
+            }
+            if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
+            if (data.scoreBlue !== undefined) document.getElementById('score-blue').innerText = data.scoreBlue;
+            if (data.scoreRed !== undefined) document.getElementById('score-red').innerText = data.scoreRed;
+            break;
+        case 'updateHUDDetails':
+            document.getElementById('hud-health').style.width = data.health + '%';
+            document.getElementById('hud-armor').style.width = data.armor + '%';
+            document.getElementById('hud-ammo-clip').innerText = data.ammo;
             break;
         case 'showWinner':
             showWinnerScreen(data);
+            break;
+        case 'updateVotes':
+            renderVotingGrid(data.votes);
             break;
     }
 });
@@ -107,6 +138,20 @@ function setupInitialData(config, maps) {
     serverConfig = config;
     serverMaps = maps;
 
+    // Localize UI
+    const locale = config.Locales[config.Locale];
+    for (let key in locale) {
+        const elements = document.querySelectorAll('.l-' + key);
+        elements.forEach(el => {
+            if (el.tagName === 'INPUT' && el.type === 'placeholder') {
+                el.placeholder = locale[key];
+            } else {
+                el.innerText = locale[key].toUpperCase();
+            }
+        });
+    }
+
+    // Populate Map Select
     const mapSelect = document.getElementById('map-select');
     mapSelect.innerHTML = '';
     maps.forEach(map => {
@@ -116,13 +161,17 @@ function setupInitialData(config, maps) {
         mapSelect.appendChild(opt);
     });
 
-    const loadoutSelect = document.getElementById('loadout-select');
-    loadoutSelect.innerHTML = '';
+    // Populate Loadout Grid (Multi-Select)
+    const loadoutGrid = document.getElementById('loadout-grid');
+    loadoutGrid.innerHTML = '';
     for (let key in config.WeaponLoadouts) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = key.toUpperCase();
-        loadoutSelect.appendChild(opt);
+        const item = document.createElement('label');
+        item.className = 'loadout-item';
+        item.innerHTML = `
+            <input type="checkbox" name="loadout" value="${key}">
+            <span>${key.toUpperCase()}</span>
+        `;
+        loadoutGrid.appendChild(item);
     }
 }
 
@@ -148,22 +197,20 @@ function renderLobbyList(lobbies) {
 
         let status = lobby.status || 'waiting';
         let strokeColor = '#00ff88'; // Success
-        if (status === 'joining') strokeColor = '#00d4ff'; // Primary
-        else if (percent > 80) strokeColor = '#ff9500'; // Warning
+        if (status === 'ACTIVE') strokeColor = '#ff4444'; // Danger/In Game
 
         const radius = 25;
         const circumference = 2 * Math.PI * radius;
         const offset = circumference - (percent / 100) * circumference;
 
-        // Simplified Map Image URLs (using placeholders for now)
-        const mapImg = lobby.mapImage || `https://via.placeholder.com/140x80/0f1419/ffffff?text=${lobby.mapLabel}`;
+        const mapImg = `assets/${lobby.mapId}.png`; // Assuming assets exist or fallback
 
         item.innerHTML = `
             <div class="lobby-map-preview">
-                <img src="${mapImg}" alt="${lobby.mapLabel}">
+                <img src="${mapImg}" onerror="this.src='https://via.placeholder.com/140x80/0f1419/ffffff?text=${lobby.mapLabel}'">
             </div>
             <div class="lobby-info-main">
-                <div class="match-type">${lobby.mode === 'tdm' ? 'Team Deathmatch' : 'Free-for-All'}</div>
+                <div class="match-type">${lobby.mode === 'tdm' ? 'TEAM DEATHMATCH' : 'FREE-FOR-ALL'}</div>
                 <div class="map-name-row">
                     <i class="fa-solid fa-location-dot"></i> ${lobby.mapLabel}
                 </div>
@@ -190,33 +237,56 @@ function renderLobbyList(lobbies) {
 }
 
 function renderActionButton(lobby) {
+    const locale = serverConfig.Locales[serverConfig.Locale];
+    if (lobby.isPersistent) {
+        return `<button class="action-btn btn-join" onclick="quickJoin('${lobby.mapId}')">${locale['btn_join'].toUpperCase()}</button>`;
+    }
     if (lobby.playerCount >= lobby.maxPlayers) {
-        return `<button class="action-btn btn-disabled" disabled>FULL</button>`;
+        return `<button class="action-btn btn-disabled" disabled>${locale['btn_full'].toUpperCase()}</button>`;
     }
     if (lobby.status === 'ACTIVE') {
-        return `<button class="action-btn btn-spectate" onclick="joinLobby('${lobby.id}', true)">SPECTATE</button>`;
+        return `<button class="action-btn btn-spectate" onclick="joinLobby('${lobby.id}')">${locale['btn_spectate'].toUpperCase()}</button>`;
     }
-    const pulsingClass = lobby.status === 'joining' ? 'pulsing' : '';
-    return `<button class="action-btn btn-join ${pulsingClass}" onclick="joinLobby('${lobby.id}')">JOIN</button>`;
+    return `<button class="action-btn btn-join" onclick="joinLobby('${lobby.id}')">${locale['btn_join'].toUpperCase()}</button>`;
 }
 
-function joinLobby(lobbyId, isSpectator = false) {
+function joinLobby(lobbyId) {
     playSound('click');
     fetch(`https://${GetParentResourceName()}/joinLobby`, {
         method: 'POST',
-        body: JSON.stringify({ lobbyId, isSpectator })
+        body: JSON.stringify({ lobbyId })
+    });
+}
+
+function quickJoin(mapId) {
+    playSound('click');
+    fetch(`https://${GetParentResourceName()}/quickJoin`, {
+        method: 'POST',
+        body: JSON.stringify({ mapId })
     });
 }
 
 document.getElementById('btn-create-lobby').addEventListener('click', () => {
     playSound('click');
+
+    const selectedLoadouts = [];
+    document.querySelectorAll('input[name="loadout"]:checked').forEach(cb => {
+        selectedLoadouts.push(cb.value);
+    });
+
+    if (selectedLoadouts.length === 0) selectedLoadouts.push('pistol');
+
     const settings = {
         name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
         mapId: document.getElementById('map-select').value,
         mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
+        loadout: selectedLoadouts,
         roundTime: parseInt(document.getElementById('round-time').value),
         maxPlayers: parseInt(document.getElementById('max-players').value),
+        respawnTime: parseInt(document.getElementById('respawn-time').value),
+        killLimit: parseInt(document.getElementById('kill-limit').value),
+        vehiclesAllowed: document.getElementById('toggle-vehicles').checked,
+        friendlyFire: document.getElementById('toggle-ff').checked
     };
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
@@ -256,8 +326,16 @@ function renderPlayerList(players) {
     });
 
     if (isHost) {
-        document.getElementById('btn-start-game').disabled = players.length < (currentLobby.minPlayers || 2);
+        document.getElementById('btn-start-game').disabled = players.length < 2;
     }
+}
+
+function kickPlayer(id) {
+    playSound('click');
+    fetch(`https://${GetParentResourceName()}/kickPlayer`, {
+        method: 'POST',
+        body: JSON.stringify({ id })
+    });
 }
 
 document.getElementById('btn-ready-toggle').addEventListener('click', () => {
@@ -313,6 +391,33 @@ function showWinnerScreen(data) {
     });
     html += `</tbody></table>`;
     statsTable.innerHTML = html;
+
+    renderVotingGrid(data.votes || {});
+}
+
+function renderVotingGrid(votes) {
+    const grid = document.getElementById('voting-grid');
+    grid.innerHTML = '';
+
+    serverMaps.forEach(map => {
+        const count = votes[map.id] || 0;
+        const item = document.createElement('div');
+        item.className = 'vote-item';
+        item.innerHTML = `
+            <span class="vote-label">${map.label}</span>
+            <span class="vote-count">${count}</span>
+        `;
+        item.onclick = () => {
+            playSound('click');
+            document.querySelectorAll('.vote-item').forEach(v => v.classList.remove('active'));
+            item.classList.add('active');
+            fetch(`https://${GetParentResourceName()}/voteMap`, {
+                method: 'POST',
+                body: JSON.stringify({ mapId: map.id })
+            });
+        };
+        grid.appendChild(item);
+    });
 }
 
 document.getElementById('btn-back-to-menu').addEventListener('click', () => {
