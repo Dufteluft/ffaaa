@@ -15,8 +15,9 @@
             <header class="main-header">
                 <h1 class="header-title">GTA V FREE-FOR-ALL LOBBY FINDER</h1>
                 <nav class="nav-tabs">
-                    <button class="tab-btn active" data-tab="ffa">FFA</button>
-                    <button class="tab-btn" data-tab="lobby">LOBBY</button>
+                    <button class="tab-btn active l-tab_ffa" data-tab="ffa">FFA LOBBY</button>
+                    <button class="tab-btn l-tab_create" data-tab="create">LOBBY ERSTELLEN</button>
+                    <button class="tab-btn l-tab_list" data-tab="list">OFFENE LOBBYS</button>
                 </nav>
             </header>
 
@@ -91,17 +92,45 @@
                         </div>
                     </div>
                     <div class="input-group">
-                        <label>LOADOUT</label>
-                        <select id="loadout-select"></select>
+                        <label class="l-loadout_select">WAFFEN-LOADOUT</label>
+                        <div class="loadout-grid" id="loadout-grid">
+                            <!-- Checkboxes injected by JS -->
+                        </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
-                            <label>TIME (MIN): <span id="round-time-val">15</span></label>
+                            <label class="l-round_time">RUNDENZEIT (MIN): <span id="round-time-val">15</span></label>
                             <input type="range" id="round-time" min="5" max="30" step="5" value="15">
                         </div>
                         <div class="input-group">
-                            <label>MAX PLAYERS: <span id="max-players-val">16</span></label>
+                            <label class="l-max_players">MAX. SPIELER: <span id="max-players-val">16</span></label>
                             <input type="range" id="max-players" min="2" max="32" step="1" value="16">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label class="l-respawn_time">RESPAWN-ZEIT (SEK): <span id="respawn-time-val">5</span></label>
+                            <input type="range" id="respawn-time" min="3" max="10" step="1" value="5">
+                        </div>
+                        <div class="input-group">
+                            <label class="l-kill_limit">KILL-LIMIT: <span id="kill-limit-val">0</span></label>
+                            <input type="range" id="kill-limit" min="0" max="50" step="5" value="0">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="toggle-group">
+                            <label class="l-vehicles_allowed">FAHRZEUGE</label>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-vehicles">
+                                <span class="slider-toggle"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-group">
+                            <label class="l-friendly_fire">FRIENDLY FIRE</label>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-ff">
+                                <span class="slider-toggle"></span>
+                            </label>
                         </div>
                     </div>
                     <div class="btn-group">
@@ -146,21 +175,80 @@
         </div>
     </div>
 
-    <!-- HUD (Will be hidden/shown based on script) -->
+    <!-- HUD (In-Game Stats) -->
     <div id="game-hud" style="display: none;">
-        <!-- HUD content will be handled later as per user instructions -->
+        <div class="hud-top">
+            <div class="hud-timer">
+                <i class="fa-solid fa-clock"></i>
+                <span id="hud-time">15:00</span>
+            </div>
+            <div class="hud-scores" id="hud-scores-tdm" style="display: none;">
+                <div class="score-team blue">
+                    <span class="score-val" id="score-blue">0</span>
+                    <label class="l-team_blue">BLUE</label>
+                </div>
+                <div class="score-divider">:</div>
+                <div class="score-team red">
+                    <label class="l-team_red">RED</label>
+                    <span class="score-val" id="score-red">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hud-bottom">
+            <div class="hud-player-stats">
+                <div class="stat-item">
+                    <i class="fa-solid fa-skull"></i>
+                    <span id="hud-kills">0</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    <span id="hud-deaths">0</span>
+                </div>
+            </div>
+            <div class="hud-vitals">
+                <div class="vital-row">
+                    <i class="fa-solid fa-heart"></i>
+                    <div class="progress-bar-bg">
+                        <div id="hud-health" class="progress-bar health" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <div class="vital-row">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <div class="progress-bar-bg">
+                        <div id="hud-armor" class="progress-bar armor" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="hud-weapon">
+                <div class="ammo-count">
+                    <span id="hud-ammo-clip">30</span>
+                </div>
+                <i class="fa-solid fa-gun"></i>
+            </div>
+        </div>
     </div>
 
     <!-- Winner Screen -->
     <div id="winner-screen" class="overlay" style="display: none;">
         <div class="winner-card">
-            <h1 id="winner-title">MATCH ENDED</h1>
+            <h1 id="winner-title" class="l-game_ended">MATCH ENDED</h1>
             <h2 id="winner-name">PLAYER WINS!</h2>
-            <div id="match-stats-table"></div>
+
+            <div class="winner-content-grid">
+                <div id="match-stats-table"></div>
+
+                <div class="map-voting-section">
+                    <h3 class="l-vote_next_map">VOTE NEXT MAP</h3>
+                    <div class="voting-grid" id="voting-grid">
+                        <!-- Maps injected by JS -->
+                    </div>
+                </div>
+            </div>
 
             <div class="btn-group">
-                <button class="confirm-btn" id="btn-back-to-lobby">BACK TO LOBBY</button>
-                <button class="cancel-btn" id="btn-back-to-menu">MAIN MENU</button>
+                <button class="confirm-btn l-btn_back_to_lobby" id="btn-back-to-lobby">BACK TO LOBBY</button>
+                <button class="cancel-btn l-btn_back_to_menu" id="btn-back-to-menu">MAIN MENU</button>
             </div>
         </div>
     </div>
