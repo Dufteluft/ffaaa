@@ -87,6 +87,7 @@ function EndGame(lobbyId, reason)
     if not lobby then return end
 
     lobby.status = 'ended'
+    lobby.votes = {} -- Map votes initialisieren
 
     local winnerName = 'Niemand'
     local maxKills = -1
@@ -134,7 +135,8 @@ function EndGame(lobbyId, reason)
         TriggerClientEvent('ffa:gameEnded', pid, {
             winnerName = winnerName,
             reason = reason,
-            stats = stats
+            stats = stats,
+            mode = lobby.mode
         })
 
         -- DB-Statistiken aktualisieren
@@ -215,14 +217,34 @@ AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
-            local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
+        if lobby then
+            -- Speichere Vote
+            lobby.votes = lobby.votes or {}
+            lobby.votes[source] = mapId
 
-            -- Informiere Lobby-Chat über den Vote
+            -- Zähle Votes und synchronisiere mit Clients
+            local voteCounts = {}
+            for _, mId in pairs(lobby.votes) do
+                voteCounts[mId] = (voteCounts[mId] or 0) + 1
+            end
+
             for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                TriggerClientEvent('ffa:updateVotes', pid, voteCounts)
+            end
+
+            -- Wenn Persistent, Map nach Rundenende wechseln
+            if lobby.isPersistent and lobby.status == 'ended' then
+                -- Ermittle Map mit den meisten Votes
+                local maxVotes = -1
+                local votedMapId = lobby.mapId
+                for mId, count in pairs(voteCounts) do
+                    if count > maxVotes then
+                        maxVotes = count
+                        votedMapId = mId
+                    end
+                end
+
+                lobby.nextMapId = votedMapId
             end
         end
     end

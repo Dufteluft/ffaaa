@@ -117,6 +117,14 @@ AddEventHandler('ffa:updateLobbies', function(lobbies)
     })
 end)
 
+RegisterNetEvent('ffa:updateVotes')
+AddEventHandler('ffa:updateVotes', function(voteCounts)
+    SendNUIMessage({
+        action = 'updateVotes',
+        voteCounts = voteCounts
+    })
+end)
+
 -- Lobby-Chat Event-Handling
 RegisterNUICallback('sendLobbyChat', function(data, cb)
     TriggerServerEvent('ffa:sendLobbyChat', data)
