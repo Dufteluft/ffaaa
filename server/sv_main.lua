@@ -4,7 +4,7 @@ AddEventHandler('ffa:startGame', function()
     local state = PlayerStates[source]
     if not state then return end
 
-    local lobbyId = state.lobbyId
+    local lobbyId = tostring(state.lobbyId)
     local lobby = Lobbies[lobbyId]
 
     -- Mindestens 2 Spieler erforderlich (hier 1 für Tests)
@@ -83,6 +83,7 @@ end
 
 -- Funktion: Spiel beenden und Sieger ermitteln
 function EndGame(lobbyId, reason)
+    lobbyId = tostring(lobbyId)
     local lobby = Lobbies[lobbyId]
     if not lobby then return end
 
@@ -158,6 +159,14 @@ function EndGame(lobbyId, reason)
     end
 
     if lobby.isPersistent then
+        -- Wenn eine neue Map gewählt wurde, diese setzen
+        if lobby.nextMapId then
+            lobby.mapId = lobby.nextMapId
+            local map = Utils.GetMapById(lobby.mapId)
+            if map then lobby.mapLabel = map.label end
+            lobby.nextMapId = nil
+        end
+
         lobby.timer = lobby.roundTime * 60
         lobby.status = 'playing'
         lobby.scoreBlue = 0
@@ -166,6 +175,35 @@ function EndGame(lobbyId, reason)
     end
 end
 
+-- Event: Lobby zurücksetzen (nach Spielende für custom Lobbys)
+RegisterServerEvent('ffa:resetLobby')
+AddEventHandler('ffa:resetLobby', function()
+    local state = PlayerStates[source]
+    if not state then return end
+
+    local lobbyId = tostring(state.lobbyId)
+    local lobby = Lobbies[lobbyId]
+
+    if lobby and lobby.host == source then
+        lobby.status = 'waiting'
+        lobby.scoreBlue = 0
+        lobby.scoreRed = 0
+
+        for _, pid in ipairs(lobby.players) do
+            local ps = PlayerStates[pid]
+            if ps then
+                ps.kills = 0
+                ps.deaths = 0
+                ps.ready = (pid == lobby.host)
+
+                -- Client informieren
+                TriggerClientEvent('ffa:lobbyReset', pid, lobby)
+            end
+        end
+        UpdateLobbyPlayers(lobbyId)
+    end
+end)
+
 -- Event: Spieler wurde getötet
 RegisterServerEvent('ffa:playerKilled')
 AddEventHandler('ffa:playerKilled', function(killerId)
@@ -173,7 +211,7 @@ AddEventHandler('ffa:playerKilled', function(killerId)
     local victimState = PlayerStates[victim]
     if not victimState then return end
 
-    local lobbyId = victimState.lobbyId
+    local lobbyId = tostring(victimState.lobbyId)
     local lobby = Lobbies[lobbyId]
     if not lobby then return end
 
@@ -214,15 +252,23 @@ RegisterServerEvent('ffa:voteMap')
 AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
-        local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
+        local lobbyId = tostring(state.lobbyId)
+        local lobby = Lobbies[lobbyId]
+        if lobby then
+            lobby.nextMapId = mapId
             local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
 
-            -- Informiere Lobby-Chat über den Vote
-            for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+            -- Wenn persistente Lobby, informieren wir alle über die Map-Änderung nach dem Match
+            if lobby.isPersistent then
+                -- Hier könnten wir Votes zählen, für jetzt setzen wir es einfach
+            else
+                if map then lobby.mapLabel = map.label end
+                lobby.mapId = mapId
+
+                -- Informiere Lobby-Chat über den Vote
+                for _, pid in ipairs(lobby.players) do
+                    TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. (map and map.label or 'Unbekannt') .. ' geändert.')
+                end
             end
         end
     end

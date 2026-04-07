@@ -214,6 +214,7 @@ AddEventHandler('ffa:fetchLobbies', function(data)
     local filterTab = data and data.tab or 'ffa'
 
     for id, lobby in pairs(Lobbies) do
+        id = tostring(id)
         local isMatch = false
         if filterTab == 'ffa' then
             if lobby.isPersistent then isMatch = true end
@@ -333,7 +334,8 @@ RegisterServerEvent('ffa:kickPlayer')
 AddEventHandler('ffa:kickPlayer', function(targetId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
-        local lobby = Lobbies[state.lobbyId]
+        local lobbyId = tostring(state.lobbyId)
+        local lobby = Lobbies[lobbyId]
         if lobby and lobby.host == source then
             LeaveLobby(targetId)
             -- Dem gekickten Spieler mitteilen
