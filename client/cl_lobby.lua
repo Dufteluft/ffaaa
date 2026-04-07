@@ -42,6 +42,15 @@ function OpenMainMenu()
     })
 end
 
+-- Event: Ton im NUI abspielen
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(soundName)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = soundName
+    })
+end)
+
 -- Callback: UI schließen (vom JS aufgerufen)
 RegisterNUICallback('closeUI', function(data, cb)
     isMenuOpen = false
@@ -104,7 +113,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -169,8 +178,17 @@ RegisterNUICallback('voteMap', function(data, cb)
 end)
 
 RegisterNUICallback('closeWinnerScreen', function(data, cb)
-    isMenuOpen = false
-    SetNuiFocus(false, false)
-    SendNUIMessage({ action = 'close' })
+    isMenuOpen = true -- Menü wieder aktiv für Lobby
+    SetNuiFocus(true, true)
+    TriggerServerEvent('ffa:resetLobby')
     cb('ok')
+end)
+
+RegisterNetEvent('ffa:lobbyReset')
+AddEventHandler('ffa:lobbyReset', function(lobby)
+    currentLobby = lobby
+    SendNUIMessage({
+        action = 'lobbyJoined',
+        lobby = lobby
+    })
 end)
