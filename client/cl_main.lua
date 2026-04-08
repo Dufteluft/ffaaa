@@ -82,13 +82,13 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = (GetEntityHealth(ped) - 100) / (GetEntityMaxHealth(ped) - 100) * 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local ammo = GetAmmoInPedWeapon(ped, GetSelectedPedWeapon(ped))
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = math.max(0, health),
                 armor = armor,
                 ammo = ammo
             })
