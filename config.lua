@@ -1,17 +1,19 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
+-- Standardeinstellungen für neue Lobbys
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
 }
 
+-- Verfügbare Waffen-Loadouts
 Config.WeaponLoadouts = {
     ['pistol'] = {
         { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
@@ -42,6 +44,7 @@ Config.WeaponLoadouts = {
     }
 }
 
+-- Verfügbare Maps
 Config.Maps = {
     {
         id = 'legion',
@@ -140,6 +143,8 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_spectate'] = 'Zuschauen',
+        ['players'] = 'Spieler',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -148,10 +153,21 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Leben',
+        ['armor'] = 'Rüstung',
+        ['ammo'] = 'Munition',
+        ['time'] = 'Zeit',
+        ['ffa_mode'] = 'Alle gegen Alle',
+        ['tdm_mode'] = 'Team Deathmatch',
+        ['filter_full'] = 'Nur freie Plätze',
+        ['map_vote'] = 'Nächste Map wählen',
+        ['loading_collisions'] = 'Lade Map-Daten...',
+        ['system_msg'] = 'SYSTEM'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -175,6 +191,8 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_spectate'] = 'Spectate',
+        ['players'] = 'Players',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -183,10 +201,21 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Health',
+        ['armor'] = 'Armor',
+        ['ammo'] = 'Ammo',
+        ['time'] = 'Time',
+        ['ffa_mode'] = 'Free for All',
+        ['tdm_mode'] = 'Team Deathmatch',
+        ['filter_full'] = 'Not Full Only',
+        ['map_vote'] = 'Vote Next Map',
+        ['loading_collisions'] = 'Loading map data...',
+        ['system_msg'] = 'SYSTEM'
     }
 }
 
