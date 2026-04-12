@@ -1,58 +1,60 @@
--- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
+-- Fahrzeug-Spawn Logik
 Citizen.CreateThread(function()
+    local lastVehicle = nil
     while true do
         Citizen.Wait(5000)
-        if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+        if playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
             local playerPed = PlayerPedId()
-            local coords = GetEntityCoords(playerPed)
-            local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
+            if IsPedInAnyVehicle(playerPed, false) then
+                -- Spieler ist bereits in einem Fahrzeug
+            else
+                local coords = GetEntityCoords(playerPed)
+                local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 20.0, 0, 71)
 
-            if vehicle == 0 then
-                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 15.0, 0.0)
-                local model = `zentorno`
-                RequestModel(model)
-                while not HasModelLoaded(model) do Wait(10) end
+                if vehicle == 0 then
+                    if lastVehicle and DoesEntityExist(lastVehicle) then
+                        DeleteEntity(lastVehicle)
+                    end
 
-                local veh = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
-                SetVehicleOnGroundProperly(veh)
-                SetEntityAsMissionEntity(veh, true, true)
-                SetModelAsNoLongerNeeded(model)
+                    local model = GetHashKey(Config.VehicleModel or 'zentorno')
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(10) end
+
+                    local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                    lastVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                    SetVehicleOnGroundProperly(lastVehicle)
+                    SetEntityAsMissionEntity(lastVehicle, true, true)
+                    SetModelAsNoLongerNeeded(model)
+                end
             end
         end
     end
 end)
 
--- Anti-Teamkill: Verhindert Schaden an Teammitgliedern
+-- Anti-Teamkill
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
-        if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
-            local playerPed = PlayerPedId()
-
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
+        Citizen.Wait(1000)
+        if playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
+            -- FiveM Native für Friendly Fire
+            NetworkSetFriendlyFireOption(false)
+            SetCanAttackFriendly(PlayerPedId(), false, false)
+        else
+            NetworkSetFriendlyFireOption(true)
+            SetCanAttackFriendly(PlayerPedId(), true, false)
         end
     end
 end)
 
--- Native Anti-Teamkill via Relationship Groups
+-- Team Synchronisation
 RegisterNetEvent('ffa:syncTeams')
 AddEventHandler('ffa:syncTeams', function(teams)
-    local myTeam = teams[GetPlayerServerId(PlayerId())]
+    local myId = GetPlayerServerId(PlayerId())
+    local myTeam = teams[myId]
+
     if not myTeam then return end
 
+    -- Relationship Groups für KI und Namensschilder (optional)
     AddRelationshipGroup('BLUE_TEAM')
     AddRelationshipGroup('RED_TEAM')
 
@@ -60,10 +62,54 @@ AddEventHandler('ffa:syncTeams', function(teams)
         SetPedRelationshipGroupHash(PlayerPedId(), `BLUE_TEAM`)
     elseif myTeam == 'red' then
         SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
+    else
+        SetPedRelationshipGroupHash(PlayerPedId(), `PLAYER`)
     end
 
-    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`) -- 1 = Like
+    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`)
     SetRelationshipBetweenGroups(1, `RED_TEAM`, `RED_TEAM`)
-    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`) -- 5 = Hate
+    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`)
     SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`)
+end)
+
+-- Sound Effekte vom Server
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(soundName)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = soundName
+    })
+end)
+
+-- HUD-Updater (Health, Armor, Ammo)
+Citizen.CreateThread(function()
+    while true do
+        if playerState.isInGame then
+            local ped = PlayerPedId()
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- Prozentuale Berechnung (GTA Health ist oft 200, 100 ist tot)
+            local healthPercent = 0
+            if maxHealth > 100 then
+                healthPercent = math.max(0, math.floor(((health - 100) / (maxHealth - 100)) * 100))
+            else
+                healthPercent = math.max(0, math.floor((health / maxHealth) * 100))
+            end
+
+            local armor = GetPedArmour(ped)
+            local weapon = GetSelectedPedWeapon(ped)
+            local ammo = GetAmmoInPedWeapon(ped, weapon)
+
+            SendNUIMessage({
+                action = 'updateHUDDetails',
+                health = healthPercent,
+                armor = armor,
+                ammo = ammo
+            })
+            Wait(250)
+        else
+            Wait(1000)
+        end
+    end
 end)

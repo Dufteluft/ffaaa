@@ -4,20 +4,35 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
+    local winVal = isWin and 1 or 0
 
     -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
-    MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
+    -- Wir verwenden oxmysql Syntax falls verfügbar, sonst mysql-async
+    local query = [[
+        INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins)
+        VALUES (@id, @k, @d, 1, @w)
+        ON DUPLICATE KEY UPDATE
+            kills = kills + @k,
+            deaths = deaths + @d,
+            games_played = games_played + 1,
+            wins = wins + @w
+    ]]
+
+    MySQL.Async.execute(query, {
         ['@id'] = identifier,
         ['@k'] = kills,
         ['@d'] = deaths,
-        ['@w'] = isWin and 1 or 0
-    })
+        ['@w'] = winVal
+    }, function(rowsChanged)
+        -- Optional: Logging
+    end)
 end
 
--- Event: Statistiken für UI abrufen
+-- Event: Statistiken für UI abrufen (Könnte für ein Profil-Tab genutzt werden)
 RegisterServerEvent('ffa:getStats')
 AddEventHandler('ffa:getStats', function()
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
@@ -26,7 +41,10 @@ AddEventHandler('ffa:getStats', function()
         ['@id'] = identifier
     }, function(result)
         if result and result[1] then
-            TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+            TriggerClientEvent('ffa:receiveStats', src, result[1])
+        else
+            -- Standardwerte senden
+            TriggerClientEvent('ffa:receiveStats', src, { kills = 0, deaths = 0, games_played = 0, wins = 0 })
         end
     end)
 end)
