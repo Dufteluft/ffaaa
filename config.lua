@@ -1,12 +1,13 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Standard-Taste für das Hauptmenü (F5)
+Config.VehicleModel = 'zentorno' -- Standard-Fahrzeugmodell
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -14,31 +15,54 @@ Config.DefaultSettings = {
 
 Config.WeaponLoadouts = {
     ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        label = 'Pistolen',
+        weapons = {
+            { name = 'WEAPON_PISTOL', ammo = 250 },
+            { name = 'WEAPON_COMBATPISTOL', ammo = 250 },
+            { name = 'WEAPON_PISTOL50', ammo = 250 }
+        }
     },
     ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        label = 'SMGs',
+        weapons = {
+            { name = 'WEAPON_SMG', ammo = 250 },
+            { name = 'WEAPON_COMBATMG', ammo = 250 },
+            { name = 'WEAPON_GUSENBERG', ammo = 250 }
+        }
     },
     ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        label = 'Sturmgewehre',
+        weapons = {
+            { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 },
+            { name = 'WEAPON_CARBINERIFLE', ammo = 250 },
+            { name = 'WEAPON_SPECIALCARBINE', ammo = 250 }
+        }
     },
     ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        label = 'Sniper',
+        weapons = {
+            { name = 'WEAPON_SNIPERRIFLE', ammo = 50 },
+            { name = 'WEAPON_HEAVYSNIPER', ammo = 50 },
+            { name = 'WEAPON_MARKSMANRIFLE', ammo = 100 }
+        }
     },
     ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
+        label = 'Schrotflinten',
+        weapons = {
+            { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 },
+            { name = 'WEAPON_SAWNOFFSHOTGUN', ammo = 50 },
+            { name = 'WEAPON_BULLPUPSHOTGUN', ammo = 50 }
+        }
     },
     ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        label = 'Alle Waffen',
+        weapons = {
+            { name = 'WEAPON_PISTOL', ammo = 250 },
+            { name = 'WEAPON_SMG', ammo = 250 },
+            { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 },
+            { name = 'WEAPON_SNIPERRIFLE', ammo = 50 },
+            { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 }
+        }
     }
 }
 
@@ -127,11 +151,11 @@ Config.Locales = {
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
+        ['round_time'] = 'Rundenzeit',
         ['max_players'] = 'Max. Spieler',
-        ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
+        ['vehicles_allowed'] = 'Fahrzeuge erlaubt?',
         ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
+        ['respawn_time'] = 'Respawn-Zeit',
         ['kill_limit'] = 'Kill-Limit zum Sieg',
         ['btn_create'] = 'Lobby erstellen',
         ['btn_cancel'] = 'Abbrechen',
@@ -140,6 +164,7 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_close'] = 'Lobby schließen',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -148,10 +173,18 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Spieler',
+        ['filter_free_slots'] = 'Nur freie Plätze',
+        ['map_voting'] = 'Wähle die nächste Map',
+        ['next_map'] = 'Nächste Map: %s',
+        ['health'] = 'Leben',
+        ['armor'] = 'Rüstung',
+        ['ammo'] = 'Munition'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -162,11 +195,11 @@ Config.Locales = {
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
+        ['round_time'] = 'Round Time',
         ['max_players'] = 'Max Players',
-        ['vehicles_allowed'] = 'Vehicles Allowed',
+        ['vehicles_allowed'] = 'Vehicles Allowed?',
         ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
+        ['respawn_time'] = 'Respawn Time',
         ['kill_limit'] = 'Kill Limit to Win',
         ['btn_create'] = 'Create Lobby',
         ['btn_cancel'] = 'Cancel',
@@ -175,6 +208,7 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_close'] = 'Close Lobby',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -183,10 +217,18 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Players',
+        ['filter_free_slots'] = 'Only Free Slots',
+        ['map_voting'] = 'Vote for Next Map',
+        ['next_map'] = 'Next Map: %s',
+        ['health'] = 'Health',
+        ['armor'] = 'Armor',
+        ['ammo'] = 'Ammo'
     }
 }
 
