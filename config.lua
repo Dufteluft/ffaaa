@@ -1,12 +1,13 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Default-Taste für das Hauptmenü (F1-F12 unterstützt)
+Config.VehicleModel = 'zentorno' -- Standard-Fahrzeugmodell für die Lobbys
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -14,31 +15,42 @@ Config.DefaultSettings = {
 
 Config.WeaponLoadouts = {
     ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        label = 'Pistolen',
+        weapons = {
+            { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
+            { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 },
+            { name = 'WEAPON_PISTOL50', label = 'Pistole .50', ammo = 250 }
+        }
     },
     ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        label = 'SMGs',
+        weapons = {
+            { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
+            { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 },
+            { name = 'WEAPON_MICROSMG', label = 'Micro SMG', ammo = 250 }
+        }
     },
     ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        label = 'Sturmgewehre',
+        weapons = {
+            { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
+            { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 },
+            { name = 'WEAPON_SPECIALCARBINE', label = 'Spezialkarabiner', ammo = 250 }
+        }
     },
     ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        label = 'Scharfschützen',
+        weapons = {
+            { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
+            { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        }
     },
     ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
-    },
-    ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        label = 'Schrotflinten',
+        weapons = {
+            { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
+            { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
+        }
     }
 }
 
@@ -52,7 +64,9 @@ Config.Maps = {
             vector4(167.0, -929.0, 30.6, 180.0),
             vector4(185.0, -912.0, 30.6, 90.0),
             vector4(203.0, -930.0, 30.6, 0.0),
-            vector4(185.0, -948.0, 30.6, 270.0)
+            vector4(185.0, -948.0, 30.6, 270.0),
+            vector4(190.0, -935.0, 30.6, 45.0),
+            vector4(175.0, -920.0, 30.6, 225.0)
         }
     },
     {
@@ -64,7 +78,9 @@ Config.Maps = {
             vector4(1820.0, 3680.0, 34.0, 90.0),
             vector4(1880.0, 3680.0, 34.0, 270.0),
             vector4(1850.0, 3650.0, 34.0, 0.0),
-            vector4(1850.0, 3710.0, 34.0, 180.0)
+            vector4(1850.0, 3710.0, 34.0, 180.0),
+            vector4(1830.0, 3660.0, 34.0, 45.0),
+            vector4(1870.0, 3700.0, 34.0, 225.0)
         }
     },
     {
@@ -76,7 +92,9 @@ Config.Maps = {
             vector4(-1060.0, -2730.0, 20.1, 90.0),
             vector4(-1010.0, -2730.0, 20.1, 270.0),
             vector4(-1035.0, -2700.0, 20.1, 0.0),
-            vector4(-1035.0, -2760.0, 20.1, 180.0)
+            vector4(-1035.0, -2760.0, 20.1, 180.0),
+            vector4(-1045.0, -2720.0, 20.1, 45.0),
+            vector4(-1025.0, -2750.0, 20.1, 225.0)
         }
     },
     {
@@ -140,6 +158,7 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_spectate'] = 'Zuschauen',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -148,10 +167,25 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Spieler',
+        ['settings'] = 'Einstellungen',
+        ['chat'] = 'Chat',
+        ['ffa_mode'] = 'Alle gegen Alle',
+        ['tdm_mode'] = 'Team Deathmatch',
+        ['all_weapons'] = 'Alle Waffen',
+        ['no_limit'] = 'Kein Limit',
+        ['not_enough_players'] = 'Nicht genügend Spieler zum Starten!',
+        ['kicked_message'] = 'Du wurdest aus der Lobby gekickt.',
+        ['team_balanced'] = 'Teams wurden automatisch ausgeglichen.',
+        ['map_voted'] = 'Die Map wurde auf %s geändert.',
+        ['vote_next_map'] = 'Nächste Map wählen',
+        ['out_of_bounds'] = 'Du verlässt das Kampfgebiet!',
+        ['weapon_not_allowed'] = 'Diese Waffe ist in dieser Lobby nicht erlaubt!'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -175,6 +209,7 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_spectate'] = 'Spectate',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -183,10 +218,25 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Players',
+        ['settings'] = 'Settings',
+        ['chat'] = 'Chat',
+        ['ffa_mode'] = 'Free For All',
+        ['tdm_mode'] = 'Team Deathmatch',
+        ['all_weapons'] = 'All Weapons',
+        ['no_limit'] = 'No Limit',
+        ['not_enough_players'] = 'Not enough players to start!',
+        ['kicked_message'] = 'You have been kicked from the lobby.',
+        ['team_balanced'] = 'Teams have been auto-balanced.',
+        ['map_voted'] = 'The map has been changed to %s.',
+        ['vote_next_map'] = 'Vote next map',
+        ['out_of_bounds'] = 'You are leaving the combat zone!',
+        ['weapon_not_allowed'] = 'This weapon is not allowed in this lobby!'
     }
 }
 
