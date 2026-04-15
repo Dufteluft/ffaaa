@@ -30,18 +30,26 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
 
--- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
-
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadoutData)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    local function applyCategory(catKey)
+        local category = Config.WeaponLoadouts[catKey]
+        if category then
+            for _, weapon in ipairs(category) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
+    end
+
+    if type(loadoutData) == 'table' then
+        for _, catKey in ipairs(loadoutData) do
+            applyCategory(catKey)
+        end
+    else
+        applyCategory(loadoutData)
     end
 end
 
@@ -67,14 +75,28 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
+
+                    local function checkAllowed(catKey)
+                        local loadout = Config.WeaponLoadouts[catKey]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    return true
+                                end
+                            end
+                        end
+                        return false
+                    end
+
+                    if type(currentLobby.loadout) == 'table' then
+                        for _, catKey in ipairs(currentLobby.loadout) do
+                            if checkAllowed(catKey) then
                                 allowed = true
                                 break
                             end
                         end
+                    else
+                        allowed = checkAllowed(currentLobby.loadout)
                     end
 
                     if not allowed then
@@ -88,34 +110,24 @@ Citizen.CreateThread(function()
 end)
 
 -- Kill-Erkennung: Prüft ständig auf Tod des Spielers
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        if playerState.isInGame then
-            local ped = PlayerPedId()
-            if IsEntityDead(ped) then
-                local killerId = GetPedKiller(ped)
-                local killerServerId = -1
-
-                -- Ermitteln der Server-ID des Killers
-                if IsEntityAPed(killerId) and IsPedAPlayer(killerId) then
-                    killerServerId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(killerId))
-                end
-
-                TriggerServerEvent('ffa:playerKilled', killerServerId)
-
-                -- Kill-Cam und Respawn-Logik ausführen
-                HandleDeath(killerId)
-
-                -- Warten bis Spieler wieder lebt
-                while IsEntityDead(ped) do Citizen.Wait(100) end
-            end
+-- Kill-Erkennung via ESX Event
+RegisterNetEvent('esx:onPlayerDeath')
+AddEventHandler('esx:onPlayerDeath', function(data)
+    if playerState.isInGame then
+        local killerServerId = -1
+        if data.killerServerId then
+            killerServerId = data.killerServerId
         end
+
+        TriggerServerEvent('ffa:playerKilled', killerServerId)
+
+        -- Killer Ped ermitteln für Kamera
+        local killerPed = GetPlayerPed(GetPlayerFromServerId(killerServerId))
+        HandleDeath(killerPed)
     end
 end)
 
 -- Funktion: Behandelt Tod, Kill-Cam und Respawn
--- Funktion: Behandelt Tod, Kill-Cam/Zuschauen und Respawn
 function HandleDeath(killerPed)
     Citizen.CreateThread(function()
         local killerCoords = GetEntityCoords(killerPed)
@@ -197,7 +209,8 @@ AddEventHandler('ffa:gameEnded', function(data)
     FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
     -- Waffen entfernen am Rundenende

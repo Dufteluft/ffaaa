@@ -2,6 +2,7 @@ Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
 Config.MenuKey = 'F5' -- Default key for the main menu
+Config.VehicleModel = `zentorno`
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -125,10 +126,12 @@ Config.Locales = {
         ['tab_list'] = 'Offene Lobbys',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
+        ['map_select_create'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
         ['round_time'] = 'Rundenzeit (Min)',
         ['max_players'] = 'Max. Spieler',
+        ['max_players_create'] = 'Max. Spieler',
         ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
         ['friendly_fire'] = 'Freundliches Feuer',
         ['respawn_time'] = 'Respawn-Zeit (Sek)',
@@ -148,10 +151,13 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Spieler',
+        ['settings'] = 'Einstellungen'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -160,10 +166,12 @@ Config.Locales = {
         ['tab_list'] = 'Open Lobbies',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
+        ['map_select_create'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
         ['round_time'] = 'Round Time (Min)',
         ['max_players'] = 'Max Players',
+        ['max_players_create'] = 'Max Players',
         ['vehicles_allowed'] = 'Vehicles Allowed',
         ['friendly_fire'] = 'Friendly Fire',
         ['respawn_time'] = 'Respawn Time (Sec)',
@@ -183,10 +191,13 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Players',
+        ['settings'] = 'Settings'
     }
 }
 

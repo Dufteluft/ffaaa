@@ -68,6 +68,7 @@ function TeleportToMap(mapId)
         DoScreenFadeOut(500)
         while not IsScreenFadedOut() do Wait(0) end
 
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
         SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
         SetEntityHeading(ped, spawn.w)
 
@@ -76,23 +77,3 @@ function TeleportToMap(mapId)
         FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
     end
 end
-
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
-Citizen.CreateThread(function()
-    while true do
-        if playerState and playerState.isInGame then
-            local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
-            local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
-
-            SendNUIMessage({
-                action = 'updateHUDDetails',
-                health = health,
-                armor = armor,
-                ammo = ammo
-            })
-        end
-        Wait(500)
-    end
-end)
