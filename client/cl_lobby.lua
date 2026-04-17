@@ -4,23 +4,12 @@ local isMenuOpen = false
 -- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
 -- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
+-- Menü-Steuerung via RegisterKeyMapping (ermöglicht Rebinding in den GTA Einstellungen)
+RegisterKeyMapping('openffa', 'FFA Lobby Menü öffnen', 'keyboard', Config.MenuKey)
 
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
+RegisterCommand('openffa', function()
+    OpenMainMenu()
+end, false)
 
 -- Funktion: Hauptmenü öffnen
 function OpenMainMenu()

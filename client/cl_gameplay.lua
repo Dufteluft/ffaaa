@@ -33,14 +33,21 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+-- Funktion: Teilt das gewählte Loadout an den Spieler aus (unterstützt Multi-Select)
+function GiveLoadout(loadoutKeys)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadoutKeys) == 'string' then
+        loadoutKeys = {loadoutKeys}
+    end
+
+    for _, key in ipairs(loadoutKeys) do
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,14 +74,20 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local loadoutKeys = currentLobby.loadout
+                    if type(loadoutKeys) == 'string' then loadoutKeys = {loadoutKeys} end
+
+                    for _, key in ipairs(loadoutKeys) do
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
+                        if allowed then break end
                     end
 
                     if not allowed then
@@ -197,9 +210,19 @@ AddEventHandler('ffa:gameEnded', function(data)
     FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
     -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
+end)
+
+-- Event: Map Voting starten
+RegisterNetEvent('ffa:startMapVote')
+AddEventHandler('ffa:startMapVote', function(maps)
+    SendNUIMessage({
+        action = 'startMapVote',
+        maps = maps
+    })
 end)

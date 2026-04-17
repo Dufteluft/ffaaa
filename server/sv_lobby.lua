@@ -212,23 +212,29 @@ RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
     local filterTab = data and data.tab or 'ffa'
+    local filters = data and data.filters or {}
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
         if filterTab == 'ffa' then
             if lobby.isPersistent then isMatch = true end
-        else
+        elseif filterTab == 'list' then
             if not lobby.isPersistent then isMatch = true end
+        end
+
+        -- Filter anwenden (nur für Tab 3)
+        if isMatch and filterTab == 'list' then
+            if filters.map and filters.map ~= 'all' and lobby.mapId ~= filters.map then isMatch = false end
+            if filters.players and filters.players == 'not-full' and #lobby.players >= lobby.maxPlayers then isMatch = false end
         end
 
         if isMatch then
             -- Status Bestimmung für UI
-            local displayStatus = 'waiting'
+            local displayStatus = 'WAITING'
             if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
 
             table.insert(list, {
-                id = id,
+                id = tostring(id),
                 name = lobby.name,
                 hostName = lobby.hostName,
                 playerCount = #lobby.players,
