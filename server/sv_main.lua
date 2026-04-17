@@ -143,19 +143,30 @@ function EndGame(lobbyId, reason)
             local isWin = (winnerName == state.name) or (winnerTeam ~= 'none' and state.team == winnerTeam)
             UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
         end
+        end
 
-        -- Wenn persistente Lobby, starte für Spieler nach kurzem Delay neu
-        if lobby.isPersistent then
-            Citizen.CreateThread(function()
-                Citizen.Wait(10000) -- 10 Sekunden Anzeigezeit
+        -- Map Voting nach Rundenende
+        Citizen.CreateThread(function()
+            Citizen.Wait(1000)
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:startMapVote', pid, Config.Maps)
+            end
+
+            Citizen.Wait(10000) -- 10 Sekunden Voting Zeit
+
+            -- Wenn persistente Lobby oder Reset, starte neu
+            if lobby.isPersistent or lobby.status == 'ended' then
+                -- Hier könnte man das am meisten gewählte Ziel ermitteln,
+                -- für dieses Beispiel nutzen wir die aktuelle Map oder die zuletzt gewählte
+                for _, pid in ipairs(lobby.players) do
                 if PlayerStates[pid] and PlayerStates[pid].lobbyId == lobbyId then
                     PlayerStates[pid].kills = 0
                     PlayerStates[pid].deaths = 0
                     TriggerClientEvent('ffa:gameStarting', pid, lobby)
                 end
-            end)
+                end
         end
-    end
+        end)
 
     if lobby.isPersistent then
         lobby.timer = lobby.roundTime * 60
