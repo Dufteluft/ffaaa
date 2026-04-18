@@ -2,6 +2,7 @@ Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
 Config.MenuKey = 'F5' -- Default key for the main menu
+Config.VehicleModel = 'zentorno'
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -14,31 +15,49 @@ Config.DefaultSettings = {
 
 Config.WeaponLoadouts = {
     ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        label = 'Pistole',
+        weapons = {
+            { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
+            { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        }
     },
     ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        label = 'SMG',
+        weapons = {
+            { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
+            { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        }
     },
     ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        label = 'Sturmgewehr',
+        weapons = {
+            { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
+            { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        }
     },
     ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        label = 'Scharfschütze',
+        weapons = {
+            { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
+            { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        }
     },
     ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
+        label = 'Schrotflinte',
+        weapons = {
+            { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
+            { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
+        }
     },
     ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        label = 'Alle Waffen',
+        weapons = {
+            { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
+            { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
+            { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
+            { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
+            { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        }
     }
 }
 
@@ -144,10 +163,12 @@ Config.Locales = {
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
         ['random'] = 'Zufall',
+        ['players'] = 'Spieler',
         ['waiting_for_players'] = 'Warte auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
@@ -179,21 +200,15 @@ Config.Locales = {
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
         ['random'] = 'Random',
+        ['players'] = 'Players',
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
         ['score'] = 'Score'
     }
 }
-
-function _U(str, ...)
-    if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
-        return string.format(Config.Locales[Config.Locale][str], ...)
-    else
-        return 'Translation [' .. Config.Locale .. '][' .. str .. '] not found'
-    end
-end

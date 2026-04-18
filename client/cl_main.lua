@@ -68,6 +68,8 @@ function TeleportToMap(mapId)
         DoScreenFadeOut(500)
         while not IsScreenFadedOut() do Wait(0) end
 
+        -- Kollision laden sicherstellen
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
         SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
         SetEntityHeading(ped, spawn.w)
 
@@ -82,13 +84,16 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = GetEntityHealth(ped)
+            local maxHealth = GetEntityMaxHealth(ped)
+            local healthPercent = (health > 100) and ((health - 100) / (maxHealth - 100) * 100) or 0
+
             local armor = GetPedArmour(ped)
             local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })

@@ -20,3 +20,12 @@ end
 function Utils.Print(msg)
     print('^4[FFA Lobby]^0 ' .. tostring(msg))
 end
+
+-- Localization helper (Global)
+function _U(str, ...)
+    if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
+        return string.format(Config.Locales[Config.Locale][str], ...)
+    else
+        return 'Translation [' .. Config.Locale .. '][' .. str .. '] not found'
+    end
+end
