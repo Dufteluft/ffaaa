@@ -1,69 +1,63 @@
--- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
+-- Fahrzeug-Spawn Logik
 Citizen.CreateThread(function()
+    local lastVehicle = nil
     while true do
-        Citizen.Wait(5000)
+        Citizen.Wait(1000)
         if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
             local playerPed = PlayerPedId()
             local coords = GetEntityCoords(playerPed)
-            local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
 
-            if vehicle == 0 then
-                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 15.0, 0.0)
-                local model = `zentorno`
+            -- Prüfen ob Spieler bereits ein Fahrzeug hat
+            if not lastVehicle or not DoesEntityExist(lastVehicle) then
+                local model = GetHashKey(Config.VehicleModel or 'zentorno')
                 RequestModel(model)
                 while not HasModelLoaded(model) do Wait(10) end
 
-                local veh = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
-                SetVehicleOnGroundProperly(veh)
-                SetEntityAsMissionEntity(veh, true, true)
+                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                lastVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                SetVehicleOnGroundProperly(lastVehicle)
+                SetEntityAsMissionEntity(lastVehicle, true, true)
                 SetModelAsNoLongerNeeded(model)
             end
+        elseif lastVehicle and DoesEntityExist(lastVehicle) then
+            DeleteEntity(lastVehicle)
+            lastVehicle = nil
         end
     end
 end)
 
--- Anti-Teamkill: Verhindert Schaden an Teammitgliedern
+-- Anti-Teamkill
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        Citizen.Wait(1000)
         if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
-            local playerPed = PlayerPedId()
-
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
+            NetworkSetFriendlyFireOption(false)
+            SetCanAttackFriendly(PlayerPedId(), false, false)
+        else
+            NetworkSetFriendlyFireOption(true)
+            SetCanAttackFriendly(PlayerPedId(), true, false)
         end
     end
 end)
 
--- Native Anti-Teamkill via Relationship Groups
+-- Team-Synchronisation
 RegisterNetEvent('ffa:syncTeams')
 AddEventHandler('ffa:syncTeams', function(teams)
-    local myTeam = teams[GetPlayerServerId(PlayerId())]
+    local myTeam = teams[tostring(GetPlayerServerId(PlayerId()))] or teams[GetPlayerServerId(PlayerId())]
     if not myTeam then return end
 
-    AddRelationshipGroup('BLUE_TEAM')
-    AddRelationshipGroup('RED_TEAM')
+    -- Relationship Groups für KI/Ziele
+    local blueHash = `BLUE_TEAM`
+    local redHash = `RED_TEAM`
 
     if myTeam == 'blue' then
-        SetPedRelationshipGroupHash(PlayerPedId(), `BLUE_TEAM`)
+        SetPedRelationshipGroupHash(PlayerPedId(), blueHash)
     elseif myTeam == 'red' then
-        SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
+        SetPedRelationshipGroupHash(PlayerPedId(), redHash)
     end
 
-    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`) -- 1 = Like
-    SetRelationshipBetweenGroups(1, `RED_TEAM`, `RED_TEAM`)
-    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`) -- 5 = Hate
-    SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`)
+    SetRelationshipBetweenGroups(1, blueHash, blueHash) -- Like
+    SetRelationshipBetweenGroups(1, redHash, redHash)
+    SetRelationshipBetweenGroups(5, blueHash, redHash) -- Hate
+    SetRelationshipBetweenGroups(5, redHash, blueHash)
 end)
