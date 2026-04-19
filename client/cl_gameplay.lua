@@ -33,14 +33,20 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadouts)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadouts) == 'string' then
+        loadouts = {loadouts}
+    end
+
+    for _, key in ipairs(loadouts) do
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,14 +73,20 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local loadouts = currentLobby.loadout
+                    if type(loadouts) == 'string' then loadouts = {loadouts} end
+
+                    for _, key in ipairs(loadouts) do
+                        local weapons = Config.WeaponLoadouts[key]
+                        if weapons then
+                            for _, w in ipairs(weapons) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
+                        if allowed then break end
                     end
 
                     if not allowed then
@@ -87,30 +99,19 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Kill-Erkennung: Prüft ständig auf Tod des Spielers
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        if playerState.isInGame then
-            local ped = PlayerPedId()
-            if IsEntityDead(ped) then
-                local killerId = GetPedKiller(ped)
-                local killerServerId = -1
+-- Kill-Erkennung via ESX Event
+RegisterNetEvent('esx:onPlayerDeath')
+AddEventHandler('esx:onPlayerDeath', function(data)
+    if playerState.isInGame then
+        local killerServerId = data.killerServerId or -1
+        TriggerServerEvent('ffa:playerKilled', killerServerId)
 
-                -- Ermitteln der Server-ID des Killers
-                if IsEntityAPed(killerId) and IsPedAPlayer(killerId) then
-                    killerServerId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(killerId))
-                end
-
-                TriggerServerEvent('ffa:playerKilled', killerServerId)
-
-                -- Kill-Cam und Respawn-Logik ausführen
-                HandleDeath(killerId)
-
-                -- Warten bis Spieler wieder lebt
-                while IsEntityDead(ped) do Citizen.Wait(100) end
-            end
+        -- Kill-Cam und Respawn-Logik ausführen
+        local killerPed = -1
+        if killerServerId ~= -1 then
+            killerPed = GetPlayerPed(GetPlayerFromServerId(killerServerId))
         end
+        HandleDeath(killerPed)
     end
 end)
 

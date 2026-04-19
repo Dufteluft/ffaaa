@@ -151,6 +151,12 @@ function EndGame(lobbyId, reason)
                 if PlayerStates[pid] and PlayerStates[pid].lobbyId == lobbyId then
                     PlayerStates[pid].kills = 0
                     PlayerStates[pid].deaths = 0
+                    -- Map Voting Ergebnis anwenden
+                    if lobby.nextMapId then
+                        lobby.mapId = lobby.nextMapId
+                        local map = Utils.GetMapById(lobby.mapId)
+                        if map then lobby.mapLabel = map.label end
+                    end
                     TriggerClientEvent('ffa:gameStarting', pid, lobby)
                 end
             end)
@@ -158,10 +164,13 @@ function EndGame(lobbyId, reason)
     end
 
     if lobby.isPersistent then
+        Citizen.Wait(10000)
         lobby.timer = lobby.roundTime * 60
         lobby.status = 'playing'
         lobby.scoreBlue = 0
         lobby.scoreRed = 0
+        lobby.votes = {}
+        lobby.nextMapId = nil
         StartGameTimer(lobbyId)
     end
 end
@@ -173,7 +182,7 @@ AddEventHandler('ffa:playerKilled', function(killerId)
     local victimState = PlayerStates[victim]
     if not victimState then return end
 
-    local lobbyId = victimState.lobbyId
+    local lobbyId = tostring(victimState.lobbyId)
     local lobby = Lobbies[lobbyId]
     if not lobby then return end
 
@@ -214,15 +223,37 @@ RegisterServerEvent('ffa:voteMap')
 AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
-        local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
-            local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
+        local lobbyId = tostring(state.lobbyId)
+        local lobby = Lobbies[lobbyId]
+        if lobby then
+            if lobby.status == 'ended' then
+                -- Voting für nächste Runde
+                lobby.votes = lobby.votes or {}
+                lobby.votes[source] = mapId
 
-            -- Informiere Lobby-Chat über den Vote
-            for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                -- Ermittle Map mit den meisten Stimmen
+                local counts = {}
+                local topMap = mapId
+                local topCount = 0
+                for _, mid in pairs(lobby.votes) do
+                    counts[mid] = (counts[mid] or 0) + 1
+                    if counts[mid] > topCount then
+                        topCount = counts[mid]
+                        topMap = mid
+                    end
+                end
+                lobby.nextMapId = topMap
+            elseif not lobby.isPersistent then
+                -- Host ändert Map direkt
+                if lobby.host == source then
+                    lobby.mapId = mapId
+                    local map = Utils.GetMapById(mapId)
+                    if map then lobby.mapLabel = map.label end
+                    for _, pid in ipairs(lobby.players) do
+                        TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                    end
+                    UpdateLobbyPlayers(lobbyId)
+                end
             end
         end
     end

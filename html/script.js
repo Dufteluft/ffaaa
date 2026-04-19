@@ -26,31 +26,41 @@ function playSound(name) {
 // Tab Switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        if (btn.dataset.tab === currentTab) return;
+        const targetTab = btn.dataset.tab;
+        if (targetTab === currentTab) return;
         playSound('click');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
+        const listContainer = document.querySelector('.lobby-browser');
+        const creationContainer = document.getElementById('lobby-creation-tab');
+        const sidebar = document.getElementById('sidebar-filters');
 
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
-            fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
+        if (targetTab === 'create') {
+            listContainer.style.display = 'none';
+            sidebar.style.display = 'none';
+            creationContainer.style.display = 'block';
+        } else {
+            listContainer.style.display = 'block';
+            sidebar.style.display = 'flex';
+            creationContainer.style.display = 'none';
+
+            const container = document.getElementById('lobby-list-container');
+            container.classList.add('switching');
+            setTimeout(() => {
+                currentTab = targetTab;
+                fetchLobbies();
+                container.classList.remove('switching');
+            }, 300);
+        }
+        currentTab = targetTab;
     });
 });
 
-// Modal Controls
-document.getElementById('open-create-modal').addEventListener('click', () => {
+// Creation UI Helpers
+document.getElementById('btn-cancel-create').addEventListener('click', () => {
     playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
+    document.querySelector('.tab-btn[data-tab="ffa"]').click();
 });
 
 // Slider Sync
@@ -65,6 +75,8 @@ const setupSlider = (id) => {
 };
 setupSlider('round-time');
 setupSlider('max-players');
+setupSlider('respawn-time');
+setupSlider('kill-limit');
 
 // NUI Message Handling
 window.addEventListener('message', (event) => {
@@ -74,6 +86,7 @@ window.addEventListener('message', (event) => {
         case 'open':
             document.getElementById('app').style.display = 'flex';
             setupInitialData(data.config, data.maps);
+            setLocales(data.config);
             fetchLobbies();
             break;
         case 'close':
@@ -95,7 +108,24 @@ window.addEventListener('message', (event) => {
             document.getElementById('lobby-waiting-area').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('game-hud').style.display = 'block';
+            if (data.isPersistent) {
+                document.querySelector('.hud-timer').style.display = 'none';
+            } else {
+                document.querySelector('.hud-timer').style.display = 'block';
+            }
+            break;
+        case 'hideHUD':
+            document.getElementById('game-hud').style.display = 'none';
+            break;
+        case 'updateHUD':
+            updateHUD(data);
+            break;
+        case 'updateHUDDetails':
+            updateHUDDetails(data);
+            break;
+        case 'countdown':
+            handleCountdown(data.seconds);
             break;
         case 'showWinner':
             showWinnerScreen(data);
@@ -116,14 +146,32 @@ function setupInitialData(config, maps) {
         mapSelect.appendChild(opt);
     });
 
-    const loadoutSelect = document.getElementById('loadout-select');
-    loadoutSelect.innerHTML = '';
+    const loadoutContainer = document.getElementById('loadout-checkboxes');
+    loadoutContainer.innerHTML = '';
     for (let key in config.WeaponLoadouts) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = key.toUpperCase();
-        loadoutSelect.appendChild(opt);
+        const div = document.createElement('div');
+        div.className = 'loadout-item';
+        div.innerHTML = `
+            <input type="checkbox" name="loadout" value="${key}" id="ld-${key}">
+            <label for="ld-${key}">${key.toUpperCase()}</label>
+        `;
+        loadoutContainer.appendChild(div);
     }
+}
+
+function setLocales(config) {
+    const locale = config.Locales[config.Locale];
+    if (!locale) return;
+
+    for (let key in locale) {
+        const el = document.getElementById(`loc-${key.replace(/_/g, '-')}`);
+        if (el) el.innerText = locale[key].toUpperCase();
+    }
+
+    // Additional manual locales
+    document.getElementById('loc-players-header').innerText = locale['players'].toUpperCase();
+    document.getElementById('loc-hud-kills').innerText = locale['kills'].toUpperCase();
+    document.getElementById('loc-hud-deaths').innerText = locale['deaths'].toUpperCase();
 }
 
 function fetchLobbies() {
@@ -210,14 +258,28 @@ function joinLobby(lobbyId, isSpectator = false) {
 
 document.getElementById('btn-create-lobby').addEventListener('click', () => {
     playSound('click');
+    const selectedLoadouts = [];
+    document.querySelectorAll('input[name="loadout"]:checked').forEach(cb => {
+        selectedLoadouts.push(cb.value);
+    });
+
     const settings = {
         name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
         mapId: document.getElementById('map-select').value,
         mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
+        loadout: selectedLoadouts,
         roundTime: parseInt(document.getElementById('round-time').value),
         maxPlayers: parseInt(document.getElementById('max-players').value),
+        vehiclesAllowed: document.getElementById('vehicles-allowed').checked,
+        friendlyFire: document.getElementById('friendly-fire').checked,
+        respawnTime: parseInt(document.getElementById('respawn-time').value),
+        killLimit: parseInt(document.getElementById('kill-limit').value)
     };
+
+    if (selectedLoadouts.length === 0) {
+        // Fallback to all if nothing selected
+        settings.loadout = ['all'];
+    }
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
         method: 'POST',
@@ -304,7 +366,8 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
 function showWinnerScreen(data) {
     playSound('win');
     document.getElementById('winner-screen').style.display = 'flex';
-    document.getElementById('winner-name').innerText = data.winnerName.toUpperCase() + " WINS!";
+    const winnerSuffix = serverConfig.Locales[serverConfig.Locale]['winner_suffix'] || 'WINS!';
+    document.getElementById('winner-name').innerText = data.winnerName.toUpperCase() + " " + winnerSuffix;
 
     const statsTable = document.getElementById('match-stats-table');
     let html = `<table><thead><tr><th>NAME</th><th>KILLS</th><th>DEATHS</th><th>K/D</th></tr></thead><tbody>`;
@@ -313,6 +376,56 @@ function showWinnerScreen(data) {
     });
     html += `</tbody></table>`;
     statsTable.innerHTML = html;
+
+    // Render Map Voting
+    const voteList = document.getElementById('vote-map-list');
+    voteList.innerHTML = '';
+    serverMaps.slice(0, 4).forEach(map => {
+        const div = document.createElement('div');
+        div.className = 'vote-item';
+        div.innerText = map.label.toUpperCase();
+        div.onclick = () => {
+            document.querySelectorAll('.vote-item').forEach(el => el.classList.remove('voted'));
+            div.classList.add('voted');
+            fetch(`https://${GetParentResourceName()}/voteMap`, {
+                method: 'POST',
+                body: JSON.stringify({ mapId: map.id })
+            });
+        };
+        voteList.appendChild(div);
+    });
+}
+
+function updateHUD(data) {
+    if (data.time) document.getElementById('hud-timer-val').innerText = data.time;
+    if (data.kills !== undefined) document.getElementById('hud-kills-val').innerText = data.kills;
+    if (data.deaths !== undefined) document.getElementById('hud-deaths-val').innerText = data.deaths;
+
+    if (data.mode === 'tdm') {
+        document.getElementById('hud-tdm-scores').style.display = 'flex';
+        if (data.scoreBlue !== undefined) document.getElementById('score-blue-val').innerText = data.scoreBlue;
+        if (data.scoreRed !== undefined) document.getElementById('score-red-val').innerText = data.scoreRed;
+    } else {
+        document.getElementById('hud-tdm-scores').style.display = 'none';
+    }
+}
+
+function updateHUDDetails(data) {
+    if (data.health !== undefined) {
+        document.getElementById('health-progress').style.width = data.health + '%';
+    }
+    if (data.armor !== undefined) {
+        document.getElementById('armor-progress').style.width = data.armor + '%';
+    }
+    if (data.ammo !== undefined) {
+        document.getElementById('hud-ammo-val').innerText = data.ammo;
+    }
+}
+
+function handleCountdown(seconds) {
+    if (seconds > 0) {
+        // Optional: Visual countdown on screen
+    }
 }
 
 document.getElementById('btn-back-to-menu').addEventListener('click', () => {
