@@ -68,12 +68,22 @@ function TeleportToMap(mapId)
         DoScreenFadeOut(500)
         while not IsScreenFadedOut() do Wait(0) end
 
+        -- Kollision laden vor Teleport
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
         SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
         SetEntityHeading(ped, spawn.w)
 
+        -- Sicherstellen dass Spieler nicht durchfällt
+        FreezeEntityPosition(ped, true)
+
+        local timer = GetGameTimer()
+        while not HasCollisionLoadedAroundEntity(ped) and (GetGameTimer() - timer) < 2000 do
+            Wait(10)
+        end
+
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        -- FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet (wird in cl_gameplay.lua gesteuert)
     end
 end
 

@@ -2,6 +2,7 @@ Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
 Config.MenuKey = 'F5' -- Default key for the main menu
+Config.VehicleModel = 'zentorno'
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -148,10 +149,12 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Spieler'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -183,10 +186,12 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Players'
     }
 }
 

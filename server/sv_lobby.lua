@@ -98,11 +98,12 @@ end
 
 -- Event: Lobby beitreten
 RegisterServerEvent('ffa:joinLobby')
-AddEventHandler('ffa:joinLobby', function(lobbyId)
+AddEventHandler('ffa:joinLobby', function(data)
+    local lobbyId = type(data) == 'table' and tostring(data.lobbyId) or tostring(data)
     if JoinLobby(source, lobbyId) then
         TriggerClientEvent('ffa:lobbyJoined', source, Lobbies[lobbyId])
     else
-        -- Nachricht an Spieler: Lobby voll oder existiert nicht
+        TriggerClientEvent('esx:showNotification', source, 'Lobby voll oder existiert nicht.')
     end
 end)
 
@@ -179,8 +180,55 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
-        for _, pid in ipairs(lobby.players) do
-            TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+        if lobby then
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+            end
+        end
+    end
+end)
+
+-- Event: Lobby schließen
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            -- Kicke alle Spieler und lösche Lobby
+            local players = {}
+            for _, pid in ipairs(lobby.players) do table.insert(players, pid) end
+
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+            end
+        end
+    end
+end)
+
+-- Event: Einstellungen aktualisieren
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            lobby.name = settings.name or lobby.name
+            lobby.mapId = settings.mapId or lobby.mapId
+            local map = Utils.GetMapById(lobby.mapId)
+            if map then lobby.mapLabel = map.label end
+
+            lobby.mode = settings.mode or lobby.mode
+            lobby.loadout = settings.loadout or lobby.loadout
+            lobby.roundTime = settings.roundTime or lobby.roundTime
+            lobby.maxPlayers = settings.maxPlayers or lobby.maxPlayers
+            lobby.vehiclesAllowed = settings.vehiclesAllowed or lobby.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire or lobby.friendlyFire
+            lobby.respawnTime = settings.respawnTime or lobby.respawnTime
+            lobby.killLimit = settings.killLimit or lobby.killLimit
+
+            UpdateLobbyPlayers(state.lobbyId)
         end
     end
 end)
@@ -211,7 +259,14 @@ end)
 RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
-    local filterTab = data and data.tab or 'ffa'
+    local filterTab = 'ffa'
+    if data then
+        if type(data) == 'table' then
+            filterTab = data.tab or 'ffa'
+        else
+            filterTab = data
+        end
+    end
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
@@ -282,7 +337,8 @@ end)
 
 -- Event: Schneller Beitritt (Tab 1) - Immer offen, sofortiger Start
 RegisterServerEvent('ffa:quickJoin')
-AddEventHandler('ffa:quickJoin', function(mapId)
+AddEventHandler('ffa:quickJoin', function(data)
+    local mapId = type(data) == 'table' and data.mapId or data
     local playerId = source
     local targetLobbyId = nil
 
