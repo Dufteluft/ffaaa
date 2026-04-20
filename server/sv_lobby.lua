@@ -1,9 +1,9 @@
 ESX = exports['es_extended']:getSharedObject()
 
-Lobbies = {} -- Speichert alle aktiven Lobbys
-PlayerStates = {} -- Speichert den Status jedes Spielers (Lobby-ID, Team, Kills, etc.)
+Lobbies = {} -- Stores all active lobbies
+PlayerStates = {} -- Stores status of each player (lobbyId, team, kills, etc.)
 
--- Hilfsfunktion zur Generierung einer eindeutigen Lobby-ID
+-- Helper: Generate unique lobby ID as string
 function GenerateLobbyId()
     local id
     repeat
@@ -12,45 +12,46 @@ function GenerateLobbyId()
     return id
 end
 
--- Event: Lobby erstellen
--- Funktion: Erstellt eine neue Lobby (Intern und via Netzwerk nutzbar)
+-- Function: Create a new lobby
 function CreateLobby(playerId, settings)
     local xPlayer = ESX.GetPlayerFromId(playerId)
     if not xPlayer then return nil end
 
     local lobbyId = GenerateLobbyId()
     local map = Utils.GetMapById(settings.mapId)
+    if not map then return nil end
 
     Lobbies[lobbyId] = {
         id = lobbyId,
-        name = settings.name,
+        name = settings.name or "LOBBY " .. lobbyId,
         host = playerId,
         hostName = xPlayer.getName(),
         isPersistent = settings.isPersistent or false,
         mapId = settings.mapId,
         mapLabel = map.label,
-        mode = settings.mode,
-        loadout = settings.loadout,
-        roundTime = settings.roundTime,
-        maxPlayers = settings.maxPlayers,
-        vehiclesAllowed = settings.vehiclesAllowed,
-        friendlyFire = settings.friendlyFire,
-        respawnTime = settings.respawnTime,
-        killLimit = settings.killLimit,
+        mode = settings.mode or 'ffa',
+        loadout = settings.loadout or {'all'}, -- Now an array for multi-select
+        roundTime = settings.roundTime or 15,
+        maxPlayers = settings.maxPlayers or 16,
+        vehiclesAllowed = settings.vehiclesAllowed or false,
+        friendlyFire = settings.friendlyFire or false,
+        respawnTime = settings.respawnTime or 5,
+        killLimit = settings.killLimit or 30,
         players = {},
         status = 'waiting',
-        timer = settings.roundTime * 60,
+        timer = (settings.roundTime or 15) * 60,
         scoreBlue = 0,
-        scoreRed = 0
+        scoreRed = 0,
+        votes = {}
     }
 
-    Utils.Print('Lobby erstellt: ' .. settings.name .. ' von ' .. xPlayer.getName())
+    Utils.Print('Lobby created: ' .. Lobbies[lobbyId].name .. ' by ' .. xPlayer.getName())
 
     JoinLobby(playerId, lobbyId)
     return lobbyId
 end
 
--- Event: Lobby erstellen (via NUI)
+-- Event: Create Lobby (via NUI)
 RegisterServerEvent('ffa:createLobby')
 AddEventHandler('ffa:createLobby', function(settings)
     local lobbyId = CreateLobby(source, settings)
@@ -59,8 +60,9 @@ AddEventHandler('ffa:createLobby', function(settings)
     end
 end)
 
--- Funktion: Spieler tritt einer Lobby bei
+-- Function: Player joins a lobby
 function JoinLobby(playerId, lobbyId)
+    lobbyId = tostring(lobbyId)
     local lobby = Lobbies[lobbyId]
     if not lobby then return false end
     if #lobby.players >= lobby.maxPlayers then return false end
@@ -68,19 +70,19 @@ function JoinLobby(playerId, lobbyId)
     local xPlayer = ESX.GetPlayerFromId(playerId)
     if not xPlayer then return false end
 
-    -- Prüfen, ob der Spieler bereits in einer Lobby ist
+    -- Leave current lobby if any
     if PlayerStates[playerId] and PlayerStates[playerId].lobbyId then
         LeaveLobby(playerId)
     end
 
     table.insert(lobby.players, playerId)
 
-    -- Speichere aktuellen Status des Spielers (Position und Routing Bucket)
+    -- Save player state
     local ped = GetPlayerPed(playerId)
     PlayerStates[playerId] = {
         lobbyId = lobbyId,
         team = 'none',
-        ready = (playerId == lobby.host),
+        ready = (playerId == lobby.host or lobby.isPersistent),
         kills = 0,
         deaths = 0,
         name = xPlayer.getName(),
@@ -88,25 +90,23 @@ function JoinLobby(playerId, lobbyId)
         oldBucket = GetPlayerRoutingBucket(playerId)
     }
 
-    -- Setze Routing Bucket auf Lobby ID (vermeidet Konflikte zwischen Lobbys)
-    -- Wir nutzen die lobbyId als Bucket, müssen sie aber in eine Zahl umwandeln
+    -- Isolation via Routing Bucket
     SetPlayerRoutingBucket(playerId, tonumber(lobbyId))
 
     UpdateLobbyPlayers(lobbyId)
     return true
 end
 
--- Event: Lobby beitreten
+-- Event: Join Lobby
 RegisterServerEvent('ffa:joinLobby')
 AddEventHandler('ffa:joinLobby', function(lobbyId)
-    if JoinLobby(source, lobbyId) then
-        TriggerClientEvent('ffa:lobbyJoined', source, Lobbies[lobbyId])
-    else
-        -- Nachricht an Spieler: Lobby voll oder existiert nicht
+    local _source = source
+    if JoinLobby(_source, lobbyId) then
+        TriggerClientEvent('ffa:lobbyJoined', _source, Lobbies[tostring(lobbyId)])
     end
 end)
 
--- Funktion: Lobby verlassen
+-- Function: Leave Lobby
 function LeaveLobby(playerId)
     local state = PlayerStates[playerId]
     if not state or not state.lobbyId then return end
@@ -114,10 +114,8 @@ function LeaveLobby(playerId)
     local lobbyId = state.lobbyId
     local lobby = Lobbies[lobbyId]
 
-    -- Routing Bucket wiederherstellen
+    -- Restore state
     SetPlayerRoutingBucket(playerId, state.oldBucket or 0)
-
-    -- Position wiederherstellen und Waffen entfernen (via Client)
     TriggerClientEvent('ffa:restoreState', playerId, state.oldCoords)
 
     if lobby then
@@ -131,11 +129,10 @@ function LeaveLobby(playerId)
         if #lobby.players == 0 and not lobby.isPersistent then
             Lobbies[lobbyId] = nil
         elseif #lobby.players > 0 then
-            -- Wenn der Host geht, wird der nächste Spieler Host
             if playerId == lobby.host then
                 lobby.host = lobby.players[1]
                 local xPlayer = ESX.GetPlayerFromId(lobby.host)
-                lobby.hostName = xPlayer.getName()
+                if xPlayer then lobby.hostName = xPlayer.getName() end
             end
             UpdateLobbyPlayers(lobbyId)
         end
@@ -145,27 +142,29 @@ function LeaveLobby(playerId)
     TriggerClientEvent('ffa:leftLobby', playerId)
 end
 
--- Event: Lobby verlassen
+-- Event: Leave Lobby
 RegisterServerEvent('ffa:leaveLobby')
 AddEventHandler('ffa:leaveLobby', function()
     LeaveLobby(source)
 end)
 
--- Funktion: Aktualisiert die Spielerliste für alle in der Lobby
+-- Function: Update player list for all in lobby
 function UpdateLobbyPlayers(lobbyId)
-    local lobby = Lobbies[lobbyId]
+    local lobby = Lobbies[tostring(lobbyId)]
     if not lobby then return end
 
     local playersInfo = {}
     for _, pid in ipairs(lobby.players) do
         local state = PlayerStates[pid]
-        table.insert(playersInfo, {
-            id = pid,
-            name = state.name,
-            team = state.team,
-            ready = state.ready,
-            isHost = (pid == lobby.host)
-        })
+        if state then
+            table.insert(playersInfo, {
+                id = pid,
+                name = state.name,
+                team = state.team,
+                ready = state.ready,
+                isHost = (pid == lobby.host)
+            })
+        end
     end
 
     for _, pid in ipairs(lobby.players) do
@@ -173,21 +172,21 @@ function UpdateLobbyPlayers(lobbyId)
     end
 end
 
--- Event: Lobby-Chat senden
+-- Event: Lobby Chat
 RegisterServerEvent('ffa:sendLobbyChat')
 AddEventHandler('ffa:sendLobbyChat', function(data)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
-        for _, pid in ipairs(lobby.players) do
-            TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+        if lobby then
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+            end
         end
     end
 end)
 
-RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
-
--- Event: Bereit-Status umschalten
+-- Event: Toggle Ready
 RegisterServerEvent('ffa:toggleReady')
 AddEventHandler('ffa:toggleReady', function()
     local state = PlayerStates[source]
@@ -197,7 +196,7 @@ AddEventHandler('ffa:toggleReady', function()
     end
 end)
 
--- Event: Team setzen
+-- Event: Set Team
 RegisterServerEvent('ffa:setTeam')
 AddEventHandler('ffa:setTeam', function(team)
     local state = PlayerStates[source]
@@ -207,11 +206,14 @@ AddEventHandler('ffa:setTeam', function(team)
     end
 end)
 
--- Event: Lobbyliste für UI abrufen
+-- Event: Fetch Lobbies (with filtering)
 RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
+    local _source = source
     local list = {}
     local filterTab = data and data.tab or 'ffa'
+    local filterMap = data and data.map or 'all'
+    local filterPlayers = data and data.players or 'all'
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
@@ -222,11 +224,12 @@ AddEventHandler('ffa:fetchLobbies', function(data)
         end
 
         if isMatch then
-            -- Status Bestimmung für UI
-            local displayStatus = 'waiting'
-            if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
+            -- Additional Filters
+            if filterMap ~= 'all' and lobby.mapId ~= filterMap then isMatch = false end
+            if filterPlayers == 'free' and #lobby.players >= lobby.maxPlayers then isMatch = false end
+        end
 
+        if isMatch then
             table.insert(list, {
                 id = id,
                 name = lobby.name,
@@ -236,20 +239,28 @@ AddEventHandler('ffa:fetchLobbies', function(data)
                 mapLabel = lobby.mapLabel,
                 mapId = lobby.mapId,
                 mode = lobby.mode,
-                status = displayStatus,
+                status = (lobby.status == 'playing' and 'ACTIVE' or 'waiting'),
                 isPersistent = lobby.isPersistent
             })
         end
     end
-    TriggerClientEvent('ffa:updateLobbies', source, list)
+    TriggerClientEvent('ffa:updateLobbies', _source, list)
 end)
 
--- Wenn Spieler den Server verlässt
-AddEventHandler('playerDropped', function()
-    LeaveLobby(source)
+-- Event: Kick Player
+RegisterServerEvent('ffa:kickPlayer')
+AddEventHandler('ffa:kickPlayer', function(data)
+    local targetId = tonumber(data.id)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            LeaveLobby(targetId)
+        end
+    end
 end)
 
--- Automatische Initialisierung der persistenten Lobbys beim Server-Start
+-- Initialization of persistent lobbies
 MySQL.ready(function()
     Citizen.Wait(1000)
     for _, map in ipairs(Config.Maps) do
@@ -257,14 +268,14 @@ MySQL.ready(function()
         Lobbies[lobbyId] = {
             id = lobbyId,
             name = "FFA " .. map.label,
-            host = -1, -- System Host
+            host = -1,
             hostName = "SYSTEM",
             isPersistent = true,
             mapId = map.id,
             mapLabel = map.label,
             mode = 'ffa',
-            loadout = 'all',
-            roundTime = 0, -- 0 bedeutet unendlich/kein Timer
+            loadout = {'all'},
+            roundTime = 20, -- Reset every 20 mins
             maxPlayers = 32,
             vehiclesAllowed = false,
             friendlyFire = false,
@@ -272,72 +283,34 @@ MySQL.ready(function()
             killLimit = 0,
             players = {},
             status = 'playing',
-            timer = 0,
+            timer = 20 * 60,
             scoreBlue = 0,
-            scoreRed = 0
+            scoreRed = 0,
+            votes = {}
         }
-        Utils.Print('Persistente FFA Lobby initialisiert: ' .. map.label)
+        StartGameTimer(lobbyId)
+        Utils.Print('Initialized persistent lobby: ' .. map.label)
     end
 end)
 
--- Event: Schneller Beitritt (Tab 1) - Immer offen, sofortiger Start
+-- Quick Join (Tab 1)
 RegisterServerEvent('ffa:quickJoin')
 AddEventHandler('ffa:quickJoin', function(mapId)
-    local playerId = source
-    local targetLobbyId = nil
-
-    -- Suche nach einer bestehenden persistenten Lobby für diese Map
+    local _source = source
+    local targetId = nil
     for id, lobby in pairs(Lobbies) do
-        if lobby.mapId == mapId and lobby.isPersistent then
-            targetLobbyId = id
+        if lobby.isPersistent and lobby.mapId == mapId then
+            targetId = id
             break
         end
     end
 
-    if targetLobbyId then
-        if JoinLobby(playerId, targetLobbyId) then
-            local lobby = Lobbies[targetLobbyId]
-            -- Direkt ins Spiel starten (Wartebereich überspringen)
-            PlayerStates[playerId].team = 'ffa'
-            TriggerClientEvent('ffa:gameStarting', playerId, lobby)
-        end
-    else
-        -- Erstelle eine neue persistente Lobby
-        local map = Utils.GetMapById(mapId)
-        local lobbyId = CreateLobby(playerId, {
-            name = "FFA " .. map.label,
-            mapId = mapId,
-            mode = 'ffa',
-            loadout = 'all',
-            roundTime = 60, -- Lange Laufzeit für persistente Lobbys
-            maxPlayers = 32,
-            vehiclesAllowed = false,
-            friendlyFire = false,
-            respawnTime = 3,
-            killLimit = 0,
-            isPersistent = true
-        })
-
-        if lobbyId then
-            local lobby = Lobbies[lobbyId]
-            lobby.status = 'playing' -- Direkt auf spielend setzen
-            PlayerStates[playerId].team = 'ffa'
-            TriggerClientEvent('ffa:gameStarting', playerId, lobby)
-            StartGameTimer(lobbyId)
-        end
+    if targetId and JoinLobby(_source, targetId) then
+        PlayerStates[_source].team = 'ffa'
+        TriggerClientEvent('ffa:gameStarting', _source, Lobbies[targetId])
     end
 end)
 
--- Event: Spieler aus Lobby kicken
-RegisterServerEvent('ffa:kickPlayer')
-AddEventHandler('ffa:kickPlayer', function(targetId)
-    local state = PlayerStates[source]
-    if state and state.lobbyId then
-        local lobby = Lobbies[state.lobbyId]
-        if lobby and lobby.host == source then
-            LeaveLobby(targetId)
-            -- Dem gekickten Spieler mitteilen
-            TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
-        end
-    end
+AddEventHandler('playerDropped', function()
+    LeaveLobby(source)
 end)
