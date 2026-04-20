@@ -2,6 +2,7 @@ Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
 Config.MenuKey = 'F5' -- Default key for the main menu
+Config.VehicleModel = 'zentorno'
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -14,31 +15,49 @@ Config.DefaultSettings = {
 
 Config.WeaponLoadouts = {
     ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        label = 'Pistole',
+        weapons = {
+            { name = 'WEAPON_PISTOL', ammo = 250 },
+            { name = 'WEAPON_COMBATPISTOL', ammo = 250 }
+        }
     },
     ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        label = 'SMG',
+        weapons = {
+            { name = 'WEAPON_SMG', ammo = 250 },
+            { name = 'WEAPON_COMBATMG', ammo = 250 }
+        }
     },
     ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        label = 'Sturmgewehr',
+        weapons = {
+            { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 },
+            { name = 'WEAPON_CARBINERIFLE', ammo = 250 }
+        }
     },
     ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        label = 'Scharfschützengewehr',
+        weapons = {
+            { name = 'WEAPON_SNIPERRIFLE', ammo = 50 },
+            { name = 'WEAPON_HEAVYSNIPER', ammo = 50 }
+        }
     },
     ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
+        label = 'Schrotflinte',
+        weapons = {
+            { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 },
+            { name = 'WEAPON_SAWNOFFSHOTGUN', ammo = 50 }
+        }
     },
     ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        label = 'Alle Waffen',
+        weapons = {
+            { name = 'WEAPON_PISTOL', ammo = 250 },
+            { name = 'WEAPON_SMG', ammo = 250 },
+            { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 },
+            { name = 'WEAPON_SNIPERRIFLE', ammo = 50 },
+            { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 }
+        }
     }
 }
 
@@ -148,10 +167,20 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Spieler',
+        ['host'] = 'Host',
+        ['map'] = 'Map',
+        ['mode'] = 'Modus',
+        ['actions'] = 'Aktionen',
+        ['full'] = 'VOLL',
+        ['spectate'] = 'ZUSCHAUEN',
+        ['back_to_lobby'] = 'ZURÜCK ZUR LOBBY',
+        ['main_menu'] = 'HAUPTMENÜ'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -183,10 +212,20 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Players',
+        ['host'] = 'Host',
+        ['map'] = 'Map',
+        ['mode'] = 'Mode',
+        ['actions'] = 'Actions',
+        ['full'] = 'FULL',
+        ['spectate'] = 'SPECTATE',
+        ['back_to_lobby'] = 'BACK TO LOBBY',
+        ['main_menu'] = 'MAIN MENU'
     }
 }
 
