@@ -38,7 +38,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -73,26 +73,20 @@ function TeleportToMap(mapId)
 
         Wait(500)
         DoScreenFadeIn(500)
+        -- Collision laden
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
         FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
-Citizen.CreateThread(function()
-    while true do
-        if playerState and playerState.isInGame then
-            local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
-            local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
-
-            SendNUIMessage({
-                action = 'updateHUDDetails',
-                health = health,
-                armor = armor,
-                ammo = ammo
-            })
-        end
-        Wait(500)
-    end
+-- Event: Zurücksetzen der Lobby (für nicht persistente Lobbys nach Rundenende)
+RegisterNetEvent('ffa:resetLobby')
+AddEventHandler('ffa:resetLobby', function(lobby)
+    currentLobby = lobby
+    playerState.isInGame = false
+    FreezeEntityPosition(PlayerPedId(), false)
+    SendNUIMessage({
+        action = 'lobbyJoined',
+        lobby = lobby
+    })
 end)
