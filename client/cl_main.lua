@@ -78,21 +78,3 @@ function TeleportToMap(mapId)
 end
 
 -- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
-Citizen.CreateThread(function()
-    while true do
-        if playerState and playerState.isInGame then
-            local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
-            local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
-
-            SendNUIMessage({
-                action = 'updateHUDDetails',
-                health = health,
-                armor = armor,
-                ammo = ammo
-            })
-        end
-        Wait(500)
-    end
-end)

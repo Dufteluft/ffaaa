@@ -31,40 +31,36 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
+        // Hide all tab contents
+        document.querySelectorAll('.content-wrapper').forEach(el => el.style.display = 'none');
 
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
-            fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
+        currentTab = btn.dataset.tab;
+
+        // Show specific tab content
+        const content = document.getElementById(`tab-content-${currentTab}`);
+        if (content) {
+            content.style.display = 'flex';
+            if (currentTab === 'ffa' || currentTab === 'list') {
+                fetchLobbies();
+            }
+        }
     });
 });
 
-// Modal Controls
-document.getElementById('open-create-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
-});
-
 // Slider Sync
-const setupSlider = (id) => {
+const setupSlider = (id, spanId) => {
     const slider = document.getElementById(id);
-    const span = document.getElementById(id + '-val');
+    const span = document.getElementById(spanId);
     if (slider && span) {
         slider.addEventListener('input', () => {
             span.innerText = slider.value;
         });
     }
 };
-setupSlider('round-time');
-setupSlider('max-players');
+setupSlider('create-round-time', 'create-round-time-val');
+setupSlider('create-max-players', 'create-max-players-val');
+setupSlider('create-respawn', 'create-respawn-val');
+setupSlider('create-killlimit', 'create-killlimit-val');
 
 // NUI Message Handling
 window.addEventListener('message', (event) => {
@@ -84,7 +80,7 @@ window.addEventListener('message', (event) => {
             break;
         case 'lobbyCreated':
         case 'lobbyJoined':
-            document.getElementById('create-lobby-modal').style.display = 'none';
+            playSound('join');
             showLobbyArea(data.lobby, data.action === 'lobbyCreated');
             break;
         case 'updateLobbyPlayers':
@@ -95,34 +91,110 @@ window.addEventListener('message', (event) => {
             document.getElementById('lobby-waiting-area').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('game-hud').style.display = 'block';
+            document.getElementById('hud-tdm-scores').style.display = data.mode === 'tdm' ? 'flex' : 'none';
+            break;
+        case 'hideHUD':
+            document.getElementById('game-hud').style.display = 'none';
+            break;
+        case 'updateHUDDetails':
+            document.getElementById('hud-health-bar').style.width = data.health + '%';
+            document.getElementById('hud-armor-bar').style.width = data.armor + '%';
+            document.getElementById('hud-ammo').innerText = data.ammo;
+            break;
+        case 'updateHUD':
+            if (data.time) document.getElementById('hud-time-val').innerText = data.time;
+            if (data.kills !== undefined) document.getElementById('hud-kills').innerText = data.kills;
+            if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
+            if (data.scoreBlue !== undefined) document.getElementById('hud-score-blue').innerText = data.scoreBlue;
+            if (data.scoreRed !== undefined) document.getElementById('hud-score-red').innerText = data.scoreRed;
+            break;
+        case 'countdown':
+            const cdDisplay = document.getElementById('countdown-display');
+            if (data.seconds > 0) {
+                cdDisplay.style.display = 'flex';
+                document.getElementById('countdown-number').innerText = data.seconds;
+            } else {
+                cdDisplay.style.display = 'none';
+            }
             break;
         case 'showWinner':
             showWinnerScreen(data);
             break;
+        case 'addChatMessage':
+            const chatBox = document.getElementById('chat-messages');
+            if (chatBox) {
+                const msgEl = document.createElement('div');
+                msgEl.className = 'chat-msg';
+
+                const strong = document.createElement('strong');
+                strong.textContent = data.name.toUpperCase() + ':';
+
+                const text = document.createTextNode(' ' + data.message);
+
+                msgEl.appendChild(strong);
+                msgEl.appendChild(text);
+                chatBox.appendChild(msgEl);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            break;
     }
 });
+
+function applyLocalization(config) {
+    const locale = config.Locales[config.Locale];
+    if (!locale) return;
+
+    document.querySelectorAll('[data-locale]').forEach(el => {
+        const key = el.getAttribute('data-locale');
+        if (locale[key]) {
+            if (el.tagName === 'INPUT' && el.type === 'text') {
+                el.placeholder = locale[key];
+            } else {
+                el.innerText = locale[key];
+            }
+        }
+    });
+}
 
 function setupInitialData(config, maps) {
     serverConfig = config;
     serverMaps = maps;
 
-    const mapSelect = document.getElementById('map-select');
-    mapSelect.innerHTML = '';
-    maps.forEach(map => {
-        const opt = document.createElement('option');
-        opt.value = map.id;
-        opt.innerText = map.label.toUpperCase();
-        mapSelect.appendChild(opt);
+    applyLocalization(config);
+
+    // Setup Map Dropdowns
+    const mapDropdowns = ['create-map-select', 'filter-maps', 'list-filter-maps'];
+    mapDropdowns.forEach(id => {
+        const select = document.getElementById(id);
+        if (!select) return;
+
+        // Keep "ALL MAPS" if it's a filter
+        const originalFirst = select.options.length > 0 ? select.options[0] : null;
+        select.innerHTML = '';
+        if (id.includes('filter')) {
+            select.appendChild(originalFirst);
+        }
+
+        maps.forEach(map => {
+            const opt = document.createElement('option');
+            opt.value = map.id;
+            opt.innerText = map.label.toUpperCase();
+            select.appendChild(opt);
+        });
     });
 
-    const loadoutSelect = document.getElementById('loadout-select');
-    loadoutSelect.innerHTML = '';
+    // Setup Loadout Checkboxes
+    const loadoutGrid = document.getElementById('loadout-checkboxes');
+    loadoutGrid.innerHTML = '';
     for (let key in config.WeaponLoadouts) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = key.toUpperCase();
-        loadoutSelect.appendChild(opt);
+        const div = document.createElement('div');
+        div.className = 'loadout-item';
+        div.innerHTML = `
+            <input type="checkbox" id="loadout-${key}" value="${key}" class="loadout-checkbox">
+            <label for="loadout-${key}">${key.toUpperCase()}</label>
+        `;
+        loadoutGrid.appendChild(div);
     }
 }
 
@@ -134,10 +206,21 @@ function fetchLobbies() {
 }
 
 function renderLobbyList(lobbies) {
-    const container = document.getElementById('lobby-list-container');
-    container.innerHTML = '';
+    const containerFFA = document.getElementById('lobby-list-container-ffa');
+    const containerList = document.getElementById('lobby-list-container-list');
+
+    containerFFA.innerHTML = '';
+    containerList.innerHTML = '';
+
+    const mapFilter = document.getElementById(currentTab === 'ffa' ? 'filter-maps' : 'list-filter-maps').value;
+    const playerFilter = currentTab === 'ffa' ? document.getElementById('filter-players').value : 'all';
 
     lobbies.forEach((lobby, index) => {
+        // Apply Filters
+        if (mapFilter !== 'all' && lobby.mapId !== mapFilter) return;
+        if (playerFilter === 'not-full' && lobby.playerCount >= lobby.maxPlayers) return;
+
+        const container = lobby.isPersistent ? containerFFA : containerList;
         const item = document.createElement('div');
         item.className = 'lobby-item';
         item.style.animationDelay = `${index * 0.05}s`;
@@ -158,6 +241,7 @@ function renderLobbyList(lobbies) {
         // Simplified Map Image URLs (using placeholders for now)
         const mapImg = lobby.mapImage || `https://via.placeholder.com/140x80/0f1419/ffffff?text=${lobby.mapLabel}`;
 
+        // Create structure using DOM methods to prevent XSS
         item.innerHTML = `
             <div class="lobby-map-preview">
                 <img src="${mapImg}" alt="${lobby.mapLabel}">
@@ -165,7 +249,7 @@ function renderLobbyList(lobbies) {
             <div class="lobby-info-main">
                 <div class="match-type">${lobby.mode === 'tdm' ? 'Team Deathmatch' : 'Free-for-All'}</div>
                 <div class="map-name-row">
-                    <i class="fa-solid fa-location-dot"></i> ${lobby.mapLabel}
+                    <i class="fa-solid fa-location-dot"></i> <span class="map-label-text"></span>
                 </div>
             </div>
             <div class="player-counter-wrapper">
@@ -185,6 +269,7 @@ function renderLobbyList(lobbies) {
                 ${renderActionButton(lobby)}
             </div>
         `;
+        item.querySelector('.map-label-text').textContent = lobby.mapLabel;
         container.appendChild(item);
     });
 }
@@ -208,16 +293,32 @@ function joinLobby(lobbyId, isSpectator = false) {
     });
 }
 
-document.getElementById('btn-create-lobby').addEventListener('click', () => {
+document.getElementById('btn-submit-create').addEventListener('click', () => {
     playSound('click');
+
+    // Collect selected loadouts
+    const selectedLoadouts = [];
+    document.querySelectorAll('.loadout-checkbox:checked').forEach(cb => {
+        selectedLoadouts.push(cb.value);
+    });
+
     const settings = {
-        name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
-        mapId: document.getElementById('map-select').value,
-        mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
-        roundTime: parseInt(document.getElementById('round-time').value),
-        maxPlayers: parseInt(document.getElementById('max-players').value),
+        name: document.getElementById('create-lobby-name').value || 'CUSTOM LOBBY',
+        mapId: document.getElementById('create-map-select').value,
+        mode: document.getElementById('create-mode-select').value,
+        loadout: selectedLoadouts,
+        roundTime: parseInt(document.getElementById('create-round-time').value),
+        maxPlayers: parseInt(document.getElementById('create-max-players').value),
+        vehiclesAllowed: document.getElementById('create-vehicles').checked,
+        friendlyFire: document.getElementById('create-friendlyfire').checked,
+        respawnTime: parseInt(document.getElementById('create-respawn').value),
+        killLimit: parseInt(document.getElementById('create-killlimit').value)
     };
+
+    if (selectedLoadouts.length === 0) {
+        // Fallback if no weapons selected
+        settings.loadout = ['pistol'];
+    }
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
         method: 'POST',
@@ -228,7 +329,6 @@ document.getElementById('btn-create-lobby').addEventListener('click', () => {
 function showLobbyArea(lobby, asHost) {
     currentLobby = lobby;
     isHost = asHost;
-    playSound('join');
 
     document.getElementById('lobby-title').innerText = lobby.name.toUpperCase();
     document.getElementById('lobby-waiting-area').style.display = 'flex';
@@ -247,11 +347,30 @@ function renderPlayerList(players) {
     players.forEach(p => {
         const div = document.createElement('div');
         div.className = `player-item ${p.ready ? 'ready' : ''}`;
-        div.innerHTML = `
-            <span>${p.name.toUpperCase()} ${p.isHost ? '(HOST)' : ''}</span>
-            <span>${p.team.toUpperCase()}</span>
-            ${isHost && !p.isHost ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')"><i class="fa-solid fa-xmark"></i></button>` : ''}
-        `;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = `${p.name.toUpperCase()} ${p.isHost ? '(HOST)' : ''}`;
+
+        const teamSpan = document.createElement('span');
+        teamSpan.textContent = p.team.toUpperCase();
+
+        div.appendChild(nameSpan);
+        div.appendChild(teamSpan);
+
+        if (isHost && !p.isHost) {
+            const kickBtn = document.createElement('button');
+            kickBtn.className = 'kick-btn';
+            kickBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            kickBtn.onclick = () => {
+                playSound('click');
+                fetch(`https://${GetParentResourceName()}/kickPlayer`, {
+                    method: 'POST',
+                    body: JSON.stringify({ id: p.id })
+                });
+            };
+            div.appendChild(kickBtn);
+        }
+
         list.appendChild(div);
     });
 
@@ -313,6 +432,30 @@ function showWinnerScreen(data) {
     });
     html += `</tbody></table>`;
     statsTable.innerHTML = html;
+
+    // Render Map Voting
+    const votingGrid = document.getElementById('winner-map-voting');
+    votingGrid.innerHTML = '';
+
+    // Show first 4 maps for voting
+    serverMaps.slice(0, 4).forEach(map => {
+        const item = document.createElement('div');
+        item.className = 'vote-item';
+        item.innerHTML = `
+            <img src="https://via.placeholder.com/100x60/0f1419/ffffff?text=${map.label}" class="vote-map-img">
+            <span class="vote-map-label">${map.label.toUpperCase()}</span>
+        `;
+        item.onclick = () => {
+            playSound('click');
+            document.querySelectorAll('.vote-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            fetch(`https://${GetParentResourceName()}/voteMap`, {
+                method: 'POST',
+                body: JSON.stringify({ mapId: map.id })
+            });
+        };
+        votingGrid.appendChild(item);
+    });
 }
 
 document.getElementById('btn-back-to-menu').addEventListener('click', () => {
@@ -333,6 +476,11 @@ window.addEventListener('keyup', (e) => {
         fetch(`https://${GetParentResourceName()}/closeUI`, { method: 'POST' });
     }
 });
+
+// Filter Listeners
+document.getElementById('filter-maps').addEventListener('change', fetchLobbies);
+document.getElementById('filter-players').addEventListener('change', fetchLobbies);
+document.getElementById('list-filter-maps').addEventListener('change', fetchLobbies);
 
 // Auto-Refresh
 setInterval(() => {
