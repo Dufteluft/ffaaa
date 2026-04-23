@@ -67,3 +67,33 @@ AddEventHandler('ffa:syncTeams', function(teams)
     SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`) -- 5 = Hate
     SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`)
 end)
+
+-- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+Citizen.CreateThread(function()
+    while true do
+        if playerState and playerState.isInGame then
+            local ped = PlayerPedId()
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- Berechnung für ESX/GTA V Standard (200 HP max, 100 HP is dead)
+            local healthPercent = 0
+            if maxHealth > 100 then
+                healthPercent = math.max(0, ((health - 100) / (maxHealth - 100)) * 100)
+            else
+                healthPercent = (health / maxHealth) * 100
+            end
+
+            local armor = GetPedArmour(ped)
+            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            SendNUIMessage({
+                action = 'updateHUDDetails',
+                health = healthPercent,
+                armor = armor,
+                ammo = ammo
+            })
+        end
+        Wait(500)
+    end
+end)
