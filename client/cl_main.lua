@@ -39,7 +39,13 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     RemoveAllPedWeapons(ped, true)
 
     -- ESX Loadout wiederherstellen (falls vorhanden)
-    TriggerEvent('esx:restoreLoadout')
+    ESX.TriggerServerCallback('esx:getPlayerData', function(data)
+        if data and data.loadout then
+            for _, v in ipairs(data.loadout) do
+                GiveWeaponToPed(ped, GetHashKey(v.name), v.ammo, false, false)
+            end
+        end
+    end)
 
     -- Zur alten Position teleportieren
     DoScreenFadeOut(500)
@@ -68,8 +74,12 @@ function TeleportToMap(mapId)
         DoScreenFadeOut(500)
         while not IsScreenFadedOut() do Wait(0) end
 
+        -- Sicherstellen, dass die Kollision geladen ist
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
         SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
         SetEntityHeading(ped, spawn.w)
+
+        while not HasCollisionLoadedAroundEntity(ped) do Wait(0) end
 
         Wait(500)
         DoScreenFadeIn(500)
@@ -77,22 +87,4 @@ function TeleportToMap(mapId)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
-Citizen.CreateThread(function()
-    while true do
-        if playerState and playerState.isInGame then
-            local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
-            local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
-
-            SendNUIMessage({
-                action = 'updateHUDDetails',
-                health = health,
-                armor = armor,
-                ammo = ammo
-            })
-        end
-        Wait(500)
-    end
-end)
+-- HUD-Updater wurde in cl_nui.lua integriert für bessere Übersicht
