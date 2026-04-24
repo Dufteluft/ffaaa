@@ -1,23 +1,61 @@
 -- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
+local lastVehicle = nil
+
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(5000)
         if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
             local playerPed = PlayerPedId()
             local coords = GetEntityCoords(playerPed)
-            local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
 
-            if vehicle == 0 then
-                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 15.0, 0.0)
-                local model = `zentorno`
-                RequestModel(model)
-                while not HasModelLoaded(model) do Wait(10) end
+            if not IsPedInAnyVehicle(playerPed, false) then
+                local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 20.0, 0, 71)
 
-                local veh = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
-                SetVehicleOnGroundProperly(veh)
-                SetEntityAsMissionEntity(veh, true, true)
-                SetModelAsNoLongerNeeded(model)
+                if vehicle == 0 then
+                    if lastVehicle and DoesEntityExist(lastVehicle) then
+                        DeleteEntity(lastVehicle)
+                    end
+
+                    local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                    local model = GetHashKey(Config.VehicleModel or 'zentorno')
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(10) end
+
+                    lastVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                    SetVehicleOnGroundProperly(lastVehicle)
+                    SetEntityAsMissionEntity(lastVehicle, true, true)
+                    SetModelAsNoLongerNeeded(model)
+                end
             end
+        end
+    end
+end)
+
+-- HUD-Daten Synchronisation (Leben, Rüstung, Munition)
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(250)
+        if playerState and playerState.isInGame then
+            local ped = PlayerPedId()
+            local health = GetEntityHealth(ped) - 100
+            if health < 0 then health = 0 end
+            local maxHealth = GetEntityMaxHealth(ped) - 100
+            local healthPercent = (health / maxHealth) * 100
+
+            local armor = GetPedArmour(ped)
+
+            local _, currentWeapon = GetCurrentPedWeapon(ped, true)
+            local ammo = 0
+            if currentWeapon ~= `WEAPON_UNARMED` then
+                ammo = GetAmmoInPedWeapon(ped, currentWeapon)
+            end
+
+            SendNUIMessage({
+                action = 'updateHUDDetails',
+                health = healthPercent,
+                armor = armor,
+                ammo = ammo
+            })
         end
     end
 end)
@@ -25,24 +63,13 @@ end)
 -- Anti-Teamkill: Verhindert Schaden an Teammitgliedern
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        Citizen.Wait(1000)
         if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
-            local playerPed = PlayerPedId()
-
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
+            NetworkSetFriendlyFireOption(false)
+            SetCanAttackFriendly(PlayerPedId(), false, false)
+        else
+            NetworkSetFriendlyFireOption(true)
+            SetCanAttackFriendly(PlayerPedId(), true, false)
         end
     end
 end)
@@ -50,7 +77,7 @@ end)
 -- Native Anti-Teamkill via Relationship Groups
 RegisterNetEvent('ffa:syncTeams')
 AddEventHandler('ffa:syncTeams', function(teams)
-    local myTeam = teams[GetPlayerServerId(PlayerId())]
+    local myTeam = teams[tostring(GetPlayerServerId(PlayerId()))] or teams[GetPlayerServerId(PlayerId())]
     if not myTeam then return end
 
     AddRelationshipGroup('BLUE_TEAM')
@@ -60,6 +87,8 @@ AddEventHandler('ffa:syncTeams', function(teams)
         SetPedRelationshipGroupHash(PlayerPedId(), `BLUE_TEAM`)
     elseif myTeam == 'red' then
         SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
+    else
+        SetPedRelationshipGroupHash(PlayerPedId(), `PLAYER`)
     end
 
     SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`) -- 1 = Like

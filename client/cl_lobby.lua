@@ -1,46 +1,31 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
--- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
-
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
-
--- Funktion: Hauptmenü öffnen
-function OpenMainMenu()
+-- Funktion: Hauptmenü öffnen/schließen
+function ToggleMainMenu()
     if isMenuOpen then
-        -- Menü schließen wenn bereits offen
         isMenuOpen = false
         SetNuiFocus(false, false)
         SendNUIMessage({ action = 'close' })
-        return
+    else
+        isMenuOpen = true
+        SetNuiFocus(true, true)
+        SendNUIMessage({
+            action = 'open',
+            config = Config,
+            maps = Config.Maps,
+            isInGame = playerState.isInGame
+        })
     end
-
-    isMenuOpen = true
-    SetNuiFocus(true, true)
-    SendNUIMessage({
-        action = 'open',
-        config = Config,
-        maps = Config.Maps,
-        isInGame = playerState.isInGame
-    })
 end
+
+-- Key Mapping für das Hauptmenü (F5 Standard)
+RegisterKeyMapping('ffamenu', 'FFA Lobby Menü öffnen', 'keyboard', Config.MenuKey or 'F5')
+
+RegisterCommand('ffamenu', function()
+    ToggleMainMenu()
+end, false)
 
 -- Callback: UI schließen (vom JS aufgerufen)
 RegisterNUICallback('closeUI', function(data, cb)
@@ -104,7 +89,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 

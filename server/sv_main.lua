@@ -11,6 +11,8 @@ AddEventHandler('ffa:startGame', function()
     if lobby and lobby.host == source and #lobby.players >= 1 then
         lobby.status = 'playing'
         lobby.timer = lobby.roundTime * 60
+        lobby.scoreBlue = 0
+        lobby.scoreRed = 0
 
         -- Spieler Teams zuweisen (Auto-Balance)
         local blueCount, redCount = 0, 0
@@ -23,6 +25,9 @@ AddEventHandler('ffa:startGame', function()
 
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
+            pState.kills = 0
+            pState.deaths = 0
+
             if lobby.mode == 'tdm' then
                 if pState.team == 'none' or pState.team == 'random' or pState.team == 'spectator' then
                     if blueCount <= redCount then
@@ -101,7 +106,7 @@ function EndGame(lobbyId, reason)
             winnerName = _U('team_red')
             winnerTeam = 'red'
         else
-            winnerName = 'Unentschieden'
+            winnerName = 'UNENTSCHIEDEN'
         end
     -- Sieg-Logik für FFA
     else
@@ -141,7 +146,9 @@ function EndGame(lobbyId, reason)
         local state = PlayerStates[pid]
         if state then
             local isWin = (winnerName == state.name) or (winnerTeam ~= 'none' and state.team == winnerTeam)
-            UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
+            if UpdatePlayerStats then
+                UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
+            end
         end
 
         -- Wenn persistente Lobby, starte für Spieler nach kurzem Delay neu
@@ -211,18 +218,48 @@ end)
 
 -- Event: Map Voting
 RegisterServerEvent('ffa:voteMap')
-AddEventHandler('ffa:voteMap', function(mapId)
+AddEventHandler('ffa:voteMap', function(data)
+    local mapId = type(data) == 'table' and data.mapId or data
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
         if lobby and not lobby.isPersistent then
             lobby.mapId = mapId
             local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
+            if map then
+                lobby.mapLabel = map.label
+                -- Informiere Lobby-Chat über den Vote
+                for _, pid in ipairs(lobby.players) do
+                    TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                end
+            end
+        end
+    end
+end)
 
-            -- Informiere Lobby-Chat über den Vote
-            for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+-- Event: Zurück zur Lobby
+RegisterServerEvent('ffa:resetLobby')
+AddEventHandler('ffa:resetLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby then
+            if lobby.status == 'ended' then
+                lobby.status = 'waiting'
+                for _, pid in ipairs(lobby.players) do
+                    local ps = PlayerStates[pid]
+                    if ps then
+                        ps.kills = 0
+                        ps.deaths = 0
+                        ps.ready = (pid == lobby.host)
+                    end
+                    TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
+                    UpdateLobbyPlayers(state.lobbyId)
+                end
+            else
+                -- Falls bereits zurückgesetzt oder noch läuft
+                TriggerClientEvent('ffa:lobbyJoined', source, lobby)
+                UpdateLobbyPlayers(state.lobbyId)
             end
         end
     end
