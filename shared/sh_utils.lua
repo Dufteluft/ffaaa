@@ -1,6 +1,7 @@
 Utils = {}
 
 function Utils.GetMapById(id)
+    if not Config.Maps then return nil end
     for _, map in ipairs(Config.Maps) do
         if map.id == id then
             return map
@@ -11,7 +12,7 @@ end
 
 function Utils.GetRandomSpawn(mapId)
     local map = Utils.GetMapById(mapId)
-    if map and #map.spawns > 0 then
+    if map and map.spawns and #map.spawns > 0 then
         return map.spawns[math.random(#map.spawns)]
     end
     return nil

@@ -5,6 +5,18 @@ description 'Advanced FFA Lobby System for ESX Legacy'
 version '1.0.0'
 author 'Jules'
 
+lua54 'yes'
+
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+    'html/style.css',
+    'html/script.js',
+    'html/assets/*.png',
+    'html/assets/*.mp3'
+}
+
 shared_scripts {
     '@es_extended/imports.lua',
     'config.lua',
@@ -19,20 +31,8 @@ client_scripts {
 }
 
 server_scripts {
-    '@mysql-async/lib/MySQL.lua', -- Standard for many ESX setups, or use oxmysql
-    'server/sv_main.lua',
+    '@mysql-async/lib/MySQL.lua',
     'server/sv_lobby.lua',
+    'server/sv_main.lua',
     'server/sv_stats.lua'
 }
-
-ui_page 'html/index.html'
-
-files {
-    'html/index.html',
-    'html/style.css',
-    'html/script.js',
-    'html/assets/*.png',
-    'html/assets/*.mp3'
-}
-
-lua54 'yes'

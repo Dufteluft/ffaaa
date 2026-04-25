@@ -2,6 +2,7 @@ Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
 Config.MenuKey = 'F5' -- Default key for the main menu
+Config.VehicleModel = 'zentorno'
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -14,31 +15,39 @@ Config.DefaultSettings = {
 
 Config.WeaponLoadouts = {
     ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        label = 'Pistole',
+        weapons = {
+            { name = 'WEAPON_PISTOL', ammo = 250 },
+            { name = 'WEAPON_COMBATPISTOL', ammo = 250 }
+        }
     },
     ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        label = 'SMG',
+        weapons = {
+            { name = 'WEAPON_SMG', ammo = 250 },
+            { name = 'WEAPON_COMBATMG', ammo = 250 }
+        }
     },
     ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        label = 'Sturmgewehr',
+        weapons = {
+            { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 },
+            { name = 'WEAPON_CARBINERIFLE', ammo = 250 }
+        }
     },
     ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        label = 'Scharfschützengewehr',
+        weapons = {
+            { name = 'WEAPON_SNIPERRIFLE', ammo = 50 },
+            { name = 'WEAPON_HEAVYSNIPER', ammo = 50 }
+        }
     },
     ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
-    },
-    ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        label = 'Pump-Action',
+        weapons = {
+            { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 },
+            { name = 'WEAPON_SAWNOFFSHOTGUN', ammo = 50 }
+        }
     }
 }
 
@@ -46,6 +55,7 @@ Config.Maps = {
     {
         id = 'legion',
         label = 'Würfelpark',
+        image = 'assets/map_legion.png',
         center = vector3(185.0, -930.0, 30.6),
         radius = 100.0,
         spawns = {
@@ -58,6 +68,7 @@ Config.Maps = {
     {
         id = 'sandyshores',
         label = 'Sandy Shores',
+        image = 'assets/map_sandy.png',
         center = vector3(1850.0, 3680.0, 34.0),
         radius = 150.0,
         spawns = {
@@ -70,6 +81,7 @@ Config.Maps = {
     {
         id = 'airport',
         label = 'Flughafen',
+        image = 'assets/map_airport.png',
         center = vector3(-1037.0, -2737.0, 20.1),
         radius = 200.0,
         spawns = {
@@ -82,6 +94,7 @@ Config.Maps = {
     {
         id = 'vinewood',
         label = 'Vinewood',
+        image = 'assets/map_vinewood.png',
         center = vector3(630.0, 560.0, 128.0),
         radius = 120.0,
         spawns = {
@@ -94,6 +107,7 @@ Config.Maps = {
     {
         id = 'port',
         label = 'Hafen',
+        image = 'assets/map_port.png',
         center = vector3(770.0, -2980.0, 6.0),
         radius = 150.0,
         spawns = {
@@ -106,6 +120,7 @@ Config.Maps = {
     {
         id = 'paleto',
         label = 'Paleto Bay',
+        image = 'assets/map_paleto.png',
         center = vector3(-110.0, 6450.0, 31.0),
         radius = 120.0,
         spawns = {
@@ -151,7 +166,19 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['winner_suffix'] = 'GEWINNT!',
+        ['players'] = 'SPIELER',
+        ['settings'] = 'EINSTELLUNGEN',
+        ['chat'] = 'CHAT',
+        ['back_to_menu'] = 'HAUPTMENÜ',
+        ['back_to_lobby'] = 'ZURÜCK ZUR LOBBY',
+        ['vote_next_map'] = 'WÄHLE DIE NÄCHSTE MAP',
+        ['filter_all_maps'] = 'ALLE MAPS',
+        ['filter_any'] = 'ALLE',
+        ['filter_not_full'] = 'NICHT VOLL',
+        ['btn_full'] = 'VOLL',
+        ['btn_spectate'] = 'ZUSCHAUEN'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -186,7 +213,19 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['winner_suffix'] = 'WINS!',
+        ['players'] = 'PLAYERS',
+        ['settings'] = 'SETTINGS',
+        ['chat'] = 'CHAT',
+        ['back_to_menu'] = 'MAIN MENU',
+        ['back_to_lobby'] = 'BACK TO LOBBY',
+        ['vote_next_map'] = 'VOTE NEXT MAP',
+        ['filter_all_maps'] = 'ALL MAPS',
+        ['filter_any'] = 'ANY',
+        ['filter_not_full'] = 'NOT FULL',
+        ['btn_full'] = 'FULL',
+        ['btn_spectate'] = 'SPECTATE'
     }
 }
 
