@@ -5,13 +5,14 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
 
     local identifier = xPlayer.getIdentifier()
 
-    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
     MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
         ['@id'] = identifier,
-        ['@k'] = kills,
-        ['@d'] = deaths,
+        ['@k'] = kills or 0,
+        ['@d'] = deaths or 0,
         ['@w'] = isWin and 1 or 0
-    })
+    }, function(rowsChanged)
+        -- Optional: Log or callback
+    end)
 end
 
 -- Event: Statistiken für UI abrufen
@@ -27,6 +28,14 @@ AddEventHandler('ffa:getStats', function()
     }, function(result)
         if result and result[1] then
             TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+        else
+            -- Default stats if none found
+            TriggerClientEvent('ffa:receiveStats', xPlayer.source, {
+                kills = 0,
+                deaths = 0,
+                games_played = 0,
+                wins = 0
+            })
         end
     end)
 end)
