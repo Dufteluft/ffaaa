@@ -1,4 +1,3 @@
--- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(5000)
@@ -22,32 +21,19 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Anti-Teamkill: Verhindert Schaden an Teammitgliedern
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        Citizen.Wait(1000)
         if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
-            local playerPed = PlayerPedId()
-
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
+            NetworkSetFriendlyFireOption(false)
+            SetCanAttackFriendly(PlayerPedId(), false, false)
+        else
+            NetworkSetFriendlyFireOption(true)
+            SetCanAttackFriendly(PlayerPedId(), true, false)
         end
     end
 end)
 
--- Native Anti-Teamkill via Relationship Groups
 RegisterNetEvent('ffa:syncTeams')
 AddEventHandler('ffa:syncTeams', function(teams)
     local myTeam = teams[GetPlayerServerId(PlayerId())]
@@ -62,8 +48,32 @@ AddEventHandler('ffa:syncTeams', function(teams)
         SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
     end
 
-    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`) -- 1 = Like
+    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`)
     SetRelationshipBetweenGroups(1, `RED_TEAM`, `RED_TEAM`)
-    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`) -- 5 = Hate
+    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`)
     SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`)
+end)
+
+-- HUD Data Update Loop
+Citizen.CreateThread(function()
+    while true do
+        if playerState and playerState.isInGame then
+            local ped = PlayerPedId()
+            local health = GetEntityHealth(ped)
+            local maxHealth = GetEntityMaxHealth(ped)
+            local healthPercent = ((health - 100) / (maxHealth - 100)) * 100
+            local armor = GetPedArmour(ped)
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local ammo = GetAmmoInPedWeapon(ped, weapon)
+
+            SendNUIMessage({
+                action = 'updateHUDDetails',
+                health = healthPercent,
+                armor = armor,
+                ammo = ammo
+            })
+        end
+        Wait(500)
+    end
 end)
