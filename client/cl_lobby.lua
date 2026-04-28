@@ -1,31 +1,17 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
--- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
+-- Menü-Steuerung via RegisterKeyMapping (Modern FiveM)
+RegisterKeyMapping('ffamenu', 'FFA Lobby System öffnen', 'keyboard', Config.MenuKey)
 
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
+RegisterCommand('ffamenu', function()
+    OpenMainMenu()
+end, false)
 
 -- Funktion: Hauptmenü öffnen
 function OpenMainMenu()
     if isMenuOpen then
-        -- Menü schließen wenn bereits offen
         isMenuOpen = false
         SetNuiFocus(false, false)
         SendNUIMessage({ action = 'close' })
@@ -42,7 +28,7 @@ function OpenMainMenu()
     })
 end
 
--- Callback: UI schließen (vom JS aufgerufen)
+-- Callback: UI schließen
 RegisterNUICallback('closeUI', function(data, cb)
     isMenuOpen = false
     SetNuiFocus(false, false)
@@ -90,6 +76,7 @@ RegisterNetEvent('ffa:leftLobby')
 AddEventHandler('ffa:leftLobby', function()
     currentLobby = nil
     playerState.isInGame = false
+    SendNUIMessage({ action = 'hideHUD' })
 end)
 
 -- NUI Callbacks für Menü-Aktionen
@@ -99,12 +86,12 @@ RegisterNUICallback('createLobby', function(data, cb)
 end)
 
 RegisterNUICallback('joinLobby', function(data, cb)
-    TriggerServerEvent('ffa:joinLobby', data.lobbyId)
+    TriggerServerEvent('ffa:joinLobby', data)
     cb('ok')
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -139,7 +126,7 @@ RegisterNUICallback('toggleReady', function(data, cb)
 end)
 
 RegisterNUICallback('setTeam', function(data, cb)
-    TriggerServerEvent('ffa:setTeam', data.team)
+    TriggerServerEvent('ffa:setTeam', data)
     cb('ok')
 end)
 
@@ -159,12 +146,12 @@ RegisterNUICallback('quickJoin', function(data, cb)
 end)
 
 RegisterNUICallback('kickPlayer', function(data, cb)
-    TriggerServerEvent('ffa:kickPlayer', data.id)
+    TriggerServerEvent('ffa:kickPlayer', data)
     cb('ok')
 end)
 
 RegisterNUICallback('voteMap', function(data, cb)
-    TriggerServerEvent('ffa:voteMap', data.mapId)
+    TriggerServerEvent('ffa:voteMap', data)
     cb('ok')
 end)
 
