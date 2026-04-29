@@ -23,7 +23,9 @@ AddEventHandler('ffa:startGame', function()
 
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
-            if lobby.mode == 'tdm' then
+            if pState.team == 'spectator' then
+                -- Do nothing, stay spectator
+            elseif lobby.mode == 'tdm' then
                 if pState.team == 'none' or pState.team == 'random' or pState.team == 'spectator' then
                     if blueCount <= redCount then
                         pState.team = 'blue'
@@ -43,7 +45,9 @@ AddEventHandler('ffa:startGame', function()
         -- Team-Synchronisation für alle Spieler in der Lobby
         local teams = {}
         for _, pid in ipairs(lobby.players) do
-            teams[pid] = PlayerStates[pid].team
+            if PlayerStates[pid] then
+                teams[pid] = PlayerStates[pid].team
+            end
         end
         for _, pid in ipairs(lobby.players) do
             TriggerClientEvent('ffa:syncTeams', pid, teams)
@@ -144,17 +148,23 @@ function EndGame(lobbyId, reason)
             UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
         end
 
-        -- Wenn persistente Lobby, starte für Spieler nach kurzem Delay neu
-        if lobby.isPersistent then
-            Citizen.CreateThread(function()
-                Citizen.Wait(10000) -- 10 Sekunden Anzeigezeit
-                if PlayerStates[pid] and PlayerStates[pid].lobbyId == lobbyId then
-                    PlayerStates[pid].kills = 0
-                    PlayerStates[pid].deaths = 0
+        -- Nachbesprechung und Neustart/Rückkehr
+        Citizen.CreateThread(function()
+            Citizen.Wait(10000) -- 10 Sekunden Anzeigezeit für Sieger-Screen
+            if PlayerStates[pid] and PlayerStates[pid].lobbyId == lobbyId then
+                PlayerStates[pid].kills = 0
+                PlayerStates[pid].deaths = 0
+
+                if lobby.isPersistent then
                     TriggerClientEvent('ffa:gameStarting', pid, lobby)
+                else
+                    -- Zurück in den Wartebereich
+                    lobby.status = 'waiting'
+                    UpdateLobbyPlayers(lobbyId)
+                    TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
                 end
-            end)
-        end
+            end
+        end)
     end
 
     if lobby.isPersistent then
