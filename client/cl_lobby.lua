@@ -99,7 +99,7 @@ RegisterNUICallback('createLobby', function(data, cb)
 end)
 
 RegisterNUICallback('joinLobby', function(data, cb)
-    TriggerServerEvent('ffa:joinLobby', data.lobbyId)
+    TriggerServerEvent('ffa:joinLobby', data.lobbyId, data.isSpectator)
     cb('ok')
 end)
 

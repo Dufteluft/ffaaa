@@ -41,6 +41,11 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- ESX Loadout wiederherstellen (falls vorhanden)
     TriggerEvent('esx:restoreLoadout')
 
+    -- Sichtbarkeit und Kollision wiederherstellen
+    SetEntityVisible(ped, true, false)
+    SetEntityCollision(ped, true, true)
+    NetworkSetInSpectatorMode(false, ped)
+
     -- Zur alten Position teleportieren
     DoScreenFadeOut(500)
     while not IsScreenFadedOut() do Wait(0) end
@@ -82,15 +87,20 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+            local healthPercent = math.floor((health / maxHealth) * 100)
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local weaponHash = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weaponHash)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
-                ammo = ammo
+                ammo = ammo,
+                weaponName = weaponHash ~= `WEAPON_UNARMED` and weaponHash or 'UNARMED'
             })
         end
         Wait(500)

@@ -30,13 +30,13 @@ function CreateLobby(playerId, settings)
         mapId = settings.mapId,
         mapLabel = map.label,
         mode = settings.mode,
-        loadout = settings.loadout,
+        loadouts = settings.loadouts or {settings.loadout},
         roundTime = settings.roundTime,
         maxPlayers = settings.maxPlayers,
-        vehiclesAllowed = settings.vehiclesAllowed,
-        friendlyFire = settings.friendlyFire,
-        respawnTime = settings.respawnTime,
-        killLimit = settings.killLimit,
+        vehiclesAllowed = settings.vehiclesAllowed or false,
+        friendlyFire = settings.friendlyFire or false,
+        respawnTime = settings.respawnTime or 5,
+        killLimit = settings.killLimit or 0,
         players = {},
         status = 'waiting',
         timer = settings.roundTime * 60,
@@ -98,8 +98,11 @@ end
 
 -- Event: Lobby beitreten
 RegisterServerEvent('ffa:joinLobby')
-AddEventHandler('ffa:joinLobby', function(lobbyId)
+AddEventHandler('ffa:joinLobby', function(lobbyId, isSpectator)
     if JoinLobby(source, lobbyId) then
+        if isSpectator then
+            PlayerStates[source].team = 'spectator'
+        end
         TriggerClientEvent('ffa:lobbyJoined', source, Lobbies[lobbyId])
     else
         -- Nachricht an Spieler: Lobby voll oder existiert nicht
@@ -211,13 +214,13 @@ end)
 RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
-    local filterTab = data and data.tab or 'ffa'
+    local filterTab = (type(data) == 'table' and data.tab) or 'ffa'
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
         if filterTab == 'ffa' then
             if lobby.isPersistent then isMatch = true end
-        else
+        elseif filterTab == 'list' then
             if not lobby.isPersistent then isMatch = true end
         end
 
@@ -225,10 +228,9 @@ AddEventHandler('ffa:fetchLobbies', function(data)
             -- Status Bestimmung für UI
             local displayStatus = 'waiting'
             if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
 
             table.insert(list, {
-                id = id,
+                id = tostring(id),
                 name = lobby.name,
                 hostName = lobby.hostName,
                 playerCount = #lobby.players,
