@@ -1,7 +1,6 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
 -- Menü-Steuerung (F5 öffnet/schließt Menü)
 Citizen.CreateThread(function()
@@ -15,10 +14,10 @@ Citizen.CreateThread(function()
     end
 
     while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
+         Citizen.Wait(0)
+         if IsControlJustReleased(0, key) then
             OpenMainMenu()
-        end
+         end
     end
 end)
 
@@ -104,7 +103,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
