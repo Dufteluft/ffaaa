@@ -417,6 +417,32 @@ input[type="text"], input[type="range"] {
 
 .input-row { display: flex; gap: 20px; }
 
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    background: var(--surface);
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.checkbox-item input {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
 .btn-group { display: flex; gap: 15px; margin-top: 30px; }
 .confirm-btn { flex: 1; background: var(--success); color: #000; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 .cancel-btn { flex: 1; background: #333; color: #fff; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
@@ -481,3 +507,217 @@ input[type="text"], input[type="range"] {
 }
 #winner-title { font-size: 60px; font-family: 'Impact'; margin-bottom: 10px; }
 #winner-name { font-size: 32px; color: var(--primary); margin-bottom: 40px; }
+
+/* HUD Styles */
+#game-hud {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.hud-top {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 30px;
+}
+
+.hud-timer {
+    background: rgba(0,0,0,0.6);
+    padding: 10px 20px;
+    border-radius: 4px;
+    border-bottom: 3px solid var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: 900;
+}
+
+.hud-scores {
+    display: flex;
+    gap: 10px;
+}
+
+.score-box {
+    background: rgba(0,0,0,0.6);
+    padding: 5px 15px;
+    border-radius: 4px;
+    text-align: center;
+    min-width: 80px;
+}
+
+.score-box.score-blue { border-bottom: 3px solid #2196f3; }
+.score-box.score-red { border-bottom: 3px solid #f44336; }
+
+.score-label { font-size: 10px; font-weight: 900; color: var(--text-muted); display: block; }
+.score-box span:not(.score-label) { font-size: 20px; font-weight: 900; }
+
+.hud-bottom {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 40px;
+}
+
+.hud-stats {
+    background: rgba(0,0,0,0.6);
+    padding: 10px 20px;
+    border-radius: 4px;
+    display: flex;
+    gap: 30px;
+}
+
+.stat-item { text-align: center; }
+.stat-label { font-size: 10px; font-weight: 900; color: var(--text-muted); display: block; }
+.stat-item span:not(.stat-label) { font-size: 20px; font-weight: 900; }
+
+.hud-player {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.status-bars {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.bar-container {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.bar { height: 100%; transition: width 0.3s ease; }
+.bar.health { background: var(--success); }
+.bar.armor { background: var(--primary); }
+
+.ammo-info {
+    font-size: 32px;
+    font-weight: 900;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Countdown */
+#countdown-display {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.countdown-circle {
+    width: 150px;
+    height: 150px;
+    border: 8px solid var(--primary);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0,0,0,0.4);
+    box-shadow: 0 0 30px var(--primary);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+#countdown-number { font-size: 70px; font-weight: 900; font-family: 'Impact'; }
+
+/* Scoreboard */
+#scoreboard {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    z-index: 500;
+}
+
+.scoreboard-container {
+    width: 800px;
+    background: rgba(0,0,0,0.85);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    padding: 30px;
+    backdrop-filter: blur(5px);
+}
+
+.scoreboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 10px;
+}
+
+#sb-lobby-name { font-family: 'Impact'; font-size: 24px; }
+#sb-timer { font-size: 24px; font-weight: 900; }
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 11px; color: var(--text-muted); padding: 10px; }
+td { padding: 15px 10px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+/* Map Voting */
+.map-voting-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+.map-voting-section h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 15px; }
+.map-vote-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+
+.vote-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.vote-card:hover { border-color: var(--primary); background: var(--surface-hover); }
+.vote-card.voted { border-color: var(--success); background: rgba(0, 255, 136, 0.1); }
+.vote-card img { width: 100%; height: 60px; object-fit: cover; border-radius: 2px; margin-bottom: 8px; }
+.vote-card span { font-size: 12px; font-weight: 900; display: block; text-align: center; }
+
+/* Create Tab Styles */
+.create-lobby-form {
+    max-width: 600px;
+    margin: 40px auto;
+    background: rgba(0,0,0,0.2);
+    padding: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.create-lobby-form h2 {
+    margin-bottom: 30px;
+    font-family: 'Impact';
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+/* Chat Styles */
+.chat-message {
+    margin-bottom: 8px;
+    word-break: break-all;
+    animation: slideIn 0.2s forwards;
+}
+
+.chat-message strong {
+    color: var(--primary);
+    margin-right: 5px;
+}
