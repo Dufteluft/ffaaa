@@ -20,7 +20,7 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     end
 
     -- Waffen austeilen
-    GiveLoadout(lobby.loadout)
+    GiveLoadout(lobby.loadouts)
 
     -- HUD einblenden
     SendNUIMessage({
@@ -33,14 +33,25 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadoutKeys)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadoutKeys) == 'table' then
+        for _, key in ipairs(loadoutKeys) do
+            local loadout = Config.WeaponLoadouts[key]
+            if loadout then
+                for _, weapon in ipairs(loadout) do
+                    GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+                end
+            end
+        end
+    elseif type(loadoutKeys) == 'string' then
+        local loadout = Config.WeaponLoadouts[loadoutKeys]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,12 +78,28 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+
+                    if type(currentLobby.loadouts) == 'table' then
+                        for _, key in ipairs(currentLobby.loadouts) do
+                            local loadout = Config.WeaponLoadouts[key]
+                            if loadout then
+                                for _, w in ipairs(loadout) do
+                                    if GetHashKey(w.name) == currentWeapon then
+                                        allowed = true
+                                        break
+                                    end
+                                end
+                            end
+                            if allowed then break end
+                        end
+                    elseif type(currentLobby.loadouts) == 'string' then
+                        local loadout = Config.WeaponLoadouts[currentLobby.loadouts]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
                     end
@@ -103,6 +130,7 @@ Citizen.CreateThread(function()
                 end
 
                 TriggerServerEvent('ffa:playerKilled', killerServerId)
+                SendNUIMessage({ action = 'playSound', sound = 'kill' })
 
                 -- Kill-Cam und Respawn-Logik ausführen
                 HandleDeath(killerId)
@@ -149,7 +177,7 @@ function HandleDeath(killerPed)
         -- Wiederbelebung an zufälligem Punkt auf der Map
         local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
         NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w, true, false)
-        GiveLoadout(currentLobby.loadout)
+        GiveLoadout(currentLobby.loadouts)
     end)
 end
 

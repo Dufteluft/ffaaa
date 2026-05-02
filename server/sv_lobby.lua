@@ -30,7 +30,7 @@ function CreateLobby(playerId, settings)
         mapId = settings.mapId,
         mapLabel = map.label,
         mode = settings.mode,
-        loadout = settings.loadout,
+        loadouts = settings.loadouts,
         roundTime = settings.roundTime,
         maxPlayers = settings.maxPlayers,
         vehiclesAllowed = settings.vehiclesAllowed,
@@ -53,6 +53,29 @@ end
 -- Event: Lobby erstellen (via NUI)
 RegisterServerEvent('ffa:createLobby')
 AddEventHandler('ffa:createLobby', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        -- Update existing lobby settings instead of creating a new one
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            local map = Utils.GetMapById(settings.mapId)
+            lobby.name = settings.name
+            lobby.mapId = settings.mapId
+            lobby.mapLabel = map.label
+            lobby.mode = settings.mode
+            lobby.loadouts = settings.loadouts
+            lobby.roundTime = settings.roundTime
+            lobby.maxPlayers = settings.maxPlayers
+            lobby.timer = settings.roundTime * 60
+
+            -- Sync updated info to clients
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
+            end
+            return
+        end
+    end
+
     local lobbyId = CreateLobby(source, settings)
     if lobbyId then
         TriggerClientEvent('ffa:lobbyCreated', source, Lobbies[lobbyId])
@@ -263,7 +286,7 @@ MySQL.ready(function()
             mapId = map.id,
             mapLabel = map.label,
             mode = 'ffa',
-            loadout = 'all',
+            loadouts = {'all'},
             roundTime = 0, -- 0 bedeutet unendlich/kein Timer
             maxPlayers = 32,
             vehiclesAllowed = false,
@@ -308,7 +331,7 @@ AddEventHandler('ffa:quickJoin', function(mapId)
             name = "FFA " .. map.label,
             mapId = mapId,
             mode = 'ffa',
-            loadout = 'all',
+            loadouts = {'all'},
             roundTime = 60, -- Lange Laufzeit für persistente Lobbys
             maxPlayers = 32,
             vehiclesAllowed = false,

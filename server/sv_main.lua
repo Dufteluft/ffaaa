@@ -211,8 +211,9 @@ end)
 
 -- Event: Map Voting
 RegisterServerEvent('ffa:voteMap')
-AddEventHandler('ffa:voteMap', function(mapId)
+AddEventHandler('ffa:voteMap', function(data)
     local state = PlayerStates[source]
+    local mapId = data.mapId
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
         if lobby and not lobby.isPersistent then
