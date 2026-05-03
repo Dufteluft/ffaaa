@@ -1,7 +1,7 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Default key for the main menu (can be remapped in-game)
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -140,8 +140,11 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
+        ['team_ffa'] = 'Alle gegen Alle',
+        ['team_none'] = 'Kein Team',
         ['spectator'] = 'Zuschauer',
         ['random'] = 'Zufall',
         ['waiting_for_players'] = 'Warte auf Spieler...',
@@ -175,8 +178,11 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_back_lobby'] = 'Back to Lobby',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
+        ['team_ffa'] = 'Free-for-All',
+        ['team_none'] = 'No Team',
         ['spectator'] = 'Spectator',
         ['random'] = 'Random',
         ['waiting_for_players'] = 'Waiting for players...',
