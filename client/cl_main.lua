@@ -38,7 +38,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -59,7 +59,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler mit Screen-Fade
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -82,15 +82,22 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            -- Gesundheit in GTA geht von 100-200 (oder 0-100)
+            local health = GetEntityHealth(ped)
+            local maxHealth = GetEntityMaxHealth(ped)
+            local healthPercent = math.floor((health / maxHealth) * 100)
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weapon)
+            local totalAmmo = GetAmmoInPedWeapon(ped, weapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
-                ammo = ammo
+                ammo = ammo .. " / " .. (totalAmmo - ammo)
             })
         end
         Wait(500)
