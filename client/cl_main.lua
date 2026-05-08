@@ -82,13 +82,22 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- Prozentsatz berechnen (GTA nutzt oft 200 als MaxHealth für Spieler)
+            local healthPercent = math.floor((health / maxHealth) * 100)
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+            if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
+                _, ammo = GetAmmoInClip(ped, currentWeapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })
