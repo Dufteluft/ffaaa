@@ -33,7 +33,7 @@ AddEventHandler('ffa:startGame', function()
                         redCount = redCount + 1
                     end
                 end
-            else
+            elseif lobby.mode == 'ffa' then
                 pState.team = 'ffa'
             end
 

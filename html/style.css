@@ -116,6 +116,13 @@ body {
     box-shadow: 0 0 10px var(--primary);
 }
 
+.tab-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 /* Content Layout */
 .content-wrapper {
     flex: 1;
@@ -196,6 +203,10 @@ select:hover {
     overflow-y: auto;
     background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
     position: relative;
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease-in-out;
 }
 
 .lobby-list {
@@ -419,7 +430,188 @@ input[type="text"], input[type="range"] {
 
 .btn-group { display: flex; gap: 15px; margin-top: 30px; }
 .confirm-btn { flex: 1; background: var(--success); color: #000; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
+.confirm-btn:hover { box-shadow: 0 0 15px var(--success); }
 .cancel-btn { flex: 1; background: #333; color: #fff; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
+
+/* Create Lobby Tab */
+.create-lobby-form {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    background: var(--surface);
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.checkbox-item input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+}
+
+.toggles {
+    justify-content: space-around;
+    padding: 10px;
+    background: var(--surface);
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* iOS Toggle Style */
+.ios-toggle {
+    appearance: none;
+    width: 50px;
+    height: 26px;
+    background: #333;
+    border-radius: 50px;
+    position: relative;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.ios-toggle:checked {
+    background: var(--success);
+}
+
+.ios-toggle::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: 0.3s;
+}
+
+.ios-toggle:checked::before {
+    left: 26px;
+}
+
+/* HUD Styling */
+#game-hud {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    padding: 40px;
+}
+
+.hud-top {
+    display: flex;
+    justify-content: center;
+}
+
+.hud-timer {
+    background: rgba(0,0,0,0.6);
+    padding: 10px 20px;
+    border-radius: 4px;
+    border-bottom: 3px solid var(--primary);
+    font-size: 24px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hud-bottom {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    right: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.hud-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-item {
+    background: rgba(0,0,0,0.6);
+    padding: 5px 15px;
+    border-left: 4px solid var(--primary);
+    display: flex;
+    justify-content: space-between;
+    width: 150px;
+}
+
+.stat-item .label { font-size: 10px; font-weight: 900; color: var(--text-muted); }
+.stat-item span:last-child { font-weight: 900; }
+
+.hud-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,0,0,0.8);
+    padding: 10px 30px;
+    border-radius: 8px;
+    font-size: 32px;
+    font-weight: 900;
+}
+
+.team-blue { color: #2196f3; text-shadow: 0 0 10px rgba(33, 150, 243, 0.5); }
+.team-red { color: #f44336; text-shadow: 0 0 10px rgba(244, 67, 54, 0.5); }
+
+.hud-player {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.bars-container {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.bar {
+    height: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.health-bar .fill { background: var(--success); transition: width 0.3s; }
+.armor-bar .fill { background: var(--primary); transition: width 0.3s; }
+
+.ammo-container {
+    background: rgba(0,0,0,0.6);
+    padding: 15px 25px;
+    border-radius: 4px;
+    font-size: 28px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 4px solid var(--warning);
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

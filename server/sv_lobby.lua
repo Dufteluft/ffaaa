@@ -30,13 +30,13 @@ function CreateLobby(playerId, settings)
         mapId = settings.mapId,
         mapLabel = map.label,
         mode = settings.mode,
-        loadout = settings.loadout,
+        loadouts = settings.loadouts or { settings.loadout },
         roundTime = settings.roundTime,
         maxPlayers = settings.maxPlayers,
-        vehiclesAllowed = settings.vehiclesAllowed,
-        friendlyFire = settings.friendlyFire,
-        respawnTime = settings.respawnTime,
-        killLimit = settings.killLimit,
+        vehiclesAllowed = settings.vehiclesAllowed or false,
+        friendlyFire = settings.friendlyFire or false,
+        respawnTime = settings.respawnTime or 5,
+        killLimit = settings.killLimit or 0,
         players = {},
         status = 'waiting',
         timer = settings.roundTime * 60,
@@ -263,7 +263,7 @@ MySQL.ready(function()
             mapId = map.id,
             mapLabel = map.label,
             mode = 'ffa',
-            loadout = 'all',
+            loadouts = { 'all' },
             roundTime = 0, -- 0 bedeutet unendlich/kein Timer
             maxPlayers = 32,
             vehiclesAllowed = false,
@@ -308,7 +308,7 @@ AddEventHandler('ffa:quickJoin', function(mapId)
             name = "FFA " .. map.label,
             mapId = mapId,
             mode = 'ffa',
-            loadout = 'all',
+            loadouts = { 'all' },
             roundTime = 60, -- Lange Laufzeit für persistente Lobbys
             maxPlayers = 32,
             vehiclesAllowed = false,
@@ -325,6 +325,44 @@ AddEventHandler('ffa:quickJoin', function(mapId)
             TriggerClientEvent('ffa:gameStarting', playerId, lobby)
             StartGameTimer(lobbyId)
         end
+    end
+end)
+
+-- Event: Lobby-Einstellungen aktualisieren (durch Host)
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if not state or not state.lobbyId then return end
+
+    local lobby = Lobbies[state.lobbyId]
+    if not lobby or lobby.host ~= source then return end
+
+    -- Nur erlaubte Einstellungen aktualisieren
+    if settings.name then lobby.name = settings.name end
+    if settings.mode then lobby.mode = settings.mode end
+    if settings.loadouts then lobby.loadouts = settings.loadouts end
+    if settings.roundTime then
+        lobby.roundTime = settings.roundTime
+        lobby.timer = settings.roundTime * 60
+    end
+    if settings.maxPlayers then lobby.maxPlayers = settings.maxPlayers end
+    if settings.respawnTime then lobby.respawnTime = settings.respawnTime end
+    if settings.killLimit then lobby.killLimit = settings.killLimit end
+    if settings.vehiclesAllowed ~= nil then lobby.vehiclesAllowed = settings.vehiclesAllowed end
+    if settings.friendlyFire ~= nil then lobby.friendlyFire = settings.friendlyFire end
+
+    -- Map-Update (falls geändert)
+    if settings.mapId and settings.mapId ~= lobby.mapId then
+        local map = Utils.GetMapById(settings.mapId)
+        if map then
+            lobby.mapId = settings.mapId
+            lobby.mapLabel = map.label
+        end
+    end
+
+    -- Alle Spieler in der Lobby informieren
+    for _, pid in ipairs(lobby.players) do
+        TriggerClientEvent('ffa:lobbyUpdated', pid, lobby)
     end
 end)
 

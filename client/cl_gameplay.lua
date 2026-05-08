@@ -20,12 +20,13 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     end
 
     -- Waffen austeilen
-    GiveLoadout(lobby.loadout)
+    GiveLoadout(lobby.loadouts)
 
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
-        isPersistent = lobby.isPersistent
+        isPersistent = lobby.isPersistent,
+        mode = lobby.mode
     })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
@@ -33,14 +34,20 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadoutKeys)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadoutKeys) == 'string' then
+        loadoutKeys = { loadoutKeys }
+    end
+
+    for _, key in ipairs(loadoutKeys) do
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,14 +74,20 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local loadoutKeys = currentLobby.loadouts
+                    if type(loadoutKeys) == 'string' then loadoutKeys = { loadoutKeys } end
+
+                    for _, key in ipairs(loadoutKeys) do
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
+                        if allowed then break end
                     end
 
                     if not allowed then
@@ -149,7 +162,7 @@ function HandleDeath(killerPed)
         -- Wiederbelebung an zufälligem Punkt auf der Map
         local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
         NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w, true, false)
-        GiveLoadout(currentLobby.loadout)
+        GiveLoadout(currentLobby.loadouts)
     end)
 end
 
@@ -159,6 +172,39 @@ AddEventHandler('ffa:spectatePlayer', function(targetId)
     local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
     if DoesEntityExist(targetPed) then
         NetworkSetInSpectatorMode(true, targetPed)
+    end
+end)
+
+-- Relationship Groups für TDM (Anti-Teamkill)
+Citizen.CreateThread(function()
+    AddRelationshipGroup('FFA_BLUE')
+    AddRelationshipGroup('FFA_RED')
+    AddRelationshipGroup('FFA_NEUTRAL')
+
+    -- TDM Regeln: Blau vs Rot hassen sich, aber untereinander befreundet
+    SetRelationshipBetweenGroups(5, GetHashKey('FFA_BLUE'), GetHashKey('FFA_RED'))
+    SetRelationshipBetweenGroups(5, GetHashKey('FFA_RED'), GetHashKey('FFA_BLUE'))
+
+    SetRelationshipBetweenGroups(0, GetHashKey('FFA_BLUE'), GetHashKey('FFA_BLUE'))
+    SetRelationshipBetweenGroups(0, GetHashKey('FFA_RED'), GetHashKey('FFA_RED'))
+end)
+
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    if not currentLobby or currentLobby.mode ~= 'tdm' then return end
+
+    for serverId, team in pairs(teams) do
+        local player = GetPlayerFromServerId(serverId)
+        if player ~= -1 then
+            local ped = GetPlayerPed(player)
+            if team == 'blue' then
+                SetPedRelationshipGroupHash(ped, GetHashKey('FFA_BLUE'))
+            elseif team == 'red' then
+                SetPedRelationshipGroupHash(ped, GetHashKey('FFA_RED'))
+            else
+                SetPedRelationshipGroupHash(ped, GetHashKey('FFA_NEUTRAL'))
+            end
+        end
     end
 end)
 
