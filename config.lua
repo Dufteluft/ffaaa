@@ -1,12 +1,12 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Standard-Taste für das Menü (Wird über RegisterKeyMapping gemappt)
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -127,18 +115,18 @@ Config.Locales = {
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
+        ['round_time'] = 'Rundenzeit',
         ['max_players'] = 'Max. Spieler',
+        ['respawn_time'] = 'Respawn-Zeit',
+        ['kill_limit'] = 'Kill-Limit',
         ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
         ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
-        ['kill_limit'] = 'Kill-Limit zum Sieg',
         ['btn_create'] = 'Lobby erstellen',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
         ['btn_ready'] = 'Bereit',
         ['btn_start'] = 'Spiel starten',
-        ['btn_leave'] = 'Lobby verlassen',
+        ['btn_leave'] = 'Verlassen',
         ['btn_kick'] = 'Kicken',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
@@ -151,7 +139,8 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['btn_back_lobby'] = 'Zurück zur Lobby'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -162,12 +151,12 @@ Config.Locales = {
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
+        ['round_time'] = 'Round Time',
         ['max_players'] = 'Max Players',
+        ['respawn_time'] = 'Respawn Time',
+        ['kill_limit'] = 'Kill Limit',
         ['vehicles_allowed'] = 'Vehicles Allowed',
         ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
-        ['kill_limit'] = 'Kill Limit to Win',
         ['btn_create'] = 'Create Lobby',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',
@@ -186,14 +175,16 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['btn_back_lobby'] = 'Back to Lobby'
     }
 }
 
 function _U(str, ...)
-    if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
-        return string.format(Config.Locales[Config.Locale][str], ...)
+    local locale = Config.Locale or 'de'
+    if Config.Locales[locale] and Config.Locales[locale][str] then
+        return string.format(Config.Locales[locale][str], ...)
     else
-        return 'Translation [' .. Config.Locale .. '][' .. str .. '] not found'
+        return 'Translation [' .. locale .. '][' .. str .. '] not found'
     end
 end

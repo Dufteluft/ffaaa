@@ -52,6 +52,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    NetworkSetInSpectatorMode(false, ped)
 
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
@@ -77,20 +78,32 @@ function TeleportToMap(mapId)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- Performance Loop: HUD-Updates und Munition
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped) - 100
+            local healthPercent = math.floor((health / maxHealth) * 100)
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local armorPercent = math.floor((armor / 100) * 100)
+
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local ammoMsg = ""
+
+            if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
+                local _, ammoInClip = GetAmmoInClip(ped, currentWeapon)
+                local totalAmmo = GetAmmoInPedWeapon(ped, currentWeapon)
+                ammoMsg = ammoInClip .. " / " .. (totalAmmo - ammoInClip)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
-                armor = armor,
-                ammo = ammo
+                health = healthPercent,
+                armor = armorPercent,
+                ammo = ammoMsg
             })
         end
         Wait(500)
