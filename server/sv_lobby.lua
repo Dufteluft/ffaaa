@@ -197,6 +197,25 @@ AddEventHandler('ffa:toggleReady', function()
     end
 end)
 
+-- Event: Lobby-Einstellungen aktualisieren (durch Host)
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.mode = settings.mode or lobby.mode
+            lobby.friendlyFire = settings.friendlyFire ~= nil and settings.friendlyFire or lobby.friendlyFire
+            -- Weitere Einstellungen können hier synchronisiert werden
+
+            -- Clients informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:settingsUpdated', pid, lobby)
+            end
+        end
+    end
+end)
+
 -- Event: Team setzen
 RegisterServerEvent('ffa:setTeam')
 AddEventHandler('ffa:setTeam', function(team)
