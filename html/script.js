@@ -23,34 +23,55 @@ function playSound(name) {
     }
 }
 
+// Dynamic Localization
+function applyLocalization(config) {
+    const locale = config.Locale || 'de';
+    const translations = config.Locales[locale];
+    if (!translations) return;
+
+    document.querySelectorAll('[data-locale]').forEach(el => {
+        const key = el.dataset.locale;
+        if (translations[key]) {
+            if (el.tagName === 'INPUT' && el.type === 'placeholder') {
+                el.placeholder = translations[key];
+            } else if (el.tagName === 'OPTION') {
+                el.text = translations[key];
+            } else {
+                el.innerText = translations[key];
+            }
+        }
+    });
+}
+
 // Tab Switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        if (btn.dataset.tab === currentTab) return;
+        const targetTab = btn.dataset.tab;
+        if (targetTab === currentTab) return;
         playSound('click');
+
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.style.display = 'none';
+            content.classList.remove('active');
+        });
 
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
+        const activeContent = document.getElementById(`tab-${targetTab}`);
+        if (activeContent) {
+            activeContent.style.display = 'block';
+            setTimeout(() => activeContent.classList.add('active'), 50);
+        }
+
+        // Sidebar filters only for Lobby Browser
+        document.getElementById('sidebar-filters').style.display = (targetTab === 'lobby') ? 'flex' : 'none';
+
+        currentTab = targetTab;
+        if (currentTab === 'ffa' || currentTab === 'lobby') {
             fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
+        }
     });
-});
-
-// Modal Controls
-document.getElementById('open-create-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
 });
 
 // Slider Sync
@@ -65,6 +86,8 @@ const setupSlider = (id) => {
 };
 setupSlider('round-time');
 setupSlider('max-players');
+setupSlider('respawn-time');
+setupSlider('kill-limit');
 
 // NUI Message Handling
 window.addEventListener('message', (event) => {
@@ -73,6 +96,7 @@ window.addEventListener('message', (event) => {
     switch (data.action) {
         case 'open':
             document.getElementById('app').style.display = 'flex';
+            applyLocalization(data.config);
             setupInitialData(data.config, data.maps);
             fetchLobbies();
             break;
@@ -80,11 +104,15 @@ window.addEventListener('message', (event) => {
             document.getElementById('app').style.display = 'none';
             break;
         case 'updateLobbies':
-            renderLobbyList(data.lobbies);
+            if (currentTab === 'ffa') {
+                renderLobbyList(data.lobbies, 'ffa-lobby-container');
+            } else {
+                renderLobbyList(data.lobbies, 'lobby-list-container');
+            }
             break;
         case 'lobbyCreated':
         case 'lobbyJoined':
-            document.getElementById('create-lobby-modal').style.display = 'none';
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
             showLobbyArea(data.lobby, data.action === 'lobbyCreated');
             break;
         case 'updateLobbyPlayers':
@@ -95,7 +123,32 @@ window.addEventListener('message', (event) => {
             document.getElementById('lobby-waiting-area').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('game-hud').style.display = 'flex';
+            document.getElementById('hud-tdm-scores').style.display = data.mode === 'tdm' ? 'flex' : 'none';
+            break;
+        case 'hideHUD':
+            document.getElementById('game-hud').style.display = 'none';
+            break;
+        case 'updateHUD':
+            if (data.time) document.getElementById('hud-match-timer').innerText = data.time;
+            if (data.kills !== undefined) document.getElementById('hud-kills').innerText = data.kills;
+            if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
+            if (data.scoreBlue !== undefined) document.getElementById('hud-score-blue').innerText = data.scoreBlue;
+            if (data.scoreRed !== undefined) document.getElementById('hud-score-red').innerText = data.scoreRed;
+            break;
+        case 'updateHUDDetails':
+            document.getElementById('hud-health-fill').style.width = data.health + '%';
+            document.getElementById('hud-armor-fill').style.width = data.armor + '%';
+            document.getElementById('hud-ammo-val').innerText = data.ammo;
+            break;
+        case 'countdown':
+            const cd = document.getElementById('hud-countdown');
+            if (data.seconds > 0) {
+                cd.style.display = 'block';
+                document.getElementById('countdown-number').innerText = data.seconds;
+            } else {
+                cd.style.display = 'none';
+            }
             break;
         case 'showWinner':
             showWinnerScreen(data);
@@ -107,22 +160,40 @@ function setupInitialData(config, maps) {
     serverConfig = config;
     serverMaps = maps;
 
-    const mapSelect = document.getElementById('map-select');
-    mapSelect.innerHTML = '';
-    maps.forEach(map => {
-        const opt = document.createElement('option');
-        opt.value = map.id;
-        opt.innerText = map.label.toUpperCase();
-        mapSelect.appendChild(opt);
-    });
+    // Filter Maps
+    const filterMaps = document.getElementById('filter-maps');
+    if (filterMaps) {
+        filterMaps.innerHTML = '<option value="all">ALL MAPS</option>';
+        maps.forEach(map => {
+            const opt = document.createElement('option');
+            opt.value = map.id;
+            opt.innerText = map.label.toUpperCase();
+            filterMaps.appendChild(opt);
+        });
+    }
 
+    // Create Form Maps
+    const mapSelect = document.getElementById('map-select');
+    if (mapSelect) {
+        mapSelect.innerHTML = '';
+        maps.forEach(map => {
+            const opt = document.createElement('option');
+            opt.value = map.id;
+            opt.innerText = map.label.toUpperCase();
+            mapSelect.appendChild(opt);
+        });
+    }
+
+    // Create Form Loadouts
     const loadoutSelect = document.getElementById('loadout-select');
-    loadoutSelect.innerHTML = '';
-    for (let key in config.WeaponLoadouts) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = key.toUpperCase();
-        loadoutSelect.appendChild(opt);
+    if (loadoutSelect) {
+        loadoutSelect.innerHTML = '';
+        for (let key in config.WeaponLoadouts) {
+            const label = document.createElement('label');
+            label.className = 'loadout-item';
+            label.innerHTML = `<input type="checkbox" name="loadout" value="${key}"> ${key.toUpperCase()}`;
+            loadoutSelect.appendChild(label);
+        }
     }
 }
 
@@ -133,8 +204,9 @@ function fetchLobbies() {
     });
 }
 
-function renderLobbyList(lobbies) {
-    const container = document.getElementById('lobby-list-container');
+function renderLobbyList(lobbies, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
     container.innerHTML = '';
 
     lobbies.forEach((lobby, index) => {
@@ -210,13 +282,23 @@ function joinLobby(lobbyId, isSpectator = false) {
 
 document.getElementById('btn-create-lobby').addEventListener('click', () => {
     playSound('click');
+
+    const selectedLoadouts = [];
+    document.querySelectorAll('#loadout-select input:checked').forEach(cb => {
+        selectedLoadouts.push(cb.value);
+    });
+
     const settings = {
         name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
         mapId: document.getElementById('map-select').value,
         mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
+        loadout: selectedLoadouts,
         roundTime: parseInt(document.getElementById('round-time').value),
         maxPlayers: parseInt(document.getElementById('max-players').value),
+        respawnTime: parseInt(document.getElementById('respawn-time').value),
+        killLimit: parseInt(document.getElementById('kill-limit').value),
+        vehiclesAllowed: document.getElementById('vehicles-allowed').checked,
+        friendlyFire: document.getElementById('friendly-fire').checked
     };
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
@@ -276,6 +358,11 @@ document.getElementById('btn-leave-lobby').addEventListener('click', () => {
     fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
 });
 
+document.getElementById('btn-cancel-create')?.addEventListener('click', () => {
+    playSound('click');
+    document.querySelector('[data-tab="ffa"]').click();
+});
+
 document.querySelectorAll('.team-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         playSound('click');
@@ -313,6 +400,24 @@ function showWinnerScreen(data) {
     });
     html += `</tbody></table>`;
     statsTable.innerHTML = html;
+
+    // Map Voting
+    const voteGrid = document.getElementById('map-voting-grid');
+    voteGrid.innerHTML = '';
+    serverMaps.slice(0, 4).forEach(map => {
+        const div = document.createElement('div');
+        div.className = 'vote-item';
+        div.innerHTML = `<span class="map-name">${map.label.toUpperCase()}</span><span class="vote-count" id="votes-${map.id}">0 VOTES</span>`;
+        div.onclick = () => {
+            document.querySelectorAll('.vote-item').forEach(el => el.classList.remove('active'));
+            div.classList.add('active');
+            fetch(`https://${GetParentResourceName()}/voteMap`, {
+                method: 'POST',
+                body: JSON.stringify({ mapId: map.id })
+            });
+        };
+        voteGrid.appendChild(div);
+    });
 }
 
 document.getElementById('btn-back-to-menu').addEventListener('click', () => {

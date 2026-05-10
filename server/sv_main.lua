@@ -215,15 +215,34 @@ AddEventHandler('ffa:voteMap', function(mapId)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
-        if lobby and not lobby.isPersistent then
-            lobby.mapId = mapId
-            local map = Utils.GetMapById(mapId)
-            if map then lobby.mapLabel = map.label end
+        if lobby then
+            if not lobby.votes then lobby.votes = {} end
+            lobby.votes[source] = mapId
 
-            -- Informiere Lobby-Chat über den Vote
-            for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+            -- Stimmen zählen
+            local counts = {}
+            for pid, mid in pairs(lobby.votes) do
+                counts[mid] = (counts[mid] or 0) + 1
             end
+
+            -- Update Clients
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:updateVotes', pid, counts)
+            end
+
+            -- Wenn alle abgestimmt haben oder Zeit um ist, Map für nächste Runde setzen
+            -- (Hier setzen wir sie einfach direkt auf die mit den meisten Stimmen wenn wir die Lobby neustarten)
+            local topMap = mapId
+            local maxV = 0
+            for mid, v in pairs(counts) do
+                if v > maxV then
+                    maxV = v
+                    topMap = mid
+                end
+            end
+            lobby.mapId = topMap
+            local map = Utils.GetMapById(topMap)
+            if map then lobby.mapLabel = map.label end
         end
     end
 end)
