@@ -1,12 +1,12 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -14,31 +14,49 @@ Config.DefaultSettings = {
 
 Config.WeaponLoadouts = {
     ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        label = 'Pistole',
+        weapons = {
+            { name = 'WEAPON_PISTOL', ammo = 250 },
+            { name = 'WEAPON_COMBATPISTOL', ammo = 250 }
+        }
     },
     ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        label = 'SMG',
+        weapons = {
+            { name = 'WEAPON_SMG', ammo = 250 },
+            { name = 'WEAPON_COMBATMG', ammo = 250 }
+        }
     },
     ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        label = 'Sturmgewehr',
+        weapons = {
+            { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 },
+            { name = 'WEAPON_CARBINERIFLE', ammo = 250 }
+        }
     },
     ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        label = 'Scharfschütze',
+        weapons = {
+            { name = 'WEAPON_SNIPERRIFLE', ammo = 50 },
+            { name = 'WEAPON_HEAVYSNIPER', ammo = 50 }
+        }
     },
     ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
+        label = 'Schrotflinte',
+        weapons = {
+            { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 },
+            { name = 'WEAPON_SAWNOFFSHOTGUN', ammo = 50 }
+        }
     },
     ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        label = 'Alle Waffen',
+        weapons = {
+            { name = 'WEAPON_PISTOL', ammo = 250 },
+            { name = 'WEAPON_SMG', ammo = 250 },
+            { name = 'WEAPON_ASSAULTRIFLE', ammo = 250 },
+            { name = 'WEAPON_SNIPERRIFLE', ammo = 50 },
+            { name = 'WEAPON_PUMPSHOTGUN', ammo = 50 }
+        }
     }
 }
 
@@ -140,6 +158,8 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -151,7 +171,12 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Leben',
+        ['armor'] = 'Rüstung',
+        ['ammo'] = 'Munition',
+        ['time_left'] = 'Verbleibende Zeit',
+        ['col_name'] = 'Name'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -175,6 +200,8 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -186,7 +213,12 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['health'] = 'Health',
+        ['armor'] = 'Armor',
+        ['ammo'] = 'Ammo',
+        ['time_left'] = 'Time Left',
+        ['col_name'] = 'Name'
     }
 }
 
