@@ -202,12 +202,21 @@ select:hover {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.lobby-list.switching {
-    opacity: 0;
-    transform: translateX(-20px);
+.tab-content {
+    display: none;
+    height: 100%;
+    animation: tabFadeIn 0.3s ease-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes tabFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Lobby Item */
@@ -398,26 +407,124 @@ select:hover {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* Form Elements In Modal */
-.modal-content h2 {
-    margin-bottom: 30px;
+/* Form Elements */
+.create-form-container {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.create-form-container h2 {
     font-family: 'Impact', sans-serif;
+    font-size: 32px;
+    margin-bottom: 25px;
     letter-spacing: 1px;
 }
 
-.input-group { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 800px;
+}
+
+.input-group { margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
 .input-group label { font-size: 11px; font-weight: 900; color: var(--text-muted); }
-input[type="text"], input[type="range"] {
+input[type="text"], select, input[type="range"] {
     background: var(--surface);
     border: 1px solid var(--border);
     color: #fff;
     padding: 12px;
     border-radius: 4px;
+    outline: none;
+    transition: border-color 0.2s;
 }
 
-.input-row { display: flex; gap: 20px; }
+input[type="text"]:focus, select:focus {
+    border-color: var(--primary);
+}
 
-.btn-group { display: flex; gap: 15px; margin-top: 30px; }
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.weapon-multi-select {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.weapon-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.weapon-option input {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+}
+
+/* Toggle Switch */
+.toggle-group {
+    flex-direction: row !important;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--surface);
+    padding: 12px 15px;
+    border-radius: 4px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider.round {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #333;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.btn-group { display: flex; gap: 15px; margin-top: 10px; }
 .confirm-btn { flex: 1; background: var(--success); color: #000; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 .cancel-btn { flex: 1; background: #333; color: #fff; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 
@@ -481,3 +588,148 @@ input[type="text"], input[type="range"] {
 }
 #winner-title { font-size: 60px; font-family: 'Impact'; margin-bottom: 10px; }
 #winner-name { font-size: 32px; color: var(--primary); margin-bottom: 40px; }
+
+/* HUD Styles */
+#game-hud {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 500;
+}
+
+.hud-top-center {
+    position: absolute;
+    top: 40px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.match-timer {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 30px;
+    border-radius: 4px;
+    border-bottom: 3px solid var(--primary);
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.tdm-score-container {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px 20px;
+    border-radius: 4px;
+    font-size: 24px;
+    font-weight: 900;
+    gap: 15px;
+}
+
+.score-blue { color: #2196f3; }
+.score-red { color: #f44336; }
+.score-divider { color: var(--text-muted); }
+
+.hud-bottom-right {
+    position: absolute;
+    bottom: 40px; right: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 15px;
+}
+
+.hud-weapon-info {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 20px;
+    border-radius: 4px;
+    border-right: 4px solid var(--warning);
+}
+
+.ammo-count {
+    font-size: 28px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.hud-player-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat-item {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px 15px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.hud-status-bars {
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hud-bar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hud-bar-bg {
+    flex: 1;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.hud-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.hud-bar-fill.health { background: var(--success); box-shadow: 0 0 10px var(--success); }
+.hud-bar-fill.armor { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+
+.hud-bar-wrapper i {
+    width: 20px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.hud-kill-feed {
+    position: absolute;
+    top: 40px; right: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.kill-entry {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px 15px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    border-right: 3px solid var(--danger);
+    animation: killSlideIn 0.3s forwards, killFadeOut 0.5s 4.5s forwards;
+}
+
+@keyframes killSlideIn {
+    from { transform: translateX(50px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes killFadeOut {
+    to { opacity: 0; transform: translateY(-10px); }
+}

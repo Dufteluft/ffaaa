@@ -30,7 +30,7 @@ function CreateLobby(playerId, settings)
         mapId = settings.mapId,
         mapLabel = map.label,
         mode = settings.mode,
-        loadout = settings.loadout,
+        loadouts = settings.loadouts,
         roundTime = settings.roundTime,
         maxPlayers = settings.maxPlayers,
         vehiclesAllowed = settings.vehiclesAllowed,
@@ -53,6 +53,33 @@ end
 -- Event: Lobby erstellen (via NUI)
 RegisterServerEvent('ffa:createLobby')
 AddEventHandler('ffa:createLobby', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        -- Wenn Host bereits in einer Lobby ist und Einstellungen ändert
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.name = settings.name
+            lobby.mapId = settings.mapId
+            local map = Utils.GetMapById(settings.mapId)
+            lobby.mapLabel = map.label
+            lobby.mode = settings.mode
+            lobby.loadouts = settings.loadouts
+            lobby.roundTime = settings.roundTime
+            lobby.maxPlayers = settings.maxPlayers
+            lobby.vehiclesAllowed = settings.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire
+            lobby.respawnTime = settings.respawnTime
+            lobby.killLimit = settings.killLimit
+
+            -- Clients informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
+                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Lobby-Einstellungen wurden vom Host aktualisiert.')
+            end
+            return
+        end
+    end
+
     local lobbyId = CreateLobby(source, settings)
     if lobbyId then
         TriggerClientEvent('ffa:lobbyCreated', source, Lobbies[lobbyId])
@@ -263,7 +290,7 @@ MySQL.ready(function()
             mapId = map.id,
             mapLabel = map.label,
             mode = 'ffa',
-            loadout = 'all',
+        loadouts = {'all'},
             roundTime = 0, -- 0 bedeutet unendlich/kein Timer
             maxPlayers = 32,
             vehiclesAllowed = false,
@@ -308,7 +335,7 @@ AddEventHandler('ffa:quickJoin', function(mapId)
             name = "FFA " .. map.label,
             mapId = mapId,
             mode = 'ffa',
-            loadout = 'all',
+            loadouts = {'all'},
             roundTime = 60, -- Lange Laufzeit für persistente Lobbys
             maxPlayers = 32,
             vehiclesAllowed = false,

@@ -26,31 +26,31 @@ function playSound(name) {
 // Tab Switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        if (btn.dataset.tab === currentTab) return;
+        const targetTab = btn.dataset.tab;
+        if (targetTab === currentTab) return;
+
         playSound('click');
+
+        // UI Update
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+            content.style.display = 'none';
+        });
 
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
+        currentTab = targetTab;
+
+        if (targetTab === 'create') {
+            document.getElementById('tab-content-create').style.display = 'block';
+            document.getElementById('tab-content-create').classList.add('active');
+        } else {
+            document.getElementById('tab-content-list').style.display = 'block';
+            document.getElementById('tab-content-list').classList.add('active');
             fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
+        }
     });
-});
-
-// Modal Controls
-document.getElementById('open-create-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
 });
 
 // Slider Sync
@@ -65,6 +65,8 @@ const setupSlider = (id) => {
 };
 setupSlider('round-time');
 setupSlider('max-players');
+setupSlider('respawn-time');
+setupSlider('kill-limit');
 
 // NUI Message Handling
 window.addEventListener('message', (event) => {
@@ -95,7 +97,26 @@ window.addEventListener('message', (event) => {
             document.getElementById('lobby-waiting-area').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('game-hud').style.display = 'block';
+            document.getElementById('hud-tdm-score').style.display = data.mode === 'tdm' ? 'flex' : 'none';
+            break;
+        case 'hideHUD':
+            document.getElementById('game-hud').style.display = 'none';
+            break;
+        case 'updateHUD':
+            if (data.time) document.getElementById('hud-timer').innerText = data.time;
+            if (data.kills !== undefined) document.getElementById('hud-kills').innerText = data.kills;
+            if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
+            if (data.scoreBlue !== undefined) document.getElementById('hud-score-blue').innerText = data.scoreBlue;
+            if (data.scoreRed !== undefined) document.getElementById('hud-score-red').innerText = data.scoreRed;
+            break;
+        case 'updateHUDDetails':
+            document.getElementById('hud-health-bar').style.width = data.health + '%';
+            document.getElementById('hud-armor-bar').style.width = data.armor + '%';
+            document.getElementById('hud-ammo').innerText = data.ammo;
+            break;
+        case 'killFeed':
+            addKillFeed(data.killer, data.victim);
             break;
         case 'showWinner':
             showWinnerScreen(data);
@@ -107,6 +128,9 @@ function setupInitialData(config, maps) {
     serverConfig = config;
     serverMaps = maps;
 
+    // Apply Localizations
+    applyLocalization(config.Locale);
+
     const mapSelect = document.getElementById('map-select');
     mapSelect.innerHTML = '';
     maps.forEach(map => {
@@ -116,14 +140,37 @@ function setupInitialData(config, maps) {
         mapSelect.appendChild(opt);
     });
 
-    const loadoutSelect = document.getElementById('loadout-select');
-    loadoutSelect.innerHTML = '';
+    const weaponContainer = document.getElementById('weapon-checkboxes');
+    weaponContainer.innerHTML = '';
     for (let key in config.WeaponLoadouts) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = key.toUpperCase();
-        loadoutSelect.appendChild(opt);
+        const label = document.createElement('label');
+        label.className = 'weapon-option';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'loadout';
+        checkbox.value = key;
+        if (key === 'pistol') checkbox.checked = true;
+
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(key.toUpperCase()));
+        weaponContainer.appendChild(label);
     }
+}
+
+function applyLocalization(lang) {
+    const locale = serverConfig.Locales[lang];
+    if (!locale) return;
+
+    document.querySelectorAll('[data-locale]').forEach(el => {
+        const key = el.dataset.locale;
+        if (locale[key]) {
+            if (el.tagName === 'INPUT' && el.type === 'text') {
+                el.placeholder = locale[key];
+            } else {
+                el.innerText = locale[key];
+            }
+        }
+    });
 }
 
 function fetchLobbies() {
@@ -133,11 +180,24 @@ function fetchLobbies() {
     });
 }
 
+function addKillFeed(killer, victim) {
+    const feed = document.getElementById('hud-kill-feed');
+    const entry = document.createElement('div');
+    entry.className = 'kill-entry';
+    entry.innerHTML = `<span class="killer">${killer.toUpperCase()}</span> <i class="fa-solid fa-crosshairs"></i> <span class="victim">${victim.toUpperCase()}</span>`;
+    feed.prepend(entry);
+    setTimeout(() => entry.remove(), 5000);
+}
+
 function renderLobbyList(lobbies) {
     const container = document.getElementById('lobby-list-container');
     container.innerHTML = '';
 
-    lobbies.forEach((lobby, index) => {
+    // Filter: Hide full lobbies if coming from Tab 3 (Lobby List)
+    const showFull = document.getElementById('filter-players')?.value !== 'not-full';
+    const filteredLobbies = lobbies.filter(l => showFull || (l.playerCount < l.maxPlayers));
+
+    filteredLobbies.forEach((lobby, index) => {
         const item = document.createElement('div');
         item.className = 'lobby-item';
         item.style.animationDelay = `${index * 0.05}s`;
@@ -210,19 +270,54 @@ function joinLobby(lobbyId, isSpectator = false) {
 
 document.getElementById('btn-create-lobby').addEventListener('click', () => {
     playSound('click');
+
+    // Collect multi-select loadouts
+    const selectedLoadouts = [];
+    document.querySelectorAll('input[name="loadout"]:checked').forEach(cb => {
+        selectedLoadouts.push(cb.value);
+    });
+
+    if (selectedLoadouts.length === 0) {
+        // Fallback to pistol if none selected
+        selectedLoadouts.push('pistol');
+    }
+
     const settings = {
         name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
         mapId: document.getElementById('map-select').value,
         mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
+        loadouts: selectedLoadouts,
         roundTime: parseInt(document.getElementById('round-time').value),
         maxPlayers: parseInt(document.getElementById('max-players').value),
+        vehiclesAllowed: document.getElementById('vehicles-allowed').checked,
+        friendlyFire: document.getElementById('friendly-fire').checked,
+        respawnTime: parseInt(document.getElementById('respawn-time').value),
+        killLimit: parseInt(document.getElementById('kill-limit').value)
     };
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
         method: 'POST',
         body: JSON.stringify(settings)
     });
+});
+
+document.getElementById('btn-reset-form').addEventListener('click', () => {
+    playSound('click');
+    // Reset form to defaults
+    document.getElementById('lobby-name').value = '';
+    document.getElementById('map-select').selectedIndex = 0;
+    document.getElementById('mode-select').selectedIndex = 0;
+    document.querySelectorAll('input[name="loadout"]').forEach(cb => cb.checked = (cb.value === 'pistol'));
+    document.getElementById('round-time').value = 15;
+    document.getElementById('round-time-val').innerText = 15;
+    document.getElementById('max-players').value = 16;
+    document.getElementById('max-players-val').innerText = 16;
+    document.getElementById('vehicles-allowed').checked = false;
+    document.getElementById('friendly-fire').checked = false;
+    document.getElementById('respawn-time').value = 5;
+    document.getElementById('respawn-time-val').innerText = 5;
+    document.getElementById('kill-limit').value = 30;
+    document.getElementById('kill-limit-val').innerText = 30;
 });
 
 function showLobbyArea(lobby, asHost) {
@@ -232,12 +327,47 @@ function showLobbyArea(lobby, asHost) {
 
     document.getElementById('lobby-title').innerText = lobby.name.toUpperCase();
     document.getElementById('lobby-waiting-area').style.display = 'flex';
-    document.getElementById('btn-start-game').style.display = asHost ? 'block' : 'none';
 
-    document.getElementById('lobby-info-summary').innerHTML = `
+    const startBtn = document.getElementById('btn-start-game');
+    startBtn.style.display = asHost ? 'block' : 'none';
+
+    // Initial summary
+    updateLobbySummary(lobby);
+
+    // Host can edit settings
+    if (asHost) {
+        const summary = document.getElementById('lobby-info-summary');
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-settings-btn';
+        editBtn.innerText = 'EDIT SETTINGS';
+        editBtn.id = 'btn-edit-settings';
+        editBtn.onclick = () => {
+            document.getElementById('lobby-waiting-area').style.display = 'none';
+            document.querySelector('[data-tab="create"]').click();
+            // Pre-fill form with current settings
+            document.getElementById('lobby-name').value = lobby.name;
+            document.getElementById('map-select').value = lobby.mapId;
+            document.getElementById('mode-select').value = lobby.mode;
+            document.getElementById('round-time').value = lobby.roundTime;
+            document.getElementById('round-time-val').innerText = lobby.roundTime;
+            document.getElementById('max-players').value = lobby.maxPlayers;
+            document.getElementById('max-players-val').innerText = lobby.maxPlayers;
+            // Loadouts
+            document.querySelectorAll('input[name="loadout"]').forEach(cb => {
+                cb.checked = lobby.loadouts.includes(cb.value);
+            });
+        };
+        summary.appendChild(editBtn);
+    }
+}
+
+function updateLobbySummary(lobby) {
+    const summary = document.getElementById('lobby-info-summary');
+    summary.innerHTML = `
         <p>MAP: ${lobby.mapLabel}</p>
         <p>MODE: ${lobby.mode.toUpperCase()}</p>
         <p>TIME: ${lobby.roundTime} MIN</p>
+        <p>KILL LIMIT: ${lobby.killLimit}</p>
     `;
 }
 
