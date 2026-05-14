@@ -25,22 +25,34 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
-        isPersistent = lobby.isPersistent
+        isPersistent = lobby.isPersistent,
+        mode = lobby.mode
     })
-    TriggerEvent('ffa:updateHUDStats', 0, 0)
+
+    SendNUIMessage({
+        action = 'updateHUD',
+        kills = 0,
+        deaths = 0,
+        scoreBlue = 0,
+        scoreRed = 0
+    })
 end)
 
--- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
-
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadouts)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadouts) == "string" then
+        loadouts = {loadouts}
+    end
+
+    for _, loadoutKey in ipairs(loadouts) do
+        local weapons = Config.WeaponLoadouts[loadoutKey]
+        if weapons then
+            for _, weapon in ipairs(weapons) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,14 +79,20 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local loadoutKeys = currentLobby.loadout
+                    if type(loadoutKeys) == "string" then loadoutKeys = {loadoutKeys} end
+
+                    for _, lKey in ipairs(loadoutKeys) do
+                        local weapons = Config.WeaponLoadouts[lKey]
+                        if weapons then
+                            for _, w in ipairs(weapons) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
+                        if allowed then break end
                     end
 
                     if not allowed then
@@ -115,36 +133,36 @@ Citizen.CreateThread(function()
 end)
 
 -- Funktion: Behandelt Tod, Kill-Cam und Respawn
--- Funktion: Behandelt Tod, Kill-Cam/Zuschauen und Respawn
 function HandleDeath(killerPed)
     Citizen.CreateThread(function()
-        local killerCoords = GetEntityCoords(killerPed)
         local playerPed = PlayerPedId()
+        local respawnTime = currentLobby.respawnTime or 5
 
-        -- Kill-Cam: Fokus für 3 Sek auf den Mörder
+        -- Kill-Cam: Fokus auf den Mörder
         local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
         SetCamCoord(cam, GetEntityCoords(playerPed))
-        PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
+
+        if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
+            PointCamAtEntity(cam, killerPed, 0.0, 0.0, 0.0, true)
+        end
+
         RenderScriptCams(true, true, 1000, true, true)
 
-        Wait(3000)
+        -- Wartezeit basierend auf Respawn-Time
+        local camTime = math.min(respawnTime * 1000, 3000)
+        Wait(camTime)
 
         -- Wenn Respawn noch nicht fällig, wechsle in Zuschauer-Modus
-        if currentLobby.respawnTime > 3 then
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
-
-            -- Automatisch auf Killer oder zufälligen Spieler schauen
+        if respawnTime * 1000 > camTime then
             if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
                 NetworkSetInSpectatorMode(true, killerPed)
             end
-
-            Wait((currentLobby.respawnTime - 3) * 1000)
+            Wait((respawnTime * 1000) - camTime)
             NetworkSetInSpectatorMode(false, playerPed)
-        else
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
         end
+
+        RenderScriptCams(false, true, 500, true, true)
+        DestroyCam(cam, true)
 
         -- Wiederbelebung an zufälligem Punkt auf der Map
         local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
@@ -152,15 +170,6 @@ function HandleDeath(killerPed)
         GiveLoadout(currentLobby.loadout)
     end)
 end
-
--- Zuschauer-Modus (Fixiert Kamera auf Zielspieler)
-RegisterNetEvent('ffa:spectatePlayer')
-AddEventHandler('ffa:spectatePlayer', function(targetId)
-    local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
-    if DoesEntityExist(targetPed) then
-        NetworkSetInSpectatorMode(true, targetPed)
-    end
-end)
 
 -- HUD-Aktualisierungen vom Server
 RegisterNetEvent('ffa:updateTimer')
@@ -175,8 +184,7 @@ AddEventHandler('ffa:updateHUDStats', function(kills, deaths)
     SendNUIMessage({
         action = 'updateHUD',
         kills = kills,
-        deaths = deaths,
-        mode = currentLobby.mode
+        deaths = deaths
     })
 end)
 
@@ -185,8 +193,7 @@ AddEventHandler('ffa:updateTDMScore', function(blue, red)
     SendNUIMessage({
         action = 'updateHUD',
         scoreBlue = blue,
-        scoreRed = red,
-        mode = currentLobby.mode
+        scoreRed = red
     })
 end)
 
@@ -194,12 +201,12 @@ end)
 RegisterNetEvent('ffa:gameEnded')
 AddEventHandler('ffa:gameEnded', function(data)
     playerState.isInGame = false
-    FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
+    FreezeEntityPosition(PlayerPedId(), true)
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
-    -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
 end)
