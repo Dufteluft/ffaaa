@@ -14,6 +14,7 @@ AddEventHandler('ffa:startGame', function()
 
         -- Spieler Teams zuweisen (Auto-Balance)
         local blueCount, redCount = 0, 0
+
         -- Zuerst bestehende Wünsche zählen
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
@@ -24,7 +25,8 @@ AddEventHandler('ffa:startGame', function()
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
             if lobby.mode == 'tdm' then
-                if pState.team == 'none' or pState.team == 'random' or pState.team == 'spectator' then
+                -- Wenn kein Team oder Random gewählt wurde, automatisch zuweisen
+                if pState.team == 'none' or pState.team == 'random' then
                     if blueCount <= redCount then
                         pState.team = 'blue'
                         blueCount = blueCount + 1
@@ -32,12 +34,20 @@ AddEventHandler('ffa:startGame', function()
                         pState.team = 'red'
                         redCount = redCount + 1
                     end
+                elseif pState.team == 'spectator' then
+                    -- Zuschauer bleiben Zuschauer
                 end
             else
+                -- In FFA sind alle im gleichen 'ffa' Team-Typ
                 pState.team = 'ffa'
             end
 
-            TriggerClientEvent('ffa:gameStarting', pid, lobby)
+            if pState.team ~= 'spectator' then
+                TriggerClientEvent('ffa:gameStarting', pid, lobby)
+            else
+                -- Zuschauer direkt zum Spectating schicken (falls implementiert)
+                TriggerClientEvent('ffa:spectatePlayer', pid, lobby.host)
+            end
         end
 
         -- Team-Synchronisation für alle Spieler in der Lobby

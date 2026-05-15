@@ -4,14 +4,16 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
+    local winVal = isWin and 1 or 0
 
-    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
-    MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
-        ['@id'] = identifier,
-        ['@k'] = kills,
-        ['@d'] = deaths,
-        ['@w'] = isWin and 1 or 0
-    })
+    -- Kompatibilität: Prüfen ob oxmysql oder mysql-async genutzt wird
+    local query = 'INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (?, ?, ?, 1, ?) ON DUPLICATE KEY UPDATE kills = kills + VALUES(kills), deaths = deaths + VALUES(deaths), games_played = games_played + 1, wins = wins + VALUES(wins)'
+
+    if exports['oxmysql'] then
+        exports.oxmysql:execute(query, { identifier, kills, deaths, winVal })
+    else
+        MySQL.Async.execute(query, { identifier, kills, deaths, winVal })
+    end
 end
 
 -- Event: Statistiken für UI abrufen
