@@ -33,14 +33,26 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+-- Unterstützt nun auch Arrays von Loadouts (Multi-Select)
+function GiveLoadout(loadouts)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadouts) == 'table' then
+        for _, key in ipairs(loadouts) do
+            local weapons = Config.WeaponLoadouts[key]
+            if weapons then
+                for _, weapon in ipairs(weapons) do
+                    GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+                end
+            end
+        end
+    else
+        local weapons = Config.WeaponLoadouts[loadouts]
+        if weapons then
+            for _, weapon in ipairs(weapons) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,12 +79,29 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local activeLoadouts = currentLobby.loadout
+
+                    if type(activeLoadouts) == 'table' then
+                        for _, key in ipairs(activeLoadouts) do
+                            local weapons = Config.WeaponLoadouts[key]
+                            if weapons then
+                                for _, w in ipairs(weapons) do
+                                    if GetHashKey(w.name) == currentWeapon then
+                                        allowed = true
+                                        break
+                                    end
+                                end
+                            end
+                            if allowed then break end
+                        end
+                    else
+                        local weapons = Config.WeaponLoadouts[activeLoadouts]
+                        if weapons then
+                            for _, w in ipairs(weapons) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
                     end
@@ -118,32 +147,43 @@ end)
 -- Funktion: Behandelt Tod, Kill-Cam/Zuschauen und Respawn
 function HandleDeath(killerPed)
     Citizen.CreateThread(function()
-        local killerCoords = GetEntityCoords(killerPed)
         local playerPed = PlayerPedId()
+        local killerCoords = GetEntityCoords(killerPed)
 
-        -- Kill-Cam: Fokus für 3 Sek auf den Mörder
-        local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-        SetCamCoord(cam, GetEntityCoords(playerPed))
-        PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
-        RenderScriptCams(true, true, 1000, true, true)
+        -- Kill-Cam: Fokus für 3 Sek auf den Mörder (falls vorhanden)
+        local cam = nil
+        if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
+            cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+            local pCoords = GetEntityCoords(playerPed)
+            SetCamCoord(cam, pCoords.x, pCoords.y, pCoords.z + 1.0)
+            PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
+            RenderScriptCams(true, true, 1000, true, true)
+        end
 
-        Wait(3000)
+        local killCamTime = 3000
+        Wait(killCamTime)
 
         -- Wenn Respawn noch nicht fällig, wechsle in Zuschauer-Modus
-        if currentLobby.respawnTime > 3 then
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
+        if currentLobby.respawnTime * 1000 > killCamTime then
+            if cam then
+                RenderScriptCams(false, true, 500, true, true)
+                DestroyCam(cam, true)
+                cam = nil
+            end
 
             -- Automatisch auf Killer oder zufälligen Spieler schauen
             if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
                 NetworkSetInSpectatorMode(true, killerPed)
             end
 
-            Wait((currentLobby.respawnTime - 3) * 1000)
+            Wait((currentLobby.respawnTime * 1000) - killCamTime)
             NetworkSetInSpectatorMode(false, playerPed)
         else
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
+            if cam then
+                RenderScriptCams(false, true, 500, true, true)
+                DestroyCam(cam, true)
+                cam = nil
+            end
         end
 
         -- Wiederbelebung an zufälligem Punkt auf der Map
