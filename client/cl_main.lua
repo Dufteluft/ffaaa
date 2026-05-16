@@ -38,7 +38,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -52,6 +52,8 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    SetCanAttackFriendly(ped, true, false)
+    NetworkSetFriendlyFireOption(true)
 
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
@@ -59,7 +61,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler mit Screen-Fade
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -73,22 +75,29 @@ function TeleportToMap(mapId)
 
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        FreezeEntityPosition(ped, true)
     end
 end
 
 -- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
 Citizen.CreateThread(function()
     while true do
-        if playerState and playerState.isInGame then
+        if playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = GetEntityHealth(ped)
+            local maxHealth = GetEntityMaxHealth(ped)
+
+            -- In GTA V ist Health oft 100-200. Wir wollen 0-100%
+            local healthPercent = math.floor(((health - 100) / (maxHealth - 100)) * 100)
+            if healthPercent < 0 then healthPercent = 0 end
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, currentWeapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })

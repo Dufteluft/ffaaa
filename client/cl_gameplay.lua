@@ -7,11 +7,15 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     playerState.deaths = 0
 
     -- UI ausblenden für Fokus aufs Spiel
-    SendNUIMessage({ action = 'gameStarting' })
+    SendNUIMessage({
+        action = 'gameStarting',
+        isTDM = (lobby.mode == 'tdm')
+    })
     SetNuiFocus(false, false)
 
     -- Auf Karte teleportieren und Countdown (nur wenn nicht persistent)
     TeleportToMap(lobby.mapId)
+
     if lobby.isPersistent then
         FreezeEntityPosition(PlayerPedId(), false)
         SendNUIMessage({ action = 'countdown', seconds = 0 })
@@ -20,27 +24,28 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     end
 
     -- Waffen austeilen
-    GiveLoadout(lobby.loadout)
+    GiveLoadout(lobby.loadouts)
 
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
+        isTDM = (lobby.mode == 'tdm'),
         isPersistent = lobby.isPersistent
     })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
 
--- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
-
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadoutKeys)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    for _, key in ipairs(loadoutKeys) do
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,19 +72,22 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    for _, key in ipairs(currentLobby.loadouts) do
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
+                        if allowed then break end
                     end
 
                     if not allowed then
                         RemoveWeaponFromPed(ped, currentWeapon)
-                        ESX.ShowNotification('~r~Diese Waffe ist in dieser Lobby nicht erlaubt!')
+                        ESX.ShowNotification('~r~Waffe nicht erlaubt!')
                     end
                 end
             end
@@ -87,7 +95,7 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Kill-Erkennung: Prüft ständig auf Tod des Spielers
+-- Kill-Erkennung und Respawn-Logik
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
@@ -97,17 +105,13 @@ Citizen.CreateThread(function()
                 local killerId = GetPedKiller(ped)
                 local killerServerId = -1
 
-                -- Ermitteln der Server-ID des Killers
                 if IsEntityAPed(killerId) and IsPedAPlayer(killerId) then
                     killerServerId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(killerId))
                 end
 
                 TriggerServerEvent('ffa:playerKilled', killerServerId)
-
-                -- Kill-Cam und Respawn-Logik ausführen
                 HandleDeath(killerId)
 
-                -- Warten bis Spieler wieder lebt
                 while IsEntityDead(ped) do Citizen.Wait(100) end
             end
         end
@@ -115,54 +119,122 @@ Citizen.CreateThread(function()
 end)
 
 -- Funktion: Behandelt Tod, Kill-Cam und Respawn
--- Funktion: Behandelt Tod, Kill-Cam/Zuschauen und Respawn
 function HandleDeath(killerPed)
     Citizen.CreateThread(function()
-        local killerCoords = GetEntityCoords(killerPed)
         local playerPed = PlayerPedId()
+        local respawnTime = currentLobby.respawnTime or 5
 
-        -- Kill-Cam: Fokus für 3 Sek auf den Mörder
-        local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-        SetCamCoord(cam, GetEntityCoords(playerPed))
-        PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
-        RenderScriptCams(true, true, 1000, true, true)
+        -- UI Respawn Timer zeigen
+        SendNUIMessage({ action = 'showRespawn', time = respawnTime })
 
-        Wait(3000)
+        -- Kill-Cam
+        if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
+            local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+            local killerCoords = GetEntityCoords(killerPed)
+            SetCamCoord(cam, GetEntityCoords(playerPed))
+            PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
+            RenderScriptCams(true, true, 1000, true, true)
 
-        -- Wenn Respawn noch nicht fällig, wechsle in Zuschauer-Modus
-        if currentLobby.respawnTime > 3 then
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
+            Wait(3000)
 
-            -- Automatisch auf Killer oder zufälligen Spieler schauen
-            if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
+            -- Spectator mode if respawn is still far
+            if respawnTime > 3 then
+                RenderScriptCams(false, true, 500, true, true)
+                DestroyCam(cam, true)
                 NetworkSetInSpectatorMode(true, killerPed)
+                Wait((respawnTime - 3) * 1000)
+                NetworkSetInSpectatorMode(false, playerPed)
+            else
+                RenderScriptCams(false, true, 500, true, true)
+                DestroyCam(cam, true)
             end
-
-            Wait((currentLobby.respawnTime - 3) * 1000)
-            NetworkSetInSpectatorMode(false, playerPed)
         else
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
+            Wait(respawnTime * 1000)
         end
 
-        -- Wiederbelebung an zufälligem Punkt auf der Map
+        -- Respawn
         local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
         NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w, true, false)
-        GiveLoadout(currentLobby.loadout)
+        GiveLoadout(currentLobby.loadouts)
+        SendNUIMessage({ action = 'hideRespawn' })
     end)
 end
 
--- Zuschauer-Modus (Fixiert Kamera auf Zielspieler)
-RegisterNetEvent('ffa:spectatePlayer')
-AddEventHandler('ffa:spectatePlayer', function(targetId)
-    local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
-    if DoesEntityExist(targetPed) then
-        NetworkSetInSpectatorMode(true, targetPed)
+-- Fahrzeug-Spawn Logik
+Citizen.CreateThread(function()
+    local playerVehicle = nil
+    while true do
+        Citizen.Wait(5000)
+        if playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local playerPed = PlayerPedId()
+            if not IsPedInAnyVehicle(playerPed, false) then
+                if playerVehicle and DoesEntityExist(playerVehicle) then
+                    local dist = #(GetEntityCoords(playerPed) - GetEntityCoords(playerVehicle))
+                    if dist > 50.0 then
+                        DeleteEntity(playerVehicle)
+                        playerVehicle = nil
+                    end
+                end
+
+                if not playerVehicle or not DoesEntityExist(playerVehicle) then
+                    local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                    local model = `zentorno`
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(10) end
+                    playerVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                    SetVehicleOnGroundProperly(playerVehicle)
+                    SetModelAsNoLongerNeeded(model)
+                end
+            end
+        end
     end
 end)
 
--- HUD-Aktualisierungen vom Server
+-- Anti-Teamkill
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
+            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
+            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
+                local targetId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(targetPed))
+                -- Wir nutzen Relationship Groups für den Schaden
+            end
+        end
+    end
+end)
+
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myId = GetPlayerServerId(PlayerId())
+    local myTeam = teams[myId]
+    if not myTeam then return end
+
+    AddRelationshipGroup('BLUE_TEAM')
+    AddRelationshipGroup('RED_TEAM')
+
+    if myTeam == 'blue' then
+        SetPedRelationshipGroupHash(PlayerPedId(), `BLUE_TEAM`)
+    elseif myTeam == 'red' then
+        SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
+    end
+
+    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`) -- Like
+    SetRelationshipBetweenGroups(1, `RED_TEAM`, `RED_TEAM`) -- Like
+    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`) -- Hate
+    SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`) -- Hate
+
+    -- Deaktiviere Schaden im eigenen Team wenn Friendly Fire aus ist
+    if currentLobby and not currentLobby.friendlyFire then
+        SetCanAttackFriendly(PlayerPedId(), false, false)
+        NetworkSetFriendlyFireOption(false)
+    else
+        SetCanAttackFriendly(PlayerPedId(), true, false)
+        NetworkSetFriendlyFireOption(true)
+    end
+end)
+
+-- HUD Updates
 RegisterNetEvent('ffa:updateTimer')
 AddEventHandler('ffa:updateTimer', function(time)
     SendNUIMessage({ action = 'updateHUD', time = time })
@@ -172,34 +244,27 @@ RegisterNetEvent('ffa:updateHUDStats')
 AddEventHandler('ffa:updateHUDStats', function(kills, deaths)
     playerState.kills = kills
     playerState.deaths = deaths
-    SendNUIMessage({
-        action = 'updateHUD',
-        kills = kills,
-        deaths = deaths,
-        mode = currentLobby.mode
-    })
+    SendNUIMessage({ action = 'updateHUD', kills = kills, deaths = deaths })
 end)
 
 RegisterNetEvent('ffa:updateTDMScore')
 AddEventHandler('ffa:updateTDMScore', function(blue, red)
-    SendNUIMessage({
-        action = 'updateHUD',
-        scoreBlue = blue,
-        scoreRed = red,
-        mode = currentLobby.mode
-    })
+    SendNUIMessage({ action = 'updateHUD', scoreBlue = blue, scoreRed = red })
 end)
 
--- Event: Spielende (Sieg-Anzeige und Sperren)
 RegisterNetEvent('ffa:gameEnded')
 AddEventHandler('ffa:gameEnded', function(data)
     playerState.isInGame = false
-    FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
+    FreezeEntityPosition(PlayerPedId(), true)
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
-
-    -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
+end)
+
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(data)
+    SendNUIMessage({ action = 'playSound', sound = data.sound })
 end)

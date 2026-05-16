@@ -4,14 +4,22 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
+    local winVal = isWin and 1 or 0
 
-    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
-    MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
+    -- Kompatibilitätsschicht für MySQL-Async / OxMySQL
+    local MySQLQuery = 'INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w'
+    local params = {
         ['@id'] = identifier,
         ['@k'] = kills,
         ['@d'] = deaths,
-        ['@w'] = isWin and 1 or 0
-    })
+        ['@w'] = winVal
+    }
+
+    if exports['oxmysql'] then
+        exports['oxmysql']:execute(MySQLQuery, params)
+    else
+        MySQL.Async.execute(MySQLQuery, params)
+    end
 end
 
 -- Event: Statistiken für UI abrufen
@@ -21,12 +29,20 @@ AddEventHandler('ffa:getStats', function()
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
+    local sourceId = source
 
-    MySQL.Async.fetchAll('SELECT * FROM ffa_stats WHERE identifier = @id', {
-        ['@id'] = identifier
-    }, function(result)
+    local MySQLQuery = 'SELECT * FROM ffa_stats WHERE identifier = @id'
+    local params = { ['@id'] = identifier }
+
+    local callback = function(result)
         if result and result[1] then
-            TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+            TriggerClientEvent('ffa:receiveStats', sourceId, result[1])
         end
-    end)
+    end
+
+    if exports['oxmysql'] then
+        exports['oxmysql']:query(MySQLQuery, params, callback)
+    else
+        MySQL.Async.fetchAll(MySQLQuery, params, callback)
+    end
 end)
