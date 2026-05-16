@@ -1,17 +1,29 @@
+-- Lokalisierungs-Helfer (Global verfügbar)
+-- Verwendet die Konfiguration für sprachspezifische Ausgaben
+function _U(str, ...)
+    if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
+        return string.format(Config.Locales[Config.Locale][str], ...)
+    else
+        return 'Translation [' .. Config.Locale .. '][' .. str .. '] not found'
+    end
+end
+
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
+-- Standardeinstellungen für neu erstellte Lobbys
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
 }
 
+-- Definierte Waffen-Loadouts für die Lobby-Erstellung
 Config.WeaponLoadouts = {
     ['pistol'] = {
         { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
@@ -42,6 +54,7 @@ Config.WeaponLoadouts = {
     }
 }
 
+-- Verfügbare Maps für FFA und Custom Lobbys
 Config.Maps = {
     {
         id = 'legion',
@@ -102,21 +115,10 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
+-- Lokalisierungstabelle für alle UI-Texte
 Config.Locales = {
     ['de'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -136,22 +138,28 @@ Config.Locales = {
         ['btn_create'] = 'Lobby erstellen',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
-        ['btn_ready'] = 'Bereit',
+        ['btn_ready'] = 'BEREIT',
         ['btn_start'] = 'Spiel starten',
-        ['btn_leave'] = 'Lobby verlassen',
+        ['btn_leave'] = 'VERLASSEN',
         ['btn_kick'] = 'Kicken',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
-        ['random'] = 'Zufall',
+        ['random'] = 'ZUFALL',
         ['waiting_for_players'] = 'Warte auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
-        ['game_ended'] = 'Runde beendet!',
+        ['game_ended'] = 'RUNDE BEENDET!',
         ['winner'] = 'Gewinner: %s',
-        ['kills'] = 'Kills',
-        ['deaths'] = 'Tode',
+        ['kills'] = 'KILLS',
+        ['deaths'] = 'TODE',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'SPIELER',
+        ['settings'] = 'EINSTELLUNGEN',
+        ['map_vote'] = 'Nächste Map wählen',
+        ['col_name'] = 'NAME',
+        ['btn_back_lobby'] = 'ZURÜCK ZUR LOBBY',
+        ['btn_back_menu'] = 'HAUPTMENÜ'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -171,29 +179,27 @@ Config.Locales = {
         ['btn_create'] = 'Create Lobby',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',
-        ['btn_ready'] = 'Ready',
+        ['btn_ready'] = 'READY',
         ['btn_start'] = 'Start Game',
-        ['btn_leave'] = 'Leave Lobby',
+        ['btn_leave'] = 'LEAVE',
         ['btn_kick'] = 'Kick',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
-        ['random'] = 'Random',
+        ['random'] = 'RANDOM',
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
-        ['game_ended'] = 'Game Ended!',
+        ['game_ended'] = 'GAME ENDED!',
         ['winner'] = 'Winner: %s',
-        ['kills'] = 'Kills',
-        ['deaths'] = 'Deaths',
+        ['kills'] = 'KILLS',
+        ['deaths'] = 'DEATHS',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'PLAYERS',
+        ['settings'] = 'SETTINGS',
+        ['map_vote'] = 'Vote Next Map',
+        ['col_name'] = 'NAME',
+        ['btn_back_lobby'] = 'BACK TO LOBBY',
+        ['btn_back_menu'] = 'MAIN MENU'
     }
 }
-
-function _U(str, ...)
-    if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
-        return string.format(Config.Locales[Config.Locale][str], ...)
-    else
-        return 'Translation [' .. Config.Locale .. '][' .. str .. '] not found'
-    end
-end
