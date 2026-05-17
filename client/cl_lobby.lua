@@ -1,34 +1,18 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
--- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
+-- Menü-Steuerung via RegisterKeyMapping (besser für Performance und Anpassbarkeit)
+RegisterKeyMapping('openffamenu', 'Open FFA Lobby Menu', 'keyboard', Config.MenuKey)
 
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
 
 -- Funktion: Hauptmenü öffnen
 function OpenMainMenu()
     if isMenuOpen then
-        -- Menü schließen wenn bereits offen
-        isMenuOpen = false
-        SetNuiFocus(false, false)
-        SendNUIMessage({ action = 'close' })
+        CloseMainMenu()
         return
     end
 
@@ -42,11 +26,15 @@ function OpenMainMenu()
     })
 end
 
--- Callback: UI schließen (vom JS aufgerufen)
-RegisterNUICallback('closeUI', function(data, cb)
+function CloseMainMenu()
     isMenuOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
+end
+
+-- Callback: UI schließen (vom JS aufgerufen)
+RegisterNUICallback('closeUI', function(data, cb)
+    CloseMainMenu()
     cb('ok')
 end)
 
@@ -104,7 +92,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -169,8 +157,6 @@ RegisterNUICallback('voteMap', function(data, cb)
 end)
 
 RegisterNUICallback('closeWinnerScreen', function(data, cb)
-    isMenuOpen = false
-    SetNuiFocus(false, false)
-    SendNUIMessage({ action = 'close' })
+    CloseMainMenu()
     cb('ok')
 end)

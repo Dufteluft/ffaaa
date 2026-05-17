@@ -30,8 +30,6 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
 
--- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
-
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
 function GiveLoadout(loadoutKey)
     local loadout = Config.WeaponLoadouts[loadoutKey]
@@ -114,36 +112,47 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Funktion: Behandelt Tod, Kill-Cam und Respawn
 -- Funktion: Behandelt Tod, Kill-Cam/Zuschauen und Respawn
 function HandleDeath(killerPed)
     Citizen.CreateThread(function()
-        local killerCoords = GetEntityCoords(killerPed)
         local playerPed = PlayerPedId()
+        local killerCoords = nil
+
+        if DoesEntityExist(killerPed) then
+            killerCoords = GetEntityCoords(killerPed)
+        end
 
         -- Kill-Cam: Fokus für 3 Sek auf den Mörder
-        local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-        SetCamCoord(cam, GetEntityCoords(playerPed))
-        PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
-        RenderScriptCams(true, true, 1000, true, true)
+        local cam = nil
+        if killerCoords then
+            cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+            SetCamCoord(cam, GetEntityCoords(playerPed))
+            PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
+            RenderScriptCams(true, true, 1000, true, true)
+        end
 
         Wait(3000)
 
         -- Wenn Respawn noch nicht fällig, wechsle in Zuschauer-Modus
-        if currentLobby.respawnTime > 3 then
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
+        local respawnTime = (currentLobby and currentLobby.respawnTime) or 5
+        if respawnTime > 3 then
+            if cam then
+                RenderScriptCams(false, true, 500, true, true)
+                DestroyCam(cam, true)
+            end
 
             -- Automatisch auf Killer oder zufälligen Spieler schauen
             if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
                 NetworkSetInSpectatorMode(true, killerPed)
             end
 
-            Wait((currentLobby.respawnTime - 3) * 1000)
+            Wait((respawnTime - 3) * 1000)
             NetworkSetInSpectatorMode(false, playerPed)
         else
-            RenderScriptCams(false, true, 500, true, true)
-            DestroyCam(cam, true)
+            if cam then
+                RenderScriptCams(false, true, 500, true, true)
+                DestroyCam(cam, true)
+            end
         end
 
         -- Wiederbelebung an zufälligem Punkt auf der Map
@@ -153,13 +162,30 @@ function HandleDeath(killerPed)
     end)
 end
 
--- Zuschauer-Modus (Fixiert Kamera auf Zielspieler)
-RegisterNetEvent('ffa:spectatePlayer')
-AddEventHandler('ffa:spectatePlayer', function(targetId)
-    local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
-    if DoesEntityExist(targetPed) then
-        NetworkSetInSpectatorMode(true, targetPed)
+-- Scoreboard Steuerung (TAB-Taste)
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if playerState.isInGame then
+            if IsControlJustPressed(0, 37) then -- TAB
+                TriggerServerEvent('ffa:requestScoreboard')
+            elseif IsControlJustReleased(0, 37) then
+                SendNUIMessage({
+                    action = 'toggleScoreboard',
+                    visible = false
+                })
+            end
+        end
     end
+end)
+
+RegisterNetEvent('ffa:receiveScoreboard')
+AddEventHandler('ffa:receiveScoreboard', function(stats)
+    SendNUIMessage({
+        action = 'toggleScoreboard',
+        visible = true,
+        stats = stats
+    })
 end)
 
 -- HUD-Aktualisierungen vom Server
@@ -194,12 +220,12 @@ end)
 RegisterNetEvent('ffa:gameEnded')
 AddEventHandler('ffa:gameEnded', function(data)
     playerState.isInGame = false
-    FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
+    FreezeEntityPosition(PlayerPedId(), true)
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
-    -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
 end)
