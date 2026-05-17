@@ -7,14 +7,13 @@ AddEventHandler('ffa:startGame', function()
     local lobbyId = state.lobbyId
     local lobby = Lobbies[lobbyId]
 
-    -- Mindestens 2 Spieler erforderlich (hier 1 für Tests)
-    if lobby and lobby.host == source and #lobby.players >= 1 then
+    -- Mindestens 2 Spieler erforderlich für Custom Lobbys
+    if lobby and lobby.host == source and (#lobby.players >= 2 or lobby.isPersistent) then
         lobby.status = 'playing'
         lobby.timer = lobby.roundTime * 60
 
-        -- Spieler Teams zuweisen (Auto-Balance)
+        -- Spieler Teams zuweisen (Auto-Balance für Random/None)
         local blueCount, redCount = 0, 0
-        -- Zuerst bestehende Wünsche zählen
         for _, pid in ipairs(lobby.players) do
             local pState = PlayerStates[pid]
             if pState.team == 'blue' then blueCount = blueCount + 1
@@ -43,38 +42,40 @@ AddEventHandler('ffa:startGame', function()
         -- Team-Synchronisation für alle Spieler in der Lobby
         local teams = {}
         for _, pid in ipairs(lobby.players) do
-            teams[pid] = PlayerStates[pid].team
+            teams[tostring(pid)] = PlayerStates[pid].team
         end
         for _, pid in ipairs(lobby.players) do
             TriggerClientEvent('ffa:syncTeams', pid, teams)
         end
 
         StartGameTimer(lobbyId)
+    else
+        TriggerClientEvent('esx:showNotification', source, 'Mindestens 2 Spieler erforderlich.')
     end
 end)
 
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
     local lobby = Lobbies[lobbyId]
-    if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
+    if not lobby or lobby.roundTime == 0 then return end
 
     Citizen.CreateThread(function()
         while Lobbies[lobbyId] and Lobbies[lobbyId].status == 'playing' do
             Citizen.Wait(1000)
-            local lobby = Lobbies[lobbyId]
-            if not lobby then break end
+            local l = Lobbies[lobbyId]
+            if not l then break end
 
-            lobby.timer = lobby.timer - 1
+            l.timer = l.timer - 1
 
-            if lobby.timer <= 0 then
+            if l.timer <= 0 then
                 EndGame(lobbyId, 'Zeit abgelaufen')
                 break
             end
 
             -- Timer mit Clients synchronisieren
-            for _, pid in ipairs(lobby.players) do
-                local mins = math.floor(lobby.timer / 60)
-                local secs = lobby.timer % 60
+            for _, pid in ipairs(l.players) do
+                local mins = math.floor(l.timer / 60)
+                local secs = l.timer % 60
                 TriggerClientEvent('ffa:updateTimer', pid, string.format('%02d:%02d', mins, secs))
             end
         end
@@ -137,14 +138,12 @@ function EndGame(lobbyId, reason)
             stats = stats
         })
 
-        -- DB-Statistiken aktualisieren
         local state = PlayerStates[pid]
         if state then
             local isWin = (winnerName == state.name) or (winnerTeam ~= 'none' and state.team == winnerTeam)
             UpdatePlayerStats(pid, state.kills, state.deaths, isWin)
         end
 
-        -- Wenn persistente Lobby, starte für Spieler nach kurzem Delay neu
         if lobby.isPersistent then
             Citizen.CreateThread(function()
                 Citizen.Wait(10000) -- 10 Sekunden Anzeigezeit
@@ -200,6 +199,9 @@ AddEventHandler('ffa:playerKilled', function(killerId)
                 EndGame(lobbyId, 'Kill-Limit erreicht')
             end
         end
+
+        -- Sound Effekt für Killer
+        TriggerClientEvent('ffa:playSound', killerId, 'kill')
     end
 
     -- HUD-Update an alle betroffenen Spieler
@@ -211,7 +213,8 @@ end)
 
 -- Event: Map Voting
 RegisterServerEvent('ffa:voteMap')
-AddEventHandler('ffa:voteMap', function(mapId)
+AddEventHandler('ffa:voteMap', function(data)
+    local mapId = data.mapId
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
@@ -220,10 +223,34 @@ AddEventHandler('ffa:voteMap', function(mapId)
             local map = Utils.GetMapById(mapId)
             if map then lobby.mapLabel = map.label end
 
-            -- Informiere Lobby-Chat über den Vote
             for _, pid in ipairs(lobby.players) do
                 TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
             end
+        end
+    end
+end)
+
+-- Event: Gewinnerbildschirm schließen (Synchronisation für Lobbystatus)
+RegisterServerEvent('ffa:closeWinnerScreen')
+AddEventHandler('ffa:closeWinnerScreen', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.status == 'ended' then
+            -- Reset player for next round in waiting room
+            state.kills = 0
+            state.deaths = 0
+            state.ready = false
+
+            -- Wenn alle Spieler bereit sind oder der Host das Spiel neu startet
+            -- Hier setzen wir den Status der Lobby wieder auf 'waiting'
+            if lobby.status == 'ended' then
+                lobby.status = 'waiting'
+                lobby.scoreBlue = 0
+                lobby.scoreRed = 0
+            end
+
+            UpdateLobbyPlayers(state.lobbyId)
         end
     end
 end)
