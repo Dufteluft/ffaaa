@@ -1,12 +1,12 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -140,6 +140,8 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -151,7 +153,13 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['col_name'] = 'NAME',
+        ['col_host'] = 'HOST',
+        ['col_players'] = 'SPIELER',
+        ['col_map'] = 'MAP',
+        ['col_mode'] = 'MODUS',
+        ['col_action'] = 'AKTION'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -175,6 +183,8 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -186,7 +196,13 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['col_name'] = 'NAME',
+        ['col_host'] = 'HOST',
+        ['col_players'] = 'PLAYERS',
+        ['col_map'] = 'MAP',
+        ['col_mode'] = 'MODE',
+        ['col_action'] = 'ACTION'
     }
 }
 

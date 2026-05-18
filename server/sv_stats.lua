@@ -5,8 +5,10 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
 
     local identifier = xPlayer.getIdentifier()
 
-    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
-    MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
+    -- Prüfung ob MySQL-Bibliothek vorhanden ist (oxmysql oder mysql-async)
+    local dbProvider = exports['oxmysql'] and exports['oxmysql'] or MySQL
+
+    dbProvider.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
         ['@id'] = identifier,
         ['@k'] = kills,
         ['@d'] = deaths,
@@ -17,16 +19,18 @@ end
 -- Event: Statistiken für UI abrufen
 RegisterServerEvent('ffa:getStats')
 AddEventHandler('ffa:getStats', function()
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
+    local dbProvider = exports['oxmysql'] and exports['oxmysql'] or MySQL
 
-    MySQL.Async.fetchAll('SELECT * FROM ffa_stats WHERE identifier = @id', {
+    dbProvider.Async.fetchAll('SELECT * FROM ffa_stats WHERE identifier = @id', {
         ['@id'] = identifier
     }, function(result)
         if result and result[1] then
-            TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+            TriggerClientEvent('ffa:receiveStats', src, result[1])
         end
     end)
 end)
