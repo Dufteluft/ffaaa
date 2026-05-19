@@ -25,6 +25,7 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
+        mode = lobby.mode,
         isPersistent = lobby.isPersistent
     })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
@@ -197,9 +198,57 @@ AddEventHandler('ffa:gameEnded', function(data)
     FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
     -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
+end)
+
+-- Anti-Teamkill & Fahrzeug-Spawn (Verschoben aus cl_nui.lua für bessere Struktur)
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(5000)
+        if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local playerPed = PlayerPedId()
+            if not IsPedInAnyVehicle(playerPed, false) then
+                local coords = GetEntityCoords(playerPed)
+                local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
+
+                if vehicle == 0 then
+                    local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 15.0, 0.0)
+                    local model = `zentorno`
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(10) end
+
+                    local veh = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                    SetVehicleOnGroundProperly(veh)
+                    SetEntityAsMissionEntity(veh, true, true)
+                    SetModelAsNoLongerNeeded(model)
+                end
+            end
+        end
+    end
+end)
+
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myId = GetPlayerServerId(PlayerId())
+    local myTeam = teams[myId]
+    if not myTeam or myTeam == 'ffa' then return end
+
+    AddRelationshipGroup('BLUE_TEAM')
+    AddRelationshipGroup('RED_TEAM')
+
+    if myTeam == 'blue' then
+        SetPedRelationshipGroupHash(PlayerPedId(), `BLUE_TEAM`)
+    elseif myTeam == 'red' then
+        SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
+    end
+
+    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`)
+    SetRelationshipBetweenGroups(1, `RED_TEAM`, `RED_TEAM`)
+    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`)
+    SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`)
 end)
