@@ -1,3 +1,4 @@
+-- ESX Shared Object abrufen
 ESX = exports['es_extended']:getSharedObject()
 
 -- Globale Variablen für den Zugriff aus allen Client-Skripten
@@ -9,7 +10,7 @@ playerState = {
 }
 currentLobby = nil
 
--- Globaler Countdown-Handler für alle Spieler
+-- Globaler Countdown-Handler für alle Spieler vor Rundenstart
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
@@ -18,7 +19,7 @@ function StartCountdown(seconds)
                 seconds = seconds
             })
             if seconds == 0 then
-                -- Spieler nach Countdown freigeben
+                -- Spieler nach Countdown für Bewegung freigeben
                 FreezeEntityPosition(PlayerPedId(), false)
             end
             Citizen.Wait(1000)
@@ -35,18 +36,24 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
-    -- Alle Waffen entfernen
+    -- Alle FFA-Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen (Standard ESX Event)
     TriggerEvent('esx:restoreLoadout')
 
-    -- Zur alten Position teleportieren
+    -- Zur alten Position teleportieren mit weichem Übergang
     DoScreenFadeOut(500)
     while not IsScreenFadedOut() do Wait(0) end
 
     if oldCoords then
         SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
+    end
+
+    -- Cleanup von Fahrzeugen
+    if playerVehicle and DoesEntityExist(playerVehicle) then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
     end
 
     Wait(500)
@@ -59,7 +66,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler mit Screen-Fade für Kartenwechsel
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -73,22 +80,37 @@ function TeleportToMap(mapId)
 
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet (Anti-Failstart)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD-Updater: Sendet Leben, Rüstung und Munition regelmäßig an das NUI
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = GetEntityHealth(ped)
+            local maxHealth = GetEntityMaxHealth(ped)
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            -- Normalisierung der Gesundheit (GTA nutzt standardmäßig 100-200 für Spieler)
+            local healthPercent = 0
+            if maxHealth > 100 then
+                healthPercent = ((health - 100) / (maxHealth - 100)) * 100
+            else
+                healthPercent = health
+            end
+            if healthPercent < 0 then healthPercent = 0 end
+
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+            if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
+                ammo = GetAmmoInPedWeapon(ped, currentWeapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })
