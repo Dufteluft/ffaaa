@@ -1,17 +1,18 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
 }
 
+-- Definierte Waffen-Klassen für die Auswahl
 Config.WeaponLoadouts = {
     ['pistol'] = {
         { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
@@ -42,6 +43,7 @@ Config.WeaponLoadouts = {
     }
 }
 
+-- Liste der verfügbaren Karten
 Config.Maps = {
     {
         id = 'legion',
@@ -117,12 +119,14 @@ Config.Maps = {
     }
 }
 
+-- Lokalisierungen (DE & EN)
 Config.Locales = {
     ['de'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
@@ -134,12 +138,15 @@ Config.Locales = {
         ['respawn_time'] = 'Respawn-Zeit (Sek)',
         ['kill_limit'] = 'Kill-Limit zum Sieg',
         ['btn_create'] = 'Lobby erstellen',
+        ['btn_save'] = 'Einstellungen speichern',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
         ['btn_ready'] = 'Bereit',
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -158,6 +165,7 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
@@ -169,12 +177,15 @@ Config.Locales = {
         ['respawn_time'] = 'Respawn Time (Sec)',
         ['kill_limit'] = 'Kill Limit to Win',
         ['btn_create'] = 'Create Lobby',
+        ['btn_save'] = 'Save Settings',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',
         ['btn_ready'] = 'Ready',
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -190,6 +201,7 @@ Config.Locales = {
     }
 }
 
+-- Hilfsfunktion für Übersetzungen
 function _U(str, ...)
     if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
         return string.format(Config.Locales[Config.Locale][str], ...)

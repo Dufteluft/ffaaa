@@ -8,8 +8,9 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil
 
--- Globaler Countdown-Handler für alle Spieler
+-- Globaler Countdown-Handler
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
@@ -18,7 +19,6 @@ function StartCountdown(seconds)
                 seconds = seconds
             })
             if seconds == 0 then
-                -- Spieler nach Countdown freigeben
                 FreezeEntityPosition(PlayerPedId(), false)
             end
             Citizen.Wait(1000)
@@ -27,7 +27,7 @@ function StartCountdown(seconds)
     end)
 end
 
--- Event: Stellt den Spieler-Status wieder her (nach Verlassen der Lobby)
+-- Event: Stellt den Spieler-Status wieder her
 RegisterNetEvent('ffa:restoreState')
 AddEventHandler('ffa:restoreState', function(oldCoords)
     local ped = PlayerPedId()
@@ -35,13 +35,9 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
-    -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
-
-    -- ESX Loadout wiederherstellen (falls vorhanden)
     TriggerEvent('esx:restoreLoadout')
 
-    -- Zur alten Position teleportieren
     DoScreenFadeOut(500)
     while not IsScreenFadedOut() do Wait(0) end
 
@@ -49,17 +45,22 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
         SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
     end
 
+    if playerVehicle then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
+    end
+
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    SetPedRelationshipGroupHash(ped, GetHashKey("PLAYER"))
 
-    -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
     SendNUIMessage({ action = 'close' })
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -71,24 +72,40 @@ function TeleportToMap(mapId)
         SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
         SetEntityHeading(ped, spawn.w)
 
+        if currentLobby and currentLobby.vehiclesAllowed then
+            if playerVehicle then DeleteEntity(playerVehicle) end
+            local model = GetHashKey('bati')
+            RequestModel(model)
+            while not HasModelLoaded(model) do Wait(0) end
+            playerVehicle = CreateVehicle(model, spawn.x, spawn.y, spawn.z, spawn.w, true, false)
+            TaskWarpPedIntoVehicle(ped, playerVehicle, -1)
+        end
+
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        FreezeEntityPosition(ped, true)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD-Updater: Alle 500ms Details an NUI senden
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- GTA V Health: 100 ist tot, 200 ist voll (meistens)
+            -- Wir mappen das auf 0-100%
+            local healthPercent = math.max(0, math.min(100, ((health - 100) / (maxHealth - 100)) * 100))
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local weapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })
