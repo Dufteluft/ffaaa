@@ -1,26 +1,14 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
+-- currentLobby und playerState werden in cl_main.lua (global) definiert
 
--- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
+-- Menü-Steuerung über RegisterKeyMapping (ermöglicht Spielern, die Taste in den GTA-Einstellungen zu ändern)
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
 
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
+RegisterKeyMapping('openffamenu', 'FFA Lobby Menü öffnen', 'keyboard', Config.MenuKey or 'F5')
 
 -- Funktion: Hauptmenü öffnen
 function OpenMainMenu()
@@ -38,7 +26,8 @@ function OpenMainMenu()
         action = 'open',
         config = Config,
         maps = Config.Maps,
-        isInGame = playerState.isInGame
+        isInGame = playerState.isInGame,
+        myId = GetPlayerServerId(PlayerId())
     })
 end
 
@@ -65,7 +54,8 @@ AddEventHandler('ffa:lobbyCreated', function(lobby)
     currentLobby = lobby
     SendNUIMessage({
         action = 'lobbyCreated',
-        lobby = lobby
+        lobby = lobby,
+        myId = GetPlayerServerId(PlayerId())
     })
 end)
 
@@ -74,7 +64,8 @@ AddEventHandler('ffa:lobbyJoined', function(lobby)
     currentLobby = lobby
     SendNUIMessage({
         action = 'lobbyJoined',
-        lobby = lobby
+        lobby = lobby,
+        myId = GetPlayerServerId(PlayerId())
     })
 end)
 
@@ -98,13 +89,18 @@ RegisterNUICallback('createLobby', function(data, cb)
     cb('ok')
 end)
 
+RegisterNUICallback('updateSettings', function(data, cb)
+    TriggerServerEvent('ffa:updateSettings', data)
+    cb('ok')
+end)
+
 RegisterNUICallback('joinLobby', function(data, cb)
     TriggerServerEvent('ffa:joinLobby', data.lobbyId)
     cb('ok')
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -150,11 +146,6 @@ end)
 
 RegisterNUICallback('leaveLobby', function(data, cb)
     TriggerServerEvent('ffa:leaveLobby')
-    cb('ok')
-end)
-
-RegisterNUICallback('quickJoin', function(data, cb)
-    TriggerServerEvent('ffa:quickJoin', data.mapId)
     cb('ok')
 end)
 
