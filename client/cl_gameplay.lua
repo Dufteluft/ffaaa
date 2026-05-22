@@ -203,3 +203,39 @@ AddEventHandler('ffa:gameEnded', function(data)
     -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
 end)
+
+-- Native Anti-Teamkill via Relationship Groups
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myServerId = GetPlayerServerId(PlayerId())
+    local myTeam = teams[myServerId]
+    if not myTeam then return end
+
+    local _, blueGroup = AddRelationshipGroup("FFA_BLUE")
+    local _, redGroup = AddRelationshipGroup("FFA_RED")
+    local _, neutralGroup = AddRelationshipGroup("FFA_NEUTRAL")
+
+    local ped = PlayerPedId()
+
+    if myTeam == 'blue' then
+        SetPedRelationshipGroupHash(ped, blueGroup)
+    elseif myTeam == 'red' then
+        SetPedRelationshipGroupHash(ped, redGroup)
+    else
+        SetPedRelationshipGroupHash(ped, neutralGroup)
+    end
+
+    -- Beziehungen setzen: Teammitglieder respektieren sich, Gegner hassen sich
+    SetRelationshipBetweenGroups(1, blueGroup, blueGroup) -- Respect
+    SetRelationshipBetweenGroups(1, redGroup, redGroup) -- Respect
+    SetRelationshipBetweenGroups(5, blueGroup, redGroup) -- Hate
+    SetRelationshipBetweenGroups(5, redGroup, blueGroup) -- Hate
+
+    -- Wenn freundliches Feuer aus ist, Schaden innerhalb der Gruppe deaktivieren
+    if currentLobby and not currentLobby.friendlyFire then
+        SetCanAttackFriendly(ped, false, false)
+        NetworkSetFriendlyFireOption(false)
+    else
+        NetworkSetFriendlyFireOption(true)
+    end
+end)
