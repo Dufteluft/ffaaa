@@ -74,6 +74,7 @@ function JoinLobby(playerId, lobbyId)
     end
 
     table.insert(lobby.players, playerId)
+    local pidStr = tostring(playerId)
 
     -- Speichere aktuellen Status des Spielers (Position und Routing Bucket)
     local ped = GetPlayerPed(playerId)
@@ -160,7 +161,7 @@ function UpdateLobbyPlayers(lobbyId)
     for _, pid in ipairs(lobby.players) do
         local state = PlayerStates[pid]
         table.insert(playersInfo, {
-            id = pid,
+            id = tostring(pid), -- ID als String für NUI
             name = state.name,
             team = state.team,
             ready = state.ready,
@@ -328,6 +329,35 @@ AddEventHandler('ffa:quickJoin', function(mapId)
     end
 end)
 
+-- Event: Lobby-Einstellungen aktualisieren
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.name = settings.name or lobby.name
+            lobby.mapId = settings.mapId or lobby.mapId
+            lobby.mode = settings.mode or lobby.mode
+            lobby.loadout = settings.loadout or lobby.loadout
+            lobby.roundTime = settings.roundTime or lobby.roundTime
+            lobby.maxPlayers = settings.maxPlayers or lobby.maxPlayers
+            lobby.vehiclesAllowed = settings.vehiclesAllowed ~= nil and settings.vehiclesAllowed or lobby.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire ~= nil and settings.friendlyFire or lobby.friendlyFire
+            lobby.respawnTime = settings.respawnTime or lobby.respawnTime
+            lobby.killLimit = settings.killLimit or lobby.killLimit
+
+            local map = Utils.GetMapById(lobby.mapId)
+            if map then lobby.mapLabel = map.label end
+
+            -- Alle Spieler in der Lobby informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
+            end
+        end
+    end
+end)
+
 -- Event: Spieler aus Lobby kicken
 RegisterServerEvent('ffa:kickPlayer')
 AddEventHandler('ffa:kickPlayer', function(targetId)
@@ -335,9 +365,11 @@ AddEventHandler('ffa:kickPlayer', function(targetId)
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
         if lobby and lobby.host == source then
-            LeaveLobby(targetId)
+            -- targetId kommt vom JS als String, umwandeln in Number
+            local tId = tonumber(targetId)
+            LeaveLobby(tId)
             -- Dem gekickten Spieler mitteilen
-            TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
+            TriggerClientEvent('esx:showNotification', tId, 'Du wurdest aus der Lobby gekickt.')
         end
     end
 end)

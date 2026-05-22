@@ -1,46 +1,31 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
--- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
-
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
-
--- Funktion: Hauptmenü öffnen
-function OpenMainMenu()
+-- Funktion: Hauptmenü öffnen/schließen
+function ToggleMainMenu()
     if isMenuOpen then
-        -- Menü schließen wenn bereits offen
         isMenuOpen = false
         SetNuiFocus(false, false)
         SendNUIMessage({ action = 'close' })
-        return
+    else
+        isMenuOpen = true
+        SetNuiFocus(true, true)
+        SendNUIMessage({
+            action = 'open',
+            config = Config,
+            maps = Config.Maps,
+            isInGame = playerState.isInGame
+        })
     end
-
-    isMenuOpen = true
-    SetNuiFocus(true, true)
-    SendNUIMessage({
-        action = 'open',
-        config = Config,
-        maps = Config.Maps,
-        isInGame = playerState.isInGame
-    })
 end
+
+-- Registrierung des Commands und Keymappings (ESX Standard)
+RegisterCommand('openffamenu', function()
+    ToggleMainMenu()
+end, false)
+
+RegisterKeyMapping('openffamenu', 'FFA Menü öffnen', 'keyboard', Config.MenuKey)
 
 -- Callback: UI schließen (vom JS aufgerufen)
 RegisterNUICallback('closeUI', function(data, cb)
@@ -90,6 +75,7 @@ RegisterNetEvent('ffa:leftLobby')
 AddEventHandler('ffa:leftLobby', function()
     currentLobby = nil
     playerState.isInGame = false
+    SendNUIMessage({ action = 'hideHUD' })
 end)
 
 -- NUI Callbacks für Menü-Aktionen
@@ -104,7 +90,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -150,11 +136,6 @@ end)
 
 RegisterNUICallback('leaveLobby', function(data, cb)
     TriggerServerEvent('ffa:leaveLobby')
-    cb('ok')
-end)
-
-RegisterNUICallback('quickJoin', function(data, cb)
-    TriggerServerEvent('ffa:quickJoin', data.mapId)
     cb('ok')
 end)
 
