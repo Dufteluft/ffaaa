@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -49,6 +50,12 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
         SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
     end
 
+    -- Fahrzeug löschen falls vorhanden
+    if playerVehicle then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
+    end
+
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
@@ -75,6 +82,25 @@ function TeleportToMap(mapId)
         DoScreenFadeIn(500)
         FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
     end
+end
+
+-- Funktion: Fahrzeug spawnen
+function SpawnLobbyVehicle()
+    if not currentLobby or not currentLobby.vehiclesAllowed then return end
+
+    local ped = PlayerPedId()
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+    local model = GetHashKey('bati') -- Standard FFA Bike
+
+    RequestModel(model)
+    while not HasModelLoaded(model) do Wait(0) end
+
+    if playerVehicle then DeleteEntity(playerVehicle) end
+
+    playerVehicle = CreateVehicle(model, coords.x, coords.y, coords.z, heading, true, false)
+    SetPedIntoVehicle(ped, playerVehicle, -1)
+    SetModelAsNoLongerNeeded(model)
 end
 
 -- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden

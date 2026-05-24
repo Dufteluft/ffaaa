@@ -20,27 +20,41 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     end
 
     -- Waffen austeilen
-    GiveLoadout(lobby.loadout)
+    GiveLoadout(lobby.loadouts or lobby.loadout)
 
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
-        isPersistent = lobby.isPersistent
+        isPersistent = lobby.isPersistent,
+        mode = lobby.mode
     })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
+
+    -- Fahrzeug spawnen falls erlaubt
+    if lobby.vehiclesAllowed then
+        SpawnLobbyVehicle()
+    end
 end)
 
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadoutKeys)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadoutKeys) == 'string' then
+        loadoutKeys = {loadoutKeys}
+    end
+
+    if loadoutKeys then
+        for _, key in ipairs(loadoutKeys) do
+            local loadout = Config.WeaponLoadouts[key]
+            if loadout then
+                for _, weapon in ipairs(loadout) do
+                    GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+                end
+            end
         end
     end
 end
@@ -67,14 +81,21 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local loadoutKeys = currentLobby.loadouts or {currentLobby.loadout}
+
+                    if type(loadoutKeys) == 'string' then loadoutKeys = {loadoutKeys} end
+
+                    for _, key in ipairs(loadoutKeys) do
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    allowed = true
+                                    break
+                                end
                             end
                         end
+                        if allowed then break end
                     end
 
                     if not allowed then
@@ -149,7 +170,11 @@ function HandleDeath(killerPed)
         -- Wiederbelebung an zufälligem Punkt auf der Map
         local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
         NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w, true, false)
-        GiveLoadout(currentLobby.loadout)
+        GiveLoadout(currentLobby.loadouts or currentLobby.loadout)
+
+        if currentLobby.vehiclesAllowed then
+            SpawnLobbyVehicle()
+        end
     end)
 end
 
@@ -159,6 +184,39 @@ AddEventHandler('ffa:spectatePlayer', function(targetId)
     local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
     if DoesEntityExist(targetPed) then
         NetworkSetInSpectatorMode(true, targetPed)
+    end
+end)
+
+-- Relationship Groups für Anti-Teamkill
+local RelationshipGroups = {
+    ['blue'] = 'FFA_BLUE',
+    ['red'] = 'FFA_RED',
+    ['none'] = 'FFA_NEUTRAL'
+}
+
+Citizen.CreateThread(function()
+    for _, group in pairs(RelationshipGroups) do
+        AddRelationshipGroup(group)
+    end
+end)
+
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    for pid, team in pairs(teams) do
+        local targetPed = GetPlayerPed(GetPlayerFromServerId(pid))
+        if DoesEntityExist(targetPed) then
+            local group = RelationshipGroups[team] or RelationshipGroups['none']
+            SetPedRelationshipGroupHash(targetPed, GetHashKey(group))
+        end
+    end
+
+    -- Friendly Fire Einstellungen anwenden
+    if currentLobby and not currentLobby.friendlyFire then
+        SetRelationshipBetweenGroups(1, GetHashKey(RelationshipGroups['blue']), GetHashKey(RelationshipGroups['blue']))
+        SetRelationshipBetweenGroups(1, GetHashKey(RelationshipGroups['red']), GetHashKey(RelationshipGroups['red']))
+    else
+        SetRelationshipBetweenGroups(5, GetHashKey(RelationshipGroups['blue']), GetHashKey(RelationshipGroups['blue']))
+        SetRelationshipBetweenGroups(5, GetHashKey(RelationshipGroups['red']), GetHashKey(RelationshipGroups['red']))
     end
 end)
 

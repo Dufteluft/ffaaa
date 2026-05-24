@@ -30,7 +30,7 @@ function CreateLobby(playerId, settings)
         mapId = settings.mapId,
         mapLabel = map.label,
         mode = settings.mode,
-        loadout = settings.loadout,
+        loadouts = settings.loadouts, -- Array von gewählten Loadouts
         roundTime = settings.roundTime,
         maxPlayers = settings.maxPlayers,
         vehiclesAllowed = settings.vehiclesAllowed,
@@ -75,6 +75,14 @@ function JoinLobby(playerId, lobbyId)
 
     table.insert(lobby.players, playerId)
 
+    -- Wenn das Spiel bereits läuft, weise das Team basierend auf den Assignments zu
+    if lobby.status == 'playing' then
+        if not TeamAssignments[lobbyId] then TeamAssignments[lobbyId] = {} end
+        if lobby.mode == 'ffa' then
+            -- ffa team
+        end
+    end
+
     -- Speichere aktuellen Status des Spielers (Position und Routing Bucket)
     local ped = GetPlayerPed(playerId)
     PlayerStates[playerId] = {
@@ -93,6 +101,14 @@ function JoinLobby(playerId, lobbyId)
     SetPlayerRoutingBucket(playerId, tonumber(lobbyId))
 
     UpdateLobbyPlayers(lobbyId)
+
+    -- Sync Teams falls das Spiel läuft
+    if lobby.status == 'playing' and TeamAssignments[lobbyId] then
+        for _, pid in ipairs(lobby.players) do
+            TriggerClientEvent('ffa:syncTeams', pid, TeamAssignments[lobbyId])
+        end
+    end
+
     return true
 end
 
@@ -187,6 +203,36 @@ end)
 
 RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
 
+-- Event: Lobby-Einstellungen aktualisieren (nur Host)
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if not state or not state.lobbyId then return end
+
+    local lobby = Lobbies[state.lobbyId]
+    if not lobby or lobby.host ~= source then return end
+
+    -- Einstellungen aktualisieren
+    lobby.mode = settings.mode
+    lobby.roundTime = settings.roundTime
+    lobby.maxPlayers = settings.maxPlayers
+    lobby.vehiclesAllowed = settings.vehiclesAllowed
+    lobby.friendlyFire = settings.friendlyFire
+    lobby.respawnTime = settings.respawnTime
+    lobby.killLimit = settings.killLimit
+
+    if settings.mapId ~= lobby.mapId then
+        lobby.mapId = settings.mapId
+        local map = Utils.GetMapById(settings.mapId)
+        lobby.mapLabel = map.label
+    end
+
+    -- Alle Spieler in der Lobby informieren
+    for _, pid in ipairs(lobby.players) do
+        TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
+    end
+end)
+
 -- Event: Bereit-Status umschalten
 RegisterServerEvent('ffa:toggleReady')
 AddEventHandler('ffa:toggleReady', function()
@@ -263,7 +309,7 @@ MySQL.ready(function()
             mapId = map.id,
             mapLabel = map.label,
             mode = 'ffa',
-            loadout = 'all',
+            loadouts = {'all'},
             roundTime = 0, -- 0 bedeutet unendlich/kein Timer
             maxPlayers = 32,
             vehiclesAllowed = false,
@@ -308,7 +354,7 @@ AddEventHandler('ffa:quickJoin', function(mapId)
             name = "FFA " .. map.label,
             mapId = mapId,
             mode = 'ffa',
-            loadout = 'all',
+            loadouts = {'all'},
             roundTime = 60, -- Lange Laufzeit für persistente Lobbys
             maxPlayers = 32,
             vehiclesAllowed = false,
