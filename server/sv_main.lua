@@ -1,3 +1,6 @@
+-- Globale Variable für Team-Zuordnungen
+TeamAssignments = {}
+
 -- Event: Spielstart (nur durch Host)
 RegisterServerEvent('ffa:startGame')
 AddEventHandler('ffa:startGame', function()
@@ -40,11 +43,15 @@ AddEventHandler('ffa:startGame', function()
             TriggerClientEvent('ffa:gameStarting', pid, lobby)
         end
 
+        -- Host-Warten entfernen
+        TriggerClientEvent('ffa:closeWinnerScreen', lobby.host)
+
         -- Team-Synchronisation für alle Spieler in der Lobby
         local teams = {}
         for _, pid in ipairs(lobby.players) do
             teams[pid] = PlayerStates[pid].team
         end
+        TeamAssignments[lobbyId] = teams
         for _, pid in ipairs(lobby.players) do
             TriggerClientEvent('ffa:syncTeams', pid, teams)
         end
@@ -216,13 +223,16 @@ AddEventHandler('ffa:voteMap', function(mapId)
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
         if lobby and not lobby.isPersistent then
+            -- Wir zählen hier einfach die Stimmen nicht einzeln, sondern setzen die Map direkt
+            -- da in dieser Demo-Version der letzte Vote gewinnt oder wir könnten eine Liste führen.
+            -- Für die Anforderungen setzen wir die Map direkt um sofortiges Feedback zu geben.
             lobby.mapId = mapId
             local map = Utils.GetMapById(mapId)
             if map then lobby.mapLabel = map.label end
 
             -- Informiere Lobby-Chat über den Vote
             for _, pid in ipairs(lobby.players) do
-                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Map-Vote: Die nächste Map wird ' .. lobby.mapLabel .. ' sein.')
             end
         end
     end
