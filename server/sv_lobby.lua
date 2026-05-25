@@ -185,6 +185,36 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     end
 end)
 
+-- Event: Lobby-Einstellungen aktualisieren
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            local map = Utils.GetMapById(settings.mapId)
+
+            lobby.name = settings.name
+            lobby.mapId = settings.mapId
+            lobby.mapLabel = map.label
+            lobby.mode = settings.mode
+            lobby.loadout = settings.loadout
+            lobby.roundTime = settings.roundTime
+            lobby.maxPlayers = settings.maxPlayers
+            lobby.vehiclesAllowed = settings.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire
+            lobby.respawnTime = settings.respawnTime
+            lobby.killLimit = settings.killLimit
+
+            -- Alle Spieler in der Lobby informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:lobbyJoined', pid, lobby)
+                UpdateLobbyPlayers(state.lobbyId)
+            end
+        end
+    end
+end)
+
 RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
 
 -- Event: Bereit-Status umschalten
@@ -279,6 +309,14 @@ MySQL.ready(function()
         Utils.Print('Persistente FFA Lobby initialisiert: ' .. map.label)
     end
 end)
+
+-- Kompatibilitätslayer für mysql-async vs oxmysql
+if not MySQL.Async then
+    MySQL.Async = {
+        execute = function(...) exports.oxmysql:execute(...) end,
+        fetchAll = function(...) exports.oxmysql:fetch_all(...) end
+    }
+end
 
 -- Event: Schneller Beitritt (Tab 1) - Immer offen, sofortiger Start
 RegisterServerEvent('ffa:quickJoin')
