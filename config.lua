@@ -103,18 +103,6 @@ Config.Maps = {
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
     },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
-    }
 }
 
 Config.Locales = {
@@ -133,6 +121,10 @@ Config.Locales = {
         ['friendly_fire'] = 'Freundliches Feuer',
         ['respawn_time'] = 'Respawn-Zeit (Sek)',
         ['kill_limit'] = 'Kill-Limit zum Sieg',
+        ['setting_vehicles'] = 'Fahrzeuge',
+        ['setting_ff'] = 'Friendly Fire',
+        ['setting_respawn'] = 'Respawn',
+        ['setting_kills'] = 'Kill-Limit',
         ['btn_create'] = 'Lobby erstellen',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
@@ -168,6 +160,10 @@ Config.Locales = {
         ['friendly_fire'] = 'Friendly Fire',
         ['respawn_time'] = 'Respawn Time (Sec)',
         ['kill_limit'] = 'Kill Limit to Win',
+        ['setting_vehicles'] = 'Vehicles',
+        ['setting_ff'] = 'Friendly Fire',
+        ['setting_respawn'] = 'Respawn',
+        ['setting_kills'] = 'Kill Limit',
         ['btn_create'] = 'Create Lobby',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',

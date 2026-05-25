@@ -33,14 +33,26 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadout)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    -- Unterstützt Einzel-Key (String) oder Multi-Select (Array)
+    if type(loadout) == 'table' then
+        for _, key in ipairs(loadout) do
+            local weapons = Config.WeaponLoadouts[key]
+            if weapons then
+                for _, weapon in ipairs(weapons) do
+                    GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+                end
+            end
+        end
+    elseif type(loadout) == 'string' then
+        local weapons = Config.WeaponLoadouts[loadout]
+        if weapons then
+            for _, weapon in ipairs(weapons) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -67,14 +79,24 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+                    local loadout = currentLobby.loadout
+
+                    local function checkAllowed(key)
+                        local weapons = Config.WeaponLoadouts[key]
+                        if weapons then
+                            for _, w in ipairs(weapons) do
+                                if GetHashKey(w.name) == currentWeapon then return true end
                             end
                         end
+                        return false
+                    end
+
+                    if type(loadout) == 'table' then
+                        for _, key in ipairs(loadout) do
+                            if checkAllowed(key) then allowed = true; break end
+                        end
+                    else
+                        allowed = checkAllowed(loadout)
                     end
 
                     if not allowed then
@@ -197,9 +219,66 @@ AddEventHandler('ffa:gameEnded', function(data)
     FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
     -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
+
+    -- Fahrzeug entfernen falls vorhanden
+    if playerVehicle then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
+    end
+end)
+
+-- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
+local playerVehicle = nil
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(2000)
+        if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local playerPed = PlayerPedId()
+
+            if not IsPedInAnyVehicle(playerPed, false) then
+                if not playerVehicle or not DoesEntityExist(playerVehicle) then
+                    local coords = GetEntityCoords(playerPed)
+                    local model = `bati`
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(10) end
+
+                    playerVehicle = CreateVehicle(model, coords.x, coords.y, coords.z, GetEntityHeading(playerPed), true, false)
+                    SetVehicleOnGroundProperly(playerVehicle)
+                    TaskWarpPedIntoVehicle(playerPed, playerVehicle, -1)
+                    SetModelAsNoLongerNeeded(model)
+                end
+            end
+        end
+    end
+end)
+
+-- Anti-Teamkill via Relationship Groups
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myTeam = teams[GetPlayerServerId(PlayerId())]
+    if not myTeam then return end
+
+    local _, blueHash = AddRelationshipGroup('FFA_BLUE')
+    local _, redHash = AddRelationshipGroup('FFA_RED')
+    local _, neutralHash = AddRelationshipGroup('FFA_NEUTRAL')
+
+    if myTeam == 'blue' then
+        SetPedRelationshipGroupHash(PlayerPedId(), blueHash)
+    elseif myTeam == 'red' then
+        SetPedRelationshipGroupHash(PlayerPedId(), redHash)
+    else
+        SetPedRelationshipGroupHash(PlayerPedId(), neutralHash)
+    end
+
+    -- 1 = Respect, 5 = Hate
+    SetRelationshipBetweenGroups(1, blueHash, blueHash)
+    SetRelationshipBetweenGroups(1, redHash, redHash)
+    SetRelationshipBetweenGroups(5, blueHash, redHash)
+    SetRelationshipBetweenGroups(5, redHash, blueHash)
 end)

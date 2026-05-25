@@ -7,8 +7,9 @@ AddEventHandler('ffa:startGame', function()
     local lobbyId = state.lobbyId
     local lobby = Lobbies[lobbyId]
 
-    -- Mindestens 2 Spieler erforderlich (hier 1 für Tests)
-    if lobby and lobby.host == source and #lobby.players >= 1 then
+    -- Mindestens 2 Spieler erforderlich (für persistente Lobbys 1)
+    local minPlayers = lobby.isPersistent and 1 or 2
+    if lobby and lobby.host == source and #lobby.players >= minPlayers then
         lobby.status = 'playing'
         lobby.timer = lobby.roundTime * 60
 
