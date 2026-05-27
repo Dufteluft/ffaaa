@@ -1,12 +1,12 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -123,60 +111,67 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
+        ['round_time'] = 'Rundenzeit',
         ['max_players'] = 'Max. Spieler',
-        ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
-        ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
-        ['kill_limit'] = 'Kill-Limit zum Sieg',
-        ['btn_create'] = 'Lobby erstellen',
+        ['vehicles_allowed'] = 'Fahrzeuge',
+        ['friendly_fire'] = 'Friendly Fire',
+        ['respawn_time'] = 'Respawn',
+        ['kill_limit'] = 'Kill Limit',
+        ['btn_create'] = 'Erstellen',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
         ['btn_ready'] = 'Bereit',
-        ['btn_start'] = 'Spiel starten',
-        ['btn_leave'] = 'Lobby verlassen',
+        ['btn_start'] = 'Starten',
+        ['btn_leave'] = 'Verlassen',
         ['btn_kick'] = 'Kicken',
-        ['team_blue'] = 'Team Blau',
-        ['team_red'] = 'Team Rot',
+        ['btn_back_lobby'] = 'Zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü',
+        ['team_blue'] = 'Blau',
+        ['team_red'] = 'Rot',
         ['spectator'] = 'Zuschauer',
         ['random'] = 'Zufall',
-        ['waiting_for_players'] = 'Warte auf Spieler...',
+        ['waiting_for_players'] = 'Warten auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Punkte',
+        ['col_name'] = 'Name'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
+        ['round_time'] = 'Round Time',
         ['max_players'] = 'Max Players',
-        ['vehicles_allowed'] = 'Vehicles Allowed',
+        ['vehicles_allowed'] = 'Vehicles',
         ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
-        ['kill_limit'] = 'Kill Limit to Win',
-        ['btn_create'] = 'Create Lobby',
+        ['respawn_time'] = 'Respawn',
+        ['kill_limit'] = 'Kill Limit',
+        ['btn_create'] = 'Create',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',
         ['btn_ready'] = 'Ready',
-        ['btn_start'] = 'Start Game',
-        ['btn_leave'] = 'Leave Lobby',
+        ['btn_start'] = 'Start',
+        ['btn_leave'] = 'Leave',
         ['btn_kick'] = 'Kick',
-        ['team_blue'] = 'Team Blue',
-        ['team_red'] = 'Team Red',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu',
+        ['team_blue'] = 'Blue',
+        ['team_red'] = 'Red',
         ['spectator'] = 'Spectator',
         ['random'] = 'Random',
         ['waiting_for_players'] = 'Waiting for players...',
@@ -186,7 +181,8 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['col_name'] = 'Name'
     }
 }
 
