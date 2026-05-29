@@ -1,3 +1,16 @@
+-- Kompatibilitätsschicht für oxmysql / mysql-async
+local MySQL_Execute = MySQL.Async.execute
+local MySQL_FetchAll = MySQL.Async.fetchAll
+
+if exports['oxmysql'] then
+    MySQL_Execute = function(query, params, cb)
+        exports.oxmysql:execute(query, params, cb)
+    end
+    MySQL_FetchAll = function(query, params, cb)
+        exports.oxmysql:fetch(query, params, cb)
+    end
+end
+
 -- Funktion: Aktualisiert Spieler-Statistiken in der Datenbank
 function UpdatePlayerStats(playerId, kills, deaths, isWin)
     local xPlayer = ESX.GetPlayerFromId(playerId)
@@ -6,7 +19,7 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
     local identifier = xPlayer.getIdentifier()
 
     -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
-    MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
+    MySQL_Execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
         ['@id'] = identifier,
         ['@k'] = kills,
         ['@d'] = deaths,
@@ -22,7 +35,7 @@ AddEventHandler('ffa:getStats', function()
 
     local identifier = xPlayer.getIdentifier()
 
-    MySQL.Async.fetchAll('SELECT * FROM ffa_stats WHERE identifier = @id', {
+    MySQL_FetchAll('SELECT * FROM ffa_stats WHERE identifier = @id', {
         ['@id'] = identifier
     }, function(result)
         if result and result[1] then

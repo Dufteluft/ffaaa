@@ -34,14 +34,24 @@ end)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
 function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    local function giveFromKey(key)
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
+    end
+
+    if type(loadoutKey) == 'table' then
+        for _, key in ipairs(loadoutKey) do
+            giveFromKey(key)
+        end
+    else
+        giveFromKey(loadoutKey)
     end
 end
 
@@ -67,14 +77,28 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
+
+                    local function checkAllowed(key)
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    return true
+                                end
+                            end
+                        end
+                        return false
+                    end
+
+                    if type(currentLobby.loadout) == 'table' then
+                        for _, key in ipairs(currentLobby.loadout) do
+                            if checkAllowed(key) then
                                 allowed = true
                                 break
                             end
                         end
+                    else
+                        allowed = checkAllowed(currentLobby.loadout)
                     end
 
                     if not allowed then
@@ -195,11 +219,68 @@ RegisterNetEvent('ffa:gameEnded')
 AddEventHandler('ffa:gameEnded', function(data)
     playerState.isInGame = false
     FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
+
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
     -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
+end)
+
+-- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
+local playerVehicle = nil
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(5000)
+        if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local playerPed = PlayerPedId()
+
+            if not DoesEntityExist(playerVehicle) or GetEntityHealth(playerVehicle) <= 0 then
+                local coords = GetEntityCoords(playerPed)
+                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                local model = GetHashKey('bati') -- Bati 801
+
+                RequestModel(model)
+                while not HasModelLoaded(model) do Wait(10) end
+
+                playerVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                SetVehicleOnGroundProperly(playerVehicle)
+                SetEntityAsMissionEntity(playerVehicle, true, true)
+                SetModelAsNoLongerNeeded(model)
+                TaskWarpPedIntoVehicle(playerPed, playerVehicle, -1)
+            end
+        end
+    end
+end)
+
+-- Native Anti-Teamkill via Relationship Groups
+local blueGroup, redGroup, neutralGroup
+Citizen.CreateThread(function()
+    _, blueGroup = AddRelationshipGroup("FFA_BLUE")
+    _, redGroup = AddRelationshipGroup("FFA_RED")
+    _, neutralGroup = AddRelationshipGroup("FFA_NEUTRAL")
+
+    -- 1 = Respect, 5 = Hate
+    SetRelationshipBetweenGroups(1, blueGroup, blueGroup)
+    SetRelationshipBetweenGroups(1, redGroup, redGroup)
+    SetRelationshipBetweenGroups(5, blueGroup, redGroup)
+    SetRelationshipBetweenGroups(5, redGroup, blueGroup)
+end)
+
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myServerId = GetPlayerServerId(PlayerId())
+    local myTeam = teams[myServerId]
+    local ped = PlayerPedId()
+
+    if myTeam == 'blue' then
+        SetPedRelationshipGroupHash(ped, blueGroup)
+    elseif myTeam == 'red' then
+        SetPedRelationshipGroupHash(ped, redGroup)
+    else
+        SetPedRelationshipGroupHash(ped, neutralGroup)
+    end
 end)
