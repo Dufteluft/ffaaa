@@ -9,7 +9,7 @@ Citizen.CreateThread(function()
 
             if vehicle == 0 then
                 local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 15.0, 0.0)
-                local model = `zentorno`
+                local model = GetHashKey('bati') -- Changed from backtick to GetHashKey
                 RequestModel(model)
                 while not HasModelLoaded(model) do Wait(10) end
 
@@ -17,6 +17,8 @@ Citizen.CreateThread(function()
                 SetVehicleOnGroundProperly(veh)
                 SetEntityAsMissionEntity(veh, true, true)
                 SetModelAsNoLongerNeeded(model)
+
+                playerVehicle = veh -- Speichere Fahrzeug handle (global in cl_main)
             end
         end
     end
@@ -29,20 +31,10 @@ Citizen.CreateThread(function()
         if playerState and playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' and not currentLobby.friendlyFire then
             local playerPed = PlayerPedId()
 
-            -- Wir nutzen SetCanAttackFriendly, aber das ist oft unzuverlässig in GTA
-            -- Daher prüfen wir zusätzlich das Ziel des Spielers
-            local _, targetPed = GetEntityPlayerIsFreeAimingAt(PlayerId())
-
-            if targetPed and DoesEntityExist(targetPed) and IsEntityAPed(targetPed) and IsPedAPlayer(targetPed) then
-                local targetId = NetworkGetPlayerIndexFromPed(targetPed)
-                local targetServerId = GetPlayerServerId(targetId)
-
-                -- Wenn das Ziel im gleichen Team ist, Schaden deaktivieren
-                -- Hinweis: Dies erfordert eine Synchronisation der Teams aller Spieler auf dem Client
-                -- Für eine einfache Lösung nutzen wir hier eine Prüfung via Server oder Globaler Tabelle
-                -- Hier implementieren wir die native Lösung:
-                SetEntityCanBeDamagedByRelationshipGroup(targetPed, false, `PLAYER`)
-            end
+            -- Wir nutzen relationship groups für besseres teamplay (siehe syncTeams)
+            -- Hier können wir zusätzliche prüfungen einbauen
+            SetCanAttackFriendly(playerPed, false, false)
+            SetPedCanRagdollFromPlayerImpact(playerPed, false)
         end
     end
 end)
@@ -50,20 +42,26 @@ end)
 -- Native Anti-Teamkill via Relationship Groups
 RegisterNetEvent('ffa:syncTeams')
 AddEventHandler('ffa:syncTeams', function(teams)
-    local myTeam = teams[GetPlayerServerId(PlayerId())]
+    local myTeam = teams[tostring(GetPlayerServerId(PlayerId()))]
     if not myTeam then return end
 
-    AddRelationshipGroup('BLUE_TEAM')
-    AddRelationshipGroup('RED_TEAM')
+    local _, blueGroup = AddRelationshipGroup('FFA_BLUE')
+    local _, redGroup = AddRelationshipGroup('FFA_RED')
+    local _, neutralGroup = AddRelationshipGroup('FFA_NEUTRAL')
 
     if myTeam == 'blue' then
-        SetPedRelationshipGroupHash(PlayerPedId(), `BLUE_TEAM`)
+        SetPedRelationshipGroupHash(PlayerPedId(), blueGroup)
     elseif myTeam == 'red' then
-        SetPedRelationshipGroupHash(PlayerPedId(), `RED_TEAM`)
+        SetPedRelationshipGroupHash(PlayerPedId(), redGroup)
+    else
+        SetPedRelationshipGroupHash(PlayerPedId(), neutralGroup)
     end
 
-    SetRelationshipBetweenGroups(1, `BLUE_TEAM`, `BLUE_TEAM`) -- 1 = Like
-    SetRelationshipBetweenGroups(1, `RED_TEAM`, `RED_TEAM`)
-    SetRelationshipBetweenGroups(5, `BLUE_TEAM`, `RED_TEAM`) -- 5 = Hate
-    SetRelationshipBetweenGroups(5, `RED_TEAM`, `BLUE_TEAM`)
+    -- Respect teammates
+    SetRelationshipBetweenGroups(1, blueGroup, blueGroup)
+    SetRelationshipBetweenGroups(1, redGroup, redGroup)
+
+    -- Hate enemies
+    SetRelationshipBetweenGroups(5, blueGroup, redGroup)
+    SetRelationshipBetweenGroups(5, redGroup, blueGroup)
 end)

@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil -- Jetzt global für korrekte Scoping
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -77,18 +78,33 @@ function TeleportToMap(mapId)
     end
 end
 
+-- Event für Sound-Effekte
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(soundName)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = soundName
+    })
+end)
+
 -- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- Health calculation (GTA V 100-200 to 0-100%)
+            local healthPercent = math.floor(((health - 100) / (maxHealth - 100)) * 100)
+            if healthPercent < 0 then healthPercent = 0 end
+
             local armor = GetPedArmour(ped)
             local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })
