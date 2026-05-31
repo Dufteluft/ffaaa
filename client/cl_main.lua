@@ -1,6 +1,6 @@
 ESX = exports['es_extended']:getSharedObject()
 
--- Globale Variablen für den Zugriff aus allen Client-Skripten
+-- Globale Variablen
 playerState = {
     kills = 0,
     deaths = 0,
@@ -9,17 +9,17 @@ playerState = {
 }
 currentLobby = nil
 
--- Globaler Countdown-Handler für alle Spieler
+-- Countdown-Handler
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
             SendNUIMessage({
-                action = 'countdown',
-                seconds = seconds
+                action = 'updateTimer',
+                time = string.format("00:%02d", seconds)
             })
             if seconds == 0 then
-                -- Spieler nach Countdown freigeben
                 FreezeEntityPosition(PlayerPedId(), false)
+                TriggerEvent('ffa:playSound', 'start')
             end
             Citizen.Wait(1000)
             seconds = seconds - 1
@@ -27,21 +27,16 @@ function StartCountdown(seconds)
     end)
 end
 
--- Event: Stellt den Spieler-Status wieder her (nach Verlassen der Lobby)
+-- Status wiederherstellen
 RegisterNetEvent('ffa:restoreState')
 AddEventHandler('ffa:restoreState', function(oldCoords)
     local ped = PlayerPedId()
-
     playerState.isInGame = false
     currentLobby = nil
 
-    -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
-
-    -- ESX Loadout wiederherstellen (falls vorhanden)
     TriggerEvent('esx:restoreLoadout')
 
-    -- Zur alten Position teleportieren
     DoScreenFadeOut(500)
     while not IsScreenFadedOut() do Wait(0) end
 
@@ -53,18 +48,18 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
 
-    -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
     SendNUIMessage({ action = 'close' })
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Teleportation
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
         local spawn = Utils.GetRandomSpawn(mapId)
         local ped = PlayerPedId()
+
         DoScreenFadeOut(500)
         while not IsScreenFadedOut() do Wait(0) end
 
@@ -73,22 +68,25 @@ function TeleportToMap(mapId)
 
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        FreezeEntityPosition(ped, true)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD-Update-Loop
 Citizen.CreateThread(function()
     while true do
-        if playerState and playerState.isInGame then
+        if playerState.isInGame then
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped) - 100
+            local healthPercent = (health / maxHealth) * 100
+
             local armor = GetPedArmour(ped)
             local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })

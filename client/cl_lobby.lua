@@ -104,7 +104,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -164,7 +164,7 @@ RegisterNUICallback('kickPlayer', function(data, cb)
 end)
 
 RegisterNUICallback('voteMap', function(data, cb)
-    TriggerServerEvent('ffa:voteMap', data.mapId)
+    TriggerServerEvent('ffa:voteMap', data)
     cb('ok')
 end)
 
