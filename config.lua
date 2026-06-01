@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -123,17 +111,20 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
+        ['all_maps'] = 'Alle Maps',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
+        ['round_time'] = 'Rundenzeit',
         ['max_players'] = 'Max. Spieler',
         ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
         ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
+        ['respawn_time'] = 'Respawn-Zeit',
         ['kill_limit'] = 'Kill-Limit zum Sieg',
         ['btn_create'] = 'Lobby erstellen',
+        ['btn_create_nav'] = 'LOBBY ERSTELLEN',
         ['btn_cancel'] = 'Abbrechen',
         ['btn_join'] = 'Beitreten',
         ['btn_ready'] = 'Bereit',
@@ -151,24 +142,33 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Spieler',
+        ['all_players'] = 'Alle',
+        ['filter_free_slots'] = 'Nur mit freien Plätzen',
+        ['vote_next_map'] = 'Nächste Map wählen:',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
+        ['all_maps'] = 'All Maps',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
+        ['round_time'] = 'Round Time',
         ['max_players'] = 'Max Players',
         ['vehicles_allowed'] = 'Vehicles Allowed',
         ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
+        ['respawn_time'] = 'Respawn Time',
         ['kill_limit'] = 'Kill Limit to Win',
         ['btn_create'] = 'Create Lobby',
+        ['btn_create_nav'] = 'CREATE LOBBY',
         ['btn_cancel'] = 'Cancel',
         ['btn_join'] = 'Join',
         ['btn_ready'] = 'Ready',
@@ -186,7 +186,13 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['players'] = 'Players',
+        ['all_players'] = 'Any',
+        ['filter_free_slots'] = 'Free slots only',
+        ['vote_next_map'] = 'Vote next map:',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu'
     }
 }
 
