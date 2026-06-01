@@ -1,31 +1,17 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
--- Menü-Steuerung (F5 öffnet/schließt Menü)
-Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
-    local key = 166 -- Standard F5
-    if Config.MenuKey == 'F1' then key = 288
-    elseif Config.MenuKey == 'F2' then key = 289
-    elseif Config.MenuKey == 'F3' then key = 170
-    elseif Config.MenuKey == 'F5' then key = 166
-    elseif Config.MenuKey == 'F6' then key = 167
-    end
+-- Menü-Steuerung via RegisterKeyMapping
+RegisterKeyMapping('openffamenu', 'FFA Lobby Menü öffnen', 'keyboard', Config.MenuKey)
 
-    while true do
-        Citizen.Wait(0)
-        if IsControlJustReleased(0, key) then
-            OpenMainMenu()
-        end
-    end
-end)
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
 
 -- Funktion: Hauptmenü öffnen
 function OpenMainMenu()
     if isMenuOpen then
-        -- Menü schließen wenn bereits offen
         isMenuOpen = false
         SetNuiFocus(false, false)
         SendNUIMessage({ action = 'close' })
@@ -42,7 +28,7 @@ function OpenMainMenu()
     })
 end
 
--- Callback: UI schließen (vom JS aufgerufen)
+-- Callback: UI schließen
 RegisterNUICallback('closeUI', function(data, cb)
     isMenuOpen = false
     SetNuiFocus(false, false)
@@ -92,7 +78,7 @@ AddEventHandler('ffa:leftLobby', function()
     playerState.isInGame = false
 end)
 
--- NUI Callbacks für Menü-Aktionen
+-- NUI Callbacks
 RegisterNUICallback('createLobby', function(data, cb)
     TriggerServerEvent('ffa:createLobby', data)
     cb('ok')
@@ -104,7 +90,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -117,7 +103,7 @@ AddEventHandler('ffa:updateLobbies', function(lobbies)
     })
 end)
 
--- Lobby-Chat Event-Handling
+-- Lobby-Chat
 RegisterNUICallback('sendLobbyChat', function(data, cb)
     TriggerServerEvent('ffa:sendLobbyChat', data)
     cb('ok')
@@ -132,7 +118,7 @@ AddEventHandler('ffa:addChatMessage', function(name, message)
     })
 end)
 
--- Weitere Steuerungs-Callbacks
+-- Weitere Callbacks
 RegisterNUICallback('toggleReady', function(data, cb)
     TriggerServerEvent('ffa:toggleReady')
     cb('ok')
