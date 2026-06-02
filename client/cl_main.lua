@@ -8,6 +8,14 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil
+
+-- Key Mapping für das Menü
+RegisterKeyMapping('openffamenu', 'FFA Lobby Menü öffnen', 'keyboard', Config.MenuKey)
+
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -35,10 +43,16 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
+    -- Fahrzeug löschen falls vorhanden
+    if playerVehicle and DoesEntityExist(playerVehicle) then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
+    end
+
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -52,6 +66,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    NetworkSetInSpectatorMode(false, ped)
 
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
@@ -77,22 +92,40 @@ function TeleportToMap(mapId)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- Sound-Event für Client-Triggering
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(soundName)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = soundName
+    })
+end)
+
+-- HUD-Updater: Alle 250ms Leben, Rüstung und Munition an NUI senden
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- GTA V Health: 100-200. Wir wollen 0-100%
+            local healthPercent = math.floor(((health - 100) / (maxHealth - 100)) * 100)
+            if healthPercent < 0 then healthPercent = 0 end
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weapon)
+            local totalAmmo = GetAmmoInPedWeapon(ped, weapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
-                ammo = ammo
+                ammo = ammo .. ' / ' .. (totalAmmo - ammo)
             })
         end
-        Wait(500)
+        Wait(250)
     end
 end)
