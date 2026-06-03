@@ -14,31 +14,39 @@ Config.DefaultSettings = {
 
 Config.WeaponLoadouts = {
     ['pistol'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        label = 'Pistole',
+        weapons = {
+            { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
+            { name = 'WEAPON_COMBATPISTOL', label = 'Kampfpistole', ammo = 250 }
+        }
     },
     ['smg'] = {
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        label = 'SMG',
+        weapons = {
+            { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
+            { name = 'WEAPON_COMBATMG', label = 'Kampf-MG', ammo = 250 }
+        }
     },
     ['assault'] = {
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        label = 'Sturmgewehr',
+        weapons = {
+            { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
+            { name = 'WEAPON_CARBINERIFLE', label = 'Karabiner', ammo = 250 }
+        }
     },
     ['sniper'] = {
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        label = 'Sniper',
+        weapons = {
+            { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
+            { name = 'WEAPON_HEAVYSNIPER', label = 'Schweres Scharfschützengewehr', ammo = 50 }
+        }
     },
     ['shotgun'] = {
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
-        { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
-    },
-    ['all'] = {
-        { name = 'WEAPON_PISTOL', label = 'Pistole', ammo = 250 },
-        { name = 'WEAPON_SMG', label = 'SMG', ammo = 250 },
-        { name = 'WEAPON_ASSAULTRIFLE', label = 'Sturmgewehr', ammo = 250 },
-        { name = 'WEAPON_SNIPERRIFLE', label = 'Scharfschützengewehr', ammo = 50 },
-        { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 }
+        label = 'Shotgun',
+        weapons = {
+            { name = 'WEAPON_PUMPSHOTGUN', label = 'Pump-Action', ammo = 50 },
+            { name = 'WEAPON_SAWNOFFSHOTGUN', label = 'Abgesägte Schrotflinte', ammo = 50 }
+        }
     }
 }
 
@@ -52,7 +60,11 @@ Config.Maps = {
             vector4(167.0, -929.0, 30.6, 180.0),
             vector4(185.0, -912.0, 30.6, 90.0),
             vector4(203.0, -930.0, 30.6, 0.0),
-            vector4(185.0, -948.0, 30.6, 270.0)
+            vector4(185.0, -948.0, 30.6, 270.0),
+            vector4(146.0, -930.0, 30.6, 180.0),
+            vector4(185.0, -890.0, 30.6, 90.0),
+            vector4(223.0, -930.0, 30.6, 0.0),
+            vector4(185.0, -968.0, 30.6, 270.0)
         }
     },
     {
@@ -64,7 +76,11 @@ Config.Maps = {
             vector4(1820.0, 3680.0, 34.0, 90.0),
             vector4(1880.0, 3680.0, 34.0, 270.0),
             vector4(1850.0, 3650.0, 34.0, 0.0),
-            vector4(1850.0, 3710.0, 34.0, 180.0)
+            vector4(1850.0, 3710.0, 34.0, 180.0),
+            vector4(1790.0, 3680.0, 34.0, 90.0),
+            vector4(1910.0, 3680.0, 34.0, 270.0),
+            vector4(1850.0, 3620.0, 34.0, 0.0),
+            vector4(1850.0, 3740.0, 34.0, 180.0)
         }
     },
     {
@@ -76,7 +92,11 @@ Config.Maps = {
             vector4(-1060.0, -2730.0, 20.1, 90.0),
             vector4(-1010.0, -2730.0, 20.1, 270.0),
             vector4(-1035.0, -2700.0, 20.1, 0.0),
-            vector4(-1035.0, -2760.0, 20.1, 180.0)
+            vector4(-1035.0, -2760.0, 20.1, 180.0),
+            vector4(-1085.0, -2730.0, 20.1, 90.0),
+            vector4(-985.0, -2730.0, 20.1, 270.0),
+            vector4(-1035.0, -2670.0, 20.1, 0.0),
+            vector4(-1035.0, -2790.0, 20.1, 180.0)
         }
     },
     {
@@ -88,7 +108,11 @@ Config.Maps = {
             vector4(610.0, 560.0, 128.0, 90.0),
             vector4(650.0, 560.0, 128.0, 270.0),
             vector4(630.0, 540.0, 128.0, 0.0),
-            vector4(630.0, 580.0, 128.0, 180.0)
+            vector4(630.0, 580.0, 128.0, 180.0),
+            vector4(590.0, 560.0, 128.0, 90.0),
+            vector4(670.0, 560.0, 128.0, 270.0),
+            vector4(630.0, 520.0, 128.0, 0.0),
+            vector4(630.0, 600.0, 128.0, 180.0)
         }
     },
     {
@@ -100,19 +124,11 @@ Config.Maps = {
             vector4(740.0, -2980.0, 6.0, 90.0),
             vector4(800.0, -2980.0, 6.0, 270.0),
             vector4(770.0, -2950.0, 6.0, 0.0),
-            vector4(770.0, -3010.0, 6.0, 180.0)
-        }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
+            vector4(770.0, -3010.0, 6.0, 180.0),
+            vector4(710.0, -2980.0, 6.0, 90.0),
+            vector4(830.0, -2980.0, 6.0, 270.0),
+            vector4(770.0, -2920.0, 6.0, 0.0),
+            vector4(770.0, -3040.0, 6.0, 180.0)
         }
     }
 }
@@ -140,6 +156,8 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -148,10 +166,13 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['draw'] = 'Unentschieden',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['col_name'] = 'NAME',
+        ['tab_players'] = 'Spielerliste'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -175,6 +196,8 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -183,10 +206,13 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['draw'] = 'Draw',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['col_name'] = 'NAME',
+        ['tab_players'] = 'Player List'
     }
 }
 
