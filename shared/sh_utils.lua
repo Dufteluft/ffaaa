@@ -20,3 +20,9 @@ end
 function Utils.Print(msg)
     print('^4[FFA Lobby]^0 ' .. tostring(msg))
 end
+
+function Utils.FormatTime(seconds)
+    local mins = math.floor(seconds / 60)
+    local secs = seconds % 60
+    return string.format('%02d:%02d', mins, secs)
+end
