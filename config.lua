@@ -151,7 +151,13 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['filter_free_slots'] = 'Nur Lobbys mit freien Plätzen',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü',
+        ['draw'] = 'Unentschieden',
+        ['tab_players'] = 'Spielerliste',
+        ['col_name'] = 'Name'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -186,7 +192,13 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['filter_free_slots'] = 'Free slots only',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu',
+        ['draw'] = 'Draw',
+        ['tab_players'] = 'Player List',
+        ['col_name'] = 'Name'
     }
 }
 
