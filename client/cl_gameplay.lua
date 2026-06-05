@@ -25,7 +25,8 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
-        isPersistent = lobby.isPersistent
+        isPersistent = lobby.isPersistent,
+        mode = lobby.mode
     })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
@@ -34,13 +35,24 @@ end)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
 function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    if type(loadoutKey) == 'table' then
+        for _, key in ipairs(loadoutKey) do
+            local loadout = Config.WeaponLoadouts[key]
+            if loadout then
+                for _, weapon in ipairs(loadout) do
+                    GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+                end
+            end
+        end
+    else
+        local loadout = Config.WeaponLoadouts[loadoutKey]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
     end
 end
@@ -172,22 +184,26 @@ RegisterNetEvent('ffa:updateHUDStats')
 AddEventHandler('ffa:updateHUDStats', function(kills, deaths)
     playerState.kills = kills
     playerState.deaths = deaths
-    SendNUIMessage({
-        action = 'updateHUD',
-        kills = kills,
-        deaths = deaths,
-        mode = currentLobby.mode
-    })
+    if currentLobby then
+        SendNUIMessage({
+            action = 'updateHUD',
+            kills = kills,
+            deaths = deaths,
+            mode = currentLobby.mode
+        })
+    end
 end)
 
 RegisterNetEvent('ffa:updateTDMScore')
 AddEventHandler('ffa:updateTDMScore', function(blue, red)
-    SendNUIMessage({
-        action = 'updateHUD',
-        scoreBlue = blue,
-        scoreRed = red,
-        mode = currentLobby.mode
-    })
+    if currentLobby then
+        SendNUIMessage({
+            action = 'updateHUD',
+            scoreBlue = blue,
+            scoreRed = red,
+            mode = currentLobby.mode
+        })
+    end
 end)
 
 -- Event: Spielende (Sieg-Anzeige und Sperren)
@@ -197,9 +213,79 @@ AddEventHandler('ffa:gameEnded', function(data)
     FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
 
     -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
+
+    -- Fahrzeug entfernen
+    if playerVehicle and DoesEntityExist(playerVehicle) then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
+    end
+end)
+
+-- Fahrzeug-Spawn Logik (wenn in Lobby aktiviert)
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(5000)
+        if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local playerPed = PlayerPedId()
+
+            if not IsPedInAnyVehicle(playerPed, false) then
+                if playerVehicle and DoesEntityExist(playerVehicle) then
+                    local coords = GetEntityCoords(playerPed)
+                    local vCoords = GetEntityCoords(playerVehicle)
+                    if #(coords - vCoords) > 50.0 then
+                        DeleteEntity(playerVehicle)
+                        playerVehicle = nil
+                    end
+                end
+
+                if not playerVehicle then
+                    local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                    local model = GetHashKey('bati')
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(10) end
+
+                    playerVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                    SetVehicleOnGroundProperly(playerVehicle)
+                    SetEntityAsMissionEntity(playerVehicle, true, true)
+                    SetModelAsNoLongerNeeded(model)
+                end
+            end
+        end
+    end
+end)
+
+-- Native Anti-Teamkill via Relationship Groups
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myServerId = tostring(GetPlayerServerId(PlayerId()))
+    local myTeam = teams[myServerId]
+    if not myTeam then return end
+
+    local _, blueGroup = AddRelationshipGroup('FFA_BLUE')
+    local _, redGroup = AddRelationshipGroup('FFA_RED')
+    local _, neutralGroup = AddRelationshipGroup('FFA_NEUTRAL')
+
+    if myTeam == 'blue' then
+        SetPedRelationshipGroupHash(PlayerPedId(), blueGroup)
+    elseif myTeam == 'red' then
+        SetPedRelationshipGroupHash(PlayerPedId(), redGroup)
+    else
+        SetPedRelationshipGroupHash(PlayerPedId(), neutralGroup)
+    end
+
+    -- 1 = Respect/Companion, 5 = Hate
+    SetRelationshipBetweenGroups(1, blueGroup, blueGroup)
+    SetRelationshipBetweenGroups(1, redGroup, redGroup)
+    SetRelationshipBetweenGroups(5, blueGroup, redGroup)
+    SetRelationshipBetweenGroups(5, redGroup, blueGroup)
+    SetRelationshipBetweenGroups(5, neutralGroup, blueGroup)
+    SetRelationshipBetweenGroups(5, neutralGroup, redGroup)
+    SetRelationshipBetweenGroups(5, blueGroup, neutralGroup)
+    SetRelationshipBetweenGroups(5, redGroup, neutralGroup)
 end)

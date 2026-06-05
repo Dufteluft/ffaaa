@@ -90,7 +90,9 @@ function JoinLobby(playerId, lobbyId)
 
     -- Setze Routing Bucket auf Lobby ID (vermeidet Konflikte zwischen Lobbys)
     -- Wir nutzen die lobbyId als Bucket, müssen sie aber in eine Zahl umwandeln
-    SetPlayerRoutingBucket(playerId, tonumber(lobbyId))
+    if playerId ~= -1 then
+        SetPlayerRoutingBucket(playerId, tonumber(lobbyId))
+    end
 
     UpdateLobbyPlayers(lobbyId)
     return true
@@ -237,7 +239,9 @@ AddEventHandler('ffa:fetchLobbies', function(data)
                 mapId = lobby.mapId,
                 mode = lobby.mode,
                 status = displayStatus,
-                isPersistent = lobby.isPersistent
+                isPersistent = lobby.isPersistent,
+                killLimit = lobby.killLimit,
+                roundTime = lobby.roundTime
             })
         end
     end
@@ -328,6 +332,48 @@ AddEventHandler('ffa:quickJoin', function(mapId)
     end
 end)
 
+-- Event: Lobby schließen (durch Host)
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            -- Alle Spieler entfernen
+            local players = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(players, pid)
+            end
+
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+                if pid ~= source then
+                    TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+                end
+            end
+        end
+    end
+end)
+
+-- Event: Map Voting
+RegisterServerEvent('ffa:voteMap')
+AddEventHandler('ffa:voteMap', function(mapId)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and not lobby.isPersistent then
+            lobby.mapId = mapId
+            local map = Utils.GetMapById(mapId)
+            if map then lobby.mapLabel = map.label end
+
+            -- Informiere Lobby-Chat über den Vote
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Die Map wurde auf ' .. lobby.mapLabel .. ' geändert.')
+            end
+        end
+    end
+end)
+
 -- Event: Spieler aus Lobby kicken
 RegisterServerEvent('ffa:kickPlayer')
 AddEventHandler('ffa:kickPlayer', function(targetId)
@@ -335,9 +381,29 @@ AddEventHandler('ffa:kickPlayer', function(targetId)
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
         if lobby and lobby.host == source then
-            LeaveLobby(targetId)
+            LeaveLobby(tonumber(targetId))
             -- Dem gekickten Spieler mitteilen
             TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
+        end
+    end
+end)
+
+-- Event: Lobby-Einstellungen aktualisieren
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.vehiclesAllowed = settings.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire
+            lobby.respawnTime = settings.respawnTime
+            lobby.killLimit = settings.killLimit
+
+            -- Clients synchronisieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:syncSettings', pid, settings)
+            end
         end
     end
 end)
