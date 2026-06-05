@@ -43,7 +43,7 @@ AddEventHandler('ffa:startGame', function()
         -- Team-Synchronisation für alle Spieler in der Lobby
         local teams = {}
         for _, pid in ipairs(lobby.players) do
-            teams[pid] = PlayerStates[pid].team
+            teams[tostring(pid)] = PlayerStates[pid].team
         end
         for _, pid in ipairs(lobby.players) do
             TriggerClientEvent('ffa:syncTeams', pid, teams)
@@ -101,7 +101,8 @@ function EndGame(lobbyId, reason)
             winnerName = _U('team_red')
             winnerTeam = 'red'
         else
-            winnerName = 'Unentschieden'
+            winnerName = _U('draw')
+            winnerTeam = 'none'
         end
     -- Sieg-Logik für FFA
     else

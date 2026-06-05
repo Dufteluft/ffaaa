@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -82,13 +83,18 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- GTA V health range is usually 100-200, but can vary.
+            -- Map to 0-100%
+            local healthPercent = math.max(0, (health - 100) / (maxHealth - 100) * 100)
             local armor = GetPedArmour(ped)
             local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })
