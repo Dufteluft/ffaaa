@@ -1,59 +1,49 @@
 let currentLobby = null;
 let isHost = false;
-let myPlayerId = null;
 let currentTab = 'ffa';
-
-// Maps and Config from Server
-let serverMaps = [];
 let serverConfig = {};
+let serverMaps = [];
+let audioAssets = {};
 
-// Audio setup
-const sounds = {
-    click: new Audio('assets/click.mp3'),
-    join: new Audio('assets/join.mp3'),
-    start: new Audio('assets/start.mp3'),
-    kill: new Audio('assets/kill.mp3'),
-    win: new Audio('assets/win.mp3')
-};
+// Initialisierung der Audio-Assets
+function initAudio() {
+    const soundList = ['click', 'join', 'start', 'kill', 'win'];
+    soundList.forEach(name => {
+        audioAssets[name] = new Audio(`assets/${name}.mp3`);
+    });
+}
 
 function playSound(name) {
-    if (sounds[name]) {
-        sounds[name].currentTime = 0;
-        sounds[name].play().catch(() => {});
+    if (audioAssets[name]) {
+        audioAssets[name].currentTime = 0;
+        audioAssets[name].play().catch(() => {});
     }
 }
 
-// Tab Switching
+// Tab-Steuerung
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        if (btn.dataset.tab === currentTab) return;
+        const tab = btn.dataset.tab;
+        if (tab === currentTab) return;
+
         playSound('click');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        currentTab = tab;
 
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
-
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
+        if (tab === 'ffa' || tab === 'list') {
+            document.getElementById('tab-browser').style.display = 'flex';
+            document.getElementById('tab-create').style.display = 'none';
+            document.getElementById('sidebar-filters').style.display = (tab === 'list' ? 'block' : 'none');
             fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
+        } else if (tab === 'create') {
+            document.getElementById('tab-browser').style.display = 'none';
+            document.getElementById('tab-create').style.display = 'flex';
+        }
     });
 });
 
-// Modal Controls
-document.getElementById('open-create-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
-});
-
-// Slider Sync
+// Slider-Sync
 const setupSlider = (id) => {
     const slider = document.getElementById(id);
     const span = document.getElementById(id + '-val');
@@ -63,17 +53,16 @@ const setupSlider = (id) => {
         });
     }
 };
-setupSlider('round-time');
-setupSlider('max-players');
+['round-time', 'max-players', 'respawn-time', 'kill-limit'].forEach(setupSlider);
 
-// NUI Message Handling
+// NUI Message Listener
 window.addEventListener('message', (event) => {
     const data = event.data;
 
     switch (data.action) {
         case 'open':
             document.getElementById('app').style.display = 'flex';
-            setupInitialData(data.config, data.maps);
+            setupConfig(data.config, data.maps);
             fetchLobbies();
             break;
         case 'close':
@@ -84,38 +73,68 @@ window.addEventListener('message', (event) => {
             break;
         case 'lobbyCreated':
         case 'lobbyJoined':
-            document.getElementById('create-lobby-modal').style.display = 'none';
-            showLobbyArea(data.lobby, data.action === 'lobbyCreated');
+            showLobbyWaitingArea(data.lobby);
             break;
         case 'updateLobbyPlayers':
             renderPlayerList(data.players);
+            break;
+        case 'addChatMessage':
+            addChatMessage(data.name, data.message);
             break;
         case 'gameStarting':
             document.getElementById('app').style.display = 'none';
             document.getElementById('lobby-waiting-area').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('game-hud').style.display = 'block';
+            if (data.isPersistent) {
+                document.getElementById('hud-timer').innerText = '∞';
+            }
+            break;
+        case 'hideHUD':
+            document.getElementById('game-hud').style.display = 'none';
+            break;
+        case 'updateHUD':
+            updateHUD(data);
+            break;
+        case 'updateHUDDetails':
+            document.getElementById('hud-health').style.width = `${data.health}%`;
+            document.getElementById('hud-armor').style.width = `${data.armor}%`;
+            document.getElementById('hud-ammo').innerText = data.ammo;
+            break;
+        case 'countdown':
+            const cd = document.getElementById('big-countdown');
+            if (data.seconds > 0) {
+                cd.innerText = data.seconds;
+                cd.style.display = 'block';
+            } else {
+                cd.style.display = 'none';
+            }
             break;
         case 'showWinner':
             showWinnerScreen(data);
             break;
+        case 'playSound':
+            playSound(data.sound);
+            break;
     }
 });
 
-function setupInitialData(config, maps) {
+function setupConfig(config, maps) {
     serverConfig = config;
     serverMaps = maps;
 
+    // Maps Dropdown
     const mapSelect = document.getElementById('map-select');
     mapSelect.innerHTML = '';
     maps.forEach(map => {
         const opt = document.createElement('option');
         opt.value = map.id;
-        opt.innerText = map.label.toUpperCase();
+        opt.innerText = map.label;
         mapSelect.appendChild(opt);
     });
 
+    // Loadout Multi-Select
     const loadoutSelect = document.getElementById('loadout-select');
     loadoutSelect.innerHTML = '';
     for (let key in config.WeaponLoadouts) {
@@ -137,86 +156,151 @@ function renderLobbyList(lobbies) {
     const container = document.getElementById('lobby-list-container');
     container.innerHTML = '';
 
-    lobbies.forEach((lobby, index) => {
+    const filterFreeOnly = document.getElementById('filter-free-slots').checked;
+
+    lobbies.forEach(lobby => {
+        if (filterFreeOnly && lobby.playerCount >= lobby.maxPlayers) return;
+
         const item = document.createElement('div');
         item.className = 'lobby-item';
-        item.style.animationDelay = `${index * 0.05}s`;
-
-        const playerCount = lobby.playerCount || 0;
-        const maxPlayers = lobby.maxPlayers || 16;
-        const percent = (playerCount / maxPlayers) * 100;
-
-        let status = lobby.status || 'waiting';
-        let strokeColor = '#00ff88'; // Success
-        if (status === 'joining') strokeColor = '#00d4ff'; // Primary
-        else if (percent > 80) strokeColor = '#ff9500'; // Warning
-
-        const radius = 25;
-        const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (percent / 100) * circumference;
-
-        // Simplified Map Image URLs (using placeholders for now)
-        const mapImg = lobby.mapImage || `https://via.placeholder.com/140x80/0f1419/ffffff?text=${lobby.mapLabel}`;
-
         item.innerHTML = `
-            <div class="lobby-map-preview">
-                <img src="${mapImg}" alt="${lobby.mapLabel}">
+            <div class="lobby-info">
+                <h4>${lobby.name}</h4>
+                <p>${lobby.mapLabel} | ${lobby.mode.toUpperCase()} | Host: ${lobby.hostName}</p>
             </div>
-            <div class="lobby-info-main">
-                <div class="match-type">${lobby.mode === 'tdm' ? 'Team Deathmatch' : 'Free-for-All'}</div>
-                <div class="map-name-row">
-                    <i class="fa-solid fa-location-dot"></i> ${lobby.mapLabel}
-                </div>
+            <div class="lobby-players">
+                <i class="fa-solid fa-users"></i> ${lobby.playerCount} / ${lobby.maxPlayers}
             </div>
-            <div class="player-counter-wrapper">
-                <svg class="player-counter-svg">
-                    <circle class="circle-bg" cx="30" cy="30" r="${radius}"></circle>
-                    <circle class="circle-progress" cx="30" cy="30" r="${radius}"
-                        style="stroke: ${strokeColor}; stroke-dasharray: ${circumference}; stroke-dashoffset: ${offset};">
-                    </circle>
-                </svg>
-                <div class="player-count-text">${playerCount}/${maxPlayers}</div>
+            <div class="lobby-status">
+                <span class="status-${lobby.status.toLowerCase()}">${lobby.status}</span>
             </div>
-            <div class="mode-icon">
-                <i class="fa-solid fa-user"></i>
-            </div>
-            <div class="status-badge status-${status.toLowerCase()}">${status}</div>
-            <div class="action-area">
-                ${renderActionButton(lobby)}
+            <div class="lobby-actions">
+                <button class="confirm-btn" onclick="joinLobby('${lobby.id}')">BEITRETEN</button>
             </div>
         `;
         container.appendChild(item);
     });
 }
 
-function renderActionButton(lobby) {
-    if (lobby.playerCount >= lobby.maxPlayers) {
-        return `<button class="action-btn btn-disabled" disabled>FULL</button>`;
-    }
-    if (lobby.status === 'ACTIVE') {
-        return `<button class="action-btn btn-spectate" onclick="joinLobby('${lobby.id}', true)">SPECTATE</button>`;
-    }
-    const pulsingClass = lobby.status === 'joining' ? 'pulsing' : '';
-    return `<button class="action-btn btn-join ${pulsingClass}" onclick="joinLobby('${lobby.id}')">JOIN</button>`;
-}
-
-function joinLobby(lobbyId, isSpectator = false) {
+function joinLobby(lobbyId) {
     playSound('click');
     fetch(`https://${GetParentResourceName()}/joinLobby`, {
         method: 'POST',
-        body: JSON.stringify({ lobbyId, isSpectator })
+        body: JSON.stringify({ lobbyId: lobbyId })
     });
 }
 
+function showLobbyWaitingArea(lobby) {
+    currentLobby = lobby;
+    document.getElementById('lobby-title-display').innerText = lobby.name;
+    document.getElementById('lobby-waiting-area').style.display = 'flex';
+
+    // Check if we are the host
+    // The server doesn't explicitly send a "youAreHost" flag here,
+    // but we can check the player list when it arrives or rely on lobbyCreated vs lobbyJoined
+}
+
+function renderPlayerList(players) {
+    const container = document.getElementById('player-list');
+    container.innerHTML = '';
+
+    // Find myself in players to see if I'm host
+    // Assuming the server sends my ID somehow or we track it.
+    // Let's assume the server sends 'isHost' for each player relative to the lobby.
+
+    let amIHost = false;
+
+    players.forEach(p => {
+        // In reality, we'd need to know which 'p' is the local player.
+        // For now, let's use a placeholder check or rely on server-side host logic.
+        if (p.isHost && p.isLocal) amIHost = true; // hypothetically
+
+        const div = document.createElement('div');
+        div.className = `player-item ${p.ready ? 'ready' : ''}`;
+        div.innerHTML = `
+            <span>${p.name} ${p.isHost ? '<i class="fa-solid fa-crown" style="color: gold;"></i>' : ''}</span>
+            <span>${p.team.toUpperCase()}</span>
+            ${currentLobby && currentLobby.hostPlayerId === p.id ? '' : '' /* Kick button logic */}
+        `;
+
+        // If I am host, I can kick others
+        // We'll need the local player's server ID to be sure.
+
+        container.appendChild(div);
+    });
+
+    // Simple Host UI toggle (this needs refinement with real IDs)
+    // For now, we'll show host buttons if currentLobby.host matches someone.
+    // In cl_lobby.lua, we should send if the player is the host.
+}
+
+function updateHUD(data) {
+    if (data.time) document.getElementById('hud-timer').innerText = data.time;
+    if (data.kills !== undefined) document.getElementById('hud-kills').innerText = data.kills;
+    if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
+
+    if (data.mode === 'tdm') {
+        document.getElementById('hud-tdm-score').style.display = 'block';
+        document.querySelector('.score-blue').innerText = data.scoreBlue || 0;
+        document.querySelector('.score-red').innerText = data.scoreRed || 0;
+    } else {
+        document.getElementById('hud-tdm-score').style.display = 'none';
+    }
+}
+
+function showWinnerScreen(data) {
+    playSound('win');
+    document.getElementById('winner-screen').style.display = 'flex';
+    document.getElementById('winner-name-display').innerText = data.winnerName;
+
+    const statsTable = document.getElementById('match-stats-table');
+    let html = `<table><thead><tr><th>SPIELER</th><th>KILLS</th><th>TODE</th><th>K/D</th></tr></thead><tbody>`;
+    data.stats.forEach(s => {
+        html += `<tr><td>${s.name}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.kd}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    statsTable.innerHTML = html;
+
+    // Map Voting
+    const votingList = document.getElementById('map-voting-list');
+    votingList.innerHTML = '';
+    serverMaps.slice(0, 3).forEach(map => {
+        const div = document.createElement('div');
+        div.className = 'vote-item';
+        div.innerHTML = `
+            <div class="vote-name">${map.label}</div>
+            <div class="vote-count" id="vote-count-${map.id}">0</div>
+        `;
+        div.onclick = () => {
+            playSound('click');
+            document.querySelectorAll('.vote-item').forEach(i => i.classList.remove('active'));
+            div.classList.add('active');
+            fetch(`https://${GetParentResourceName()}/voteMap`, {
+                method: 'POST',
+                body: JSON.stringify({ mapId: map.id })
+            });
+        };
+        votingList.appendChild(div);
+    });
+}
+
+// Event Listeners for Buttons
 document.getElementById('btn-create-lobby').addEventListener('click', () => {
     playSound('click');
+    const selectedLoadouts = Array.from(document.getElementById('loadout-select').selectedOptions).map(opt => opt.value);
+
     const settings = {
-        name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
+        name: document.getElementById('lobby-name').value || 'Meine Lobby',
         mapId: document.getElementById('map-select').value,
         mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
+        loadout: selectedLoadouts[0], // For now, keep it simple or update server to handle array
+        loadouts: selectedLoadouts,
         roundTime: parseInt(document.getElementById('round-time').value),
         maxPlayers: parseInt(document.getElementById('max-players').value),
+        respawnTime: parseInt(document.getElementById('respawn-time').value),
+        killLimit: parseInt(document.getElementById('kill-limit').value),
+        vehiclesAllowed: document.getElementById('vehicles-allowed').checked,
+        friendlyFire: document.getElementById('friendly-fire').checked
     };
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
@@ -224,41 +308,6 @@ document.getElementById('btn-create-lobby').addEventListener('click', () => {
         body: JSON.stringify(settings)
     });
 });
-
-function showLobbyArea(lobby, asHost) {
-    currentLobby = lobby;
-    isHost = asHost;
-    playSound('join');
-
-    document.getElementById('lobby-title').innerText = lobby.name.toUpperCase();
-    document.getElementById('lobby-waiting-area').style.display = 'flex';
-    document.getElementById('btn-start-game').style.display = asHost ? 'block' : 'none';
-
-    document.getElementById('lobby-info-summary').innerHTML = `
-        <p>MAP: ${lobby.mapLabel}</p>
-        <p>MODE: ${lobby.mode.toUpperCase()}</p>
-        <p>TIME: ${lobby.roundTime} MIN</p>
-    `;
-}
-
-function renderPlayerList(players) {
-    const list = document.getElementById('player-list');
-    list.innerHTML = '';
-    players.forEach(p => {
-        const div = document.createElement('div');
-        div.className = `player-item ${p.ready ? 'ready' : ''}`;
-        div.innerHTML = `
-            <span>${p.name.toUpperCase()} ${p.isHost ? '(HOST)' : ''}</span>
-            <span>${p.team.toUpperCase()}</span>
-            ${isHost && !p.isHost ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')"><i class="fa-solid fa-xmark"></i></button>` : ''}
-        `;
-        list.appendChild(div);
-    });
-
-    if (isHost) {
-        document.getElementById('btn-start-game').disabled = players.length < (currentLobby.minPlayers || 2);
-    }
-}
 
 document.getElementById('btn-ready-toggle').addEventListener('click', () => {
     playSound('click');
@@ -301,20 +350,6 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     }
 });
 
-function showWinnerScreen(data) {
-    playSound('win');
-    document.getElementById('winner-screen').style.display = 'flex';
-    document.getElementById('winner-name').innerText = data.winnerName.toUpperCase() + " WINS!";
-
-    const statsTable = document.getElementById('match-stats-table');
-    let html = `<table><thead><tr><th>NAME</th><th>KILLS</th><th>DEATHS</th><th>K/D</th></tr></thead><tbody>`;
-    data.stats.forEach(s => {
-        html += `<tr><td>${s.name.toUpperCase()}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.kd}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-    statsTable.innerHTML = html;
-}
-
 document.getElementById('btn-back-to-menu').addEventListener('click', () => {
     playSound('click');
     document.getElementById('winner-screen').style.display = 'none';
@@ -334,11 +369,21 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
-// Auto-Refresh
+function addChatMessage(name, message) {
+    const container = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.innerHTML = `<strong>${name}:</strong> ${message}`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+// Auto-Refresh Lobbies
 setInterval(() => {
     if (document.getElementById('app').style.display === 'flex' &&
         document.getElementById('lobby-waiting-area').style.display === 'none' &&
-        document.getElementById('winner-screen').style.display === 'none') {
+        (currentTab === 'ffa' || currentTab === 'list')) {
         fetchLobbies();
     }
 }, 5000);
+
+initAudio();

@@ -1,12 +1,12 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de'
+Config.MenuKey = 'F5'
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15,
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5,
     killLimit = 30,
     friendlyFire = false,
     vehiclesAllowed = false
@@ -102,98 +102,25 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
-Config.Locales = {
+local Locales = {
     ['de'] = {
-        ['menu_title'] = 'FFA LOBBY SYSTEM',
-        ['tab_ffa'] = 'FFA Lobby',
-        ['tab_create'] = 'Lobby erstellen',
-        ['tab_list'] = 'Offene Lobbys',
-        ['lobby_name'] = 'Lobby Name',
-        ['map_select'] = 'Map auswählen',
-        ['mode_select'] = 'Spielmodus',
-        ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
-        ['max_players'] = 'Max. Spieler',
-        ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
-        ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
-        ['kill_limit'] = 'Kill-Limit zum Sieg',
-        ['btn_create'] = 'Lobby erstellen',
-        ['btn_cancel'] = 'Abbrechen',
-        ['btn_join'] = 'Beitreten',
-        ['btn_ready'] = 'Bereit',
-        ['btn_start'] = 'Spiel starten',
-        ['btn_leave'] = 'Lobby verlassen',
-        ['btn_kick'] = 'Kicken',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
-        ['spectator'] = 'Zuschauer',
-        ['random'] = 'Zufall',
-        ['waiting_for_players'] = 'Warte auf Spieler...',
-        ['countdown'] = 'Start in %s Sekunden',
-        ['game_ended'] = 'Runde beendet!',
-        ['winner'] = 'Gewinner: %s',
-        ['kills'] = 'Kills',
-        ['deaths'] = 'Tode',
-        ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['draw'] = 'Unentschieden'
     },
     ['en'] = {
-        ['menu_title'] = 'FFA LOBBY SYSTEM',
-        ['tab_ffa'] = 'FFA Lobby',
-        ['tab_create'] = 'Create Lobby',
-        ['tab_list'] = 'Open Lobbies',
-        ['lobby_name'] = 'Lobby Name',
-        ['map_select'] = 'Select Map',
-        ['mode_select'] = 'Game Mode',
-        ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
-        ['max_players'] = 'Max Players',
-        ['vehicles_allowed'] = 'Vehicles Allowed',
-        ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
-        ['kill_limit'] = 'Kill Limit to Win',
-        ['btn_create'] = 'Create Lobby',
-        ['btn_cancel'] = 'Cancel',
-        ['btn_join'] = 'Join',
-        ['btn_ready'] = 'Ready',
-        ['btn_start'] = 'Start Game',
-        ['btn_leave'] = 'Leave Lobby',
-        ['btn_kick'] = 'Kick',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
-        ['spectator'] = 'Spectator',
-        ['random'] = 'Random',
-        ['waiting_for_players'] = 'Waiting for players...',
-        ['countdown'] = 'Starting in %s seconds',
-        ['game_ended'] = 'Game Ended!',
-        ['winner'] = 'Winner: %s',
-        ['kills'] = 'Kills',
-        ['deaths'] = 'Deaths',
-        ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['draw'] = 'Draw'
     }
 }
 
 function _U(str, ...)
-    if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
-        return string.format(Config.Locales[Config.Locale][str], ...)
-    else
-        return 'Translation [' .. Config.Locale .. '][' .. str .. '] not found'
+    if Locales[Config.Locale] and Locales[Config.Locale][str] then
+        return string.format(Locales[Config.Locale][str], ...)
     end
+    return str
 end
