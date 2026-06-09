@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -35,6 +36,12 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
+    -- Fahrzeug löschen falls vorhanden
+    if playerVehicle and DoesEntityExist(playerVehicle) then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
+    end
+
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
@@ -52,6 +59,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    NetworkSetInSpectatorMode(false, ped)
 
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
@@ -82,17 +90,35 @@ Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local maxHealth = GetEntityMaxHealth(ped)
+            local health = GetEntityHealth(ped)
+
+            -- In GTA ist Health oft 100-200. Wir wollen 0-100%
+            local healthPercent = (health - 100) / (maxHealth - 100) * 100
+            if healthPercent < 0 then healthPercent = 0 end
+
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+            if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
+                ammo = GetAmmoInPedWeapon(ped, currentWeapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = healthPercent,
                 armor = armor,
                 ammo = ammo
             })
         end
         Wait(500)
     end
+end)
+
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(sound)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = sound
+    })
 end)
