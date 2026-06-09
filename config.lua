@@ -102,18 +102,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -123,6 +111,7 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
@@ -148,6 +137,7 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['draw'] = 'Unentschieden',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
@@ -158,6 +148,7 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
@@ -183,6 +174,7 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['draw'] = 'Draw',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
