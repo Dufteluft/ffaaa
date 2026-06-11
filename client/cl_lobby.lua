@@ -69,6 +69,14 @@ AddEventHandler('ffa:lobbyCreated', function(lobby)
     })
 end)
 
+RegisterNetEvent('ffa:setMyId')
+AddEventHandler('ffa:setMyId', function(id)
+    SendNUIMessage({
+        action = 'setMyId',
+        id = id
+    })
+end)
+
 RegisterNetEvent('ffa:lobbyJoined')
 AddEventHandler('ffa:lobbyJoined', function(lobby)
     currentLobby = lobby
@@ -90,6 +98,16 @@ RegisterNetEvent('ffa:leftLobby')
 AddEventHandler('ffa:leftLobby', function()
     currentLobby = nil
     playerState.isInGame = false
+    SendNUIMessage({ action = 'leftLobby' })
+end)
+
+RegisterNetEvent('ffa:syncSettings')
+AddEventHandler('ffa:syncSettings', function(lobby)
+    currentLobby = lobby
+    SendNUIMessage({
+        action = 'lobbyJoined',
+        lobby = lobby
+    })
 end)
 
 -- NUI Callbacks für Menü-Aktionen

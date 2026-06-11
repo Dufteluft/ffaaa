@@ -93,6 +93,10 @@ function JoinLobby(playerId, lobbyId)
     SetPlayerRoutingBucket(playerId, tonumber(lobbyId))
 
     UpdateLobbyPlayers(lobbyId)
+
+    -- Tell client who they are (for host check)
+    TriggerClientEvent('ffa:setMyId', playerId, playerId)
+
     return true
 end
 
@@ -217,18 +221,16 @@ AddEventHandler('ffa:fetchLobbies', function(data)
         local isMatch = false
         if filterTab == 'ffa' then
             if lobby.isPersistent then isMatch = true end
-        else
+        elseif filterTab == 'list' then
             if not lobby.isPersistent then isMatch = true end
         end
 
         if isMatch then
-            -- Status Bestimmung für UI
             local displayStatus = 'waiting'
             if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
 
             table.insert(list, {
-                id = id,
+                id = lobby.isPersistent and lobby.mapId or id,
                 name = lobby.name,
                 hostName = lobby.hostName,
                 playerCount = #lobby.players,
@@ -330,7 +332,10 @@ end)
 
 -- Event: Spieler aus Lobby kicken
 RegisterServerEvent('ffa:kickPlayer')
-AddEventHandler('ffa:kickPlayer', function(targetId)
+AddEventHandler('ffa:kickPlayer', function(data)
+    local targetId = data and tonumber(data.id)
+    if not targetId then return end
+
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
@@ -339,5 +344,31 @@ AddEventHandler('ffa:kickPlayer', function(targetId)
             -- Dem gekickten Spieler mitteilen
             TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
         end
+    end
+end)
+
+-- Event: Lobby-Einstellungen aktualisieren
+RegisterServerEvent('ffa:updateSettings')
+AddEventHandler('ffa:updateSettings', function(settings)
+    local state = PlayerStates[source]
+    if not state or not state.lobbyId then return end
+
+    local lobby = Lobbies[state.lobbyId]
+    if not lobby or lobby.host ~= source then return end
+
+    lobby.name = settings.name or lobby.name
+    lobby.mapId = settings.mapId or lobby.mapId
+    lobby.mode = settings.mode or lobby.mode
+    lobby.loadout = settings.loadout or lobby.loadout
+    lobby.roundTime = settings.roundTime or lobby.roundTime
+    lobby.maxPlayers = settings.maxPlayers or lobby.maxPlayers
+    lobby.vehiclesAllowed = settings.vehiclesAllowed
+    lobby.friendlyFire = settings.friendlyFire
+    lobby.respawnTime = settings.respawnTime or lobby.respawnTime
+    lobby.killLimit = settings.killLimit or lobby.killLimit
+
+    -- Sync an alle in der Lobby
+    for _, pid in ipairs(lobby.players) do
+        TriggerClientEvent('ffa:syncSettings', pid, lobby)
     end
 end)
