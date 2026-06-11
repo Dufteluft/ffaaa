@@ -8,7 +8,7 @@ AddEventHandler('ffa:startGame', function()
     local lobby = Lobbies[lobbyId]
 
     -- Mindestens 2 Spieler erforderlich (hier 1 für Tests)
-    if lobby and lobby.host == source and #lobby.players >= 1 then
+    if lobby and (lobby.host == source or lobby.host == -1) and #lobby.players >= 1 then
         lobby.status = 'playing'
         lobby.timer = lobby.roundTime * 60
 
