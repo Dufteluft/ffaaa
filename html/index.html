@@ -13,154 +13,202 @@
         <div class="main-container">
             <!-- Header -->
             <header class="main-header">
-                <h1 class="header-title">GTA V FREE-FOR-ALL LOBBY FINDER</h1>
+                <h1 class="header-title" data-locale="menu_title">GTA V FREE-FOR-ALL LOBBY FINDER</h1>
                 <nav class="nav-tabs">
-                    <button class="tab-btn active" data-tab="ffa">FFA</button>
-                    <button class="tab-btn" data-tab="lobby">LOBBY</button>
+                    <button class="tab-btn active" data-tab="ffa" data-locale="tab_ffa">FFA Lobby</button>
+                    <button class="tab-btn" data-tab="create" data-locale="tab_create">Lobby erstellen</button>
+                    <button class="tab-btn" data-tab="list" data-locale="tab_list">Offene Lobbys</button>
                 </nav>
             </header>
 
             <div class="content-wrapper">
-                <!-- Left Panel: Filters -->
-                <aside class="sidebar">
-                    <div class="filter-group">
-                        <label>MAPS <i class="fa-solid fa-chevron-down"></i></label>
-                        <select id="filter-maps">
-                            <option value="all">ALL MAPS</option>
-                            <option value="legion">LEGION SQUARE</option>
-                            <option value="sandy">SANDY SHORES</option>
-                            <option value="airport">AIRPORT</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>WEAPONS <i class="fa-solid fa-chevron-down"></i></label>
-                        <select id="filter-weapons">
-                            <option value="all">ALL WEAPONS</option>
-                            <option value="pistols">PISTOLS ONLY</option>
-                            <option value="snipers">SNIPERS ONLY</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>PLAYERS <i class="fa-solid fa-chevron-down"></i></label>
-                        <select id="filter-players">
-                            <option value="all">ANY</option>
-                            <option value="not-full">NOT FULL</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>TIME <i class="fa-solid fa-chevron-down"></i></label>
-                        <select id="filter-time">
-                            <option value="all">ANY TIME</option>
-                            <option value="short">5-10 MIN</option>
-                            <option value="long">15+ MIN</option>
-                        </select>
-                    </div>
-
-                    <button class="create-btn" id="open-create-modal">CREATE LOBBY</button>
-                </aside>
-
-                <!-- Main Content: Lobby List -->
-                <main class="lobby-browser">
-                    <div class="lobby-list" id="lobby-list-container">
-                        <!-- Entries will be injected here -->
-                    </div>
-                </main>
-            </div>
-        </div>
-
-        <!-- Create Lobby Modal (Hidden by default) -->
-        <div id="create-lobby-modal" class="overlay" style="display: none;">
-             <div class="modal-content">
-                <h2>CREATE CUSTOM LOBBY</h2>
-                <div class="form-container">
-                    <div class="input-group">
-                        <label>LOBBY NAME</label>
-                        <input type="text" id="lobby-name" placeholder="ENTER NAME...">
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>MAP</label>
-                            <select id="map-select"></select>
-                        </div>
-                        <div class="input-group">
-                            <label>MODE</label>
-                            <select id="mode-select">
-                                <option value="ffa">FFA</option>
-                                <option value="tdm">TEAM DEATHMATCH</option>
+                <!-- Tab 1 & 3: Lobby Browser (Shared Layout) -->
+                <div id="tab-browser" class="tab-content active">
+                    <aside class="sidebar">
+                        <div class="filter-group">
+                            <label><span data-locale="map_select">MAPS</span> <i class="fa-solid fa-chevron-down"></i></label>
+                            <select id="filter-maps">
+                                <option value="all" data-locale="all_maps">ALL MAPS</option>
+                                <!-- Map options injected by JS -->
                             </select>
                         </div>
-                    </div>
-                    <div class="input-group">
-                        <label>LOADOUT</label>
-                        <select id="loadout-select"></select>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>TIME (MIN): <span id="round-time-val">15</span></label>
-                            <input type="range" id="round-time" min="5" max="30" step="5" value="15">
+                        <div class="filter-group">
+                            <label><span data-locale="loadout_select">WEAPONS</span> <i class="fa-solid fa-chevron-down"></i></label>
+                            <select id="filter-weapons">
+                                <option value="all" data-locale="all_weapons">ALL WEAPONS</option>
+                                <!-- Weapon options injected by JS -->
+                            </select>
                         </div>
-                        <div class="input-group">
-                            <label>MAX PLAYERS: <span id="max-players-val">16</span></label>
-                            <input type="range" id="max-players" min="2" max="32" step="1" value="16">
+                        <div class="filter-group">
+                            <label><span data-locale="players">PLAYERS</span> <i class="fa-solid fa-chevron-down"></i></label>
+                            <select id="filter-players">
+                                <option value="all" data-locale="any">ANY</option>
+                                <option value="not-full" data-locale="not_full">NOT FULL</option>
+                            </select>
                         </div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="confirm-btn" id="btn-create-lobby">CREATE</button>
-                        <button class="cancel-btn" id="btn-close-modal">CANCEL</button>
+                    </aside>
+
+                    <main class="lobby-browser">
+                        <div class="lobby-list" id="lobby-list-container">
+                            <!-- Entries will be injected here -->
+                        </div>
+                    </main>
+                </div>
+
+                <!-- Tab 2: Create Lobby -->
+                <div id="tab-create" class="tab-content">
+                    <div class="create-form-container">
+                        <h2 data-locale="tab_create">CREATE CUSTOM LOBBY</h2>
+                        <div class="form-grid">
+                            <div class="input-group full-width">
+                                <label data-locale="lobby_name">LOBBY NAME</label>
+                                <input type="text" id="lobby-name" placeholder="ENTER NAME...">
+                            </div>
+                            <div class="input-group">
+                                <label data-locale="map_select">MAP</label>
+                                <select id="map-select"></select>
+                            </div>
+                            <div class="input-group">
+                                <label data-locale="mode_select">MODE</label>
+                                <select id="mode-select">
+                                    <option value="ffa">FFA</option>
+                                    <option value="tdm">TEAM DEATHMATCH</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label data-locale="loadout_select">LOADOUT</label>
+                                <select id="loadout-select" multiple></select>
+                                <small data-locale="multi_select_hint">Hold CTRL for multiple</small>
+                            </div>
+                            <div class="input-group">
+                                <label><span data-locale="round_time">TIME (MIN)</span>: <span id="round-time-val">15</span></label>
+                                <input type="range" id="round-time" min="5" max="30" step="5" value="15">
+                            </div>
+                            <div class="input-group">
+                                <label><span data-locale="max_players">MAX PLAYERS</span>: <span id="max-players-val">16</span></label>
+                                <input type="range" id="max-players" min="2" max="16" step="1" value="16">
+                            </div>
+                            <div class="input-group">
+                                <label><span data-locale="respawn_time">RESPAWN TIME</span>: <span id="respawn-time-val">5</span>s</label>
+                                <input type="range" id="respawn-time" min="3" max="10" step="1" value="5">
+                            </div>
+                            <div class="input-group">
+                                <label><span data-locale="kill_limit">KILL LIMIT</span>: <span id="kill-limit-val">30</span></label>
+                                <input type="range" id="kill-limit" min="0" max="50" step="5" value="30">
+                                <small data-locale="kill_limit_hint">0 = disabled</small>
+                            </div>
+                            <div class="input-group toggle-group">
+                                <label data-locale="vehicles_allowed">VEHICLES ALLOWED</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="vehicles-allowed">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div class="input-group toggle-group">
+                                <label data-locale="friendly_fire">FRIENDLY FIRE</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="friendly-fire">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="confirm-btn create-btn-final" id="btn-create-lobby" data-locale="btn_create">CREATE</button>
+                            <button class="cancel-btn" id="btn-cancel-create" data-locale="btn_cancel">CANCEL</button>
+                        </div>
                     </div>
                 </div>
-             </div>
+            </div>
         </div>
 
         <!-- Waiting Area / Lobby Screen -->
         <div id="lobby-waiting-area" class="overlay" style="display: none;">
             <div class="lobby-card">
                 <header class="lobby-card-header">
-                    <h2 id="lobby-card-title">LOBBY: <span id="lobby-title">Default</span></h2>
+                    <h2 id="lobby-card-title"><span data-locale="lobby_name">LOBBY</span>: <span id="lobby-title">Default</span></h2>
                 </header>
                 <div class="lobby-grid">
                     <div class="player-list-section">
-                        <h3>PLAYERS</h3>
+                        <h3 data-locale="tab_players">PLAYERS</h3>
                         <div id="player-list"></div>
                     </div>
                     <div class="settings-section">
-                        <h3>SETTINGS</h3>
-                        <div id="lobby-info-summary"></div>
+                        <h3 data-locale="settings">SETTINGS</h3>
+                        <div id="lobby-info-summary" class="settings-summary"></div>
+
                         <div class="team-selection">
-                            <button class="team-btn" data-team="blue" id="btn-team-blue">BLUE</button>
-                            <button class="team-btn" data-team="red" id="btn-team-red">RED</button>
-                            <button class="team-btn" data-team="spectator" id="btn-team-spec">SPECTATOR</button>
+                            <button class="team-btn" data-team="blue" id="btn-team-blue" data-locale="team_blue">BLUE</button>
+                            <button class="team-btn" data-team="red" id="btn-team-red" data-locale="team_red">RED</button>
+                            <button class="team-btn" data-team="spectator" id="btn-team-spec" data-locale="spectator">SPECTATOR</button>
                         </div>
+
                         <div class="lobby-chat">
                             <div id="chat-messages"></div>
                             <input type="text" id="chat-input" placeholder="SEND MESSAGE...">
                         </div>
+
                         <div class="lobby-actions">
-                            <button class="ready-btn" id="btn-ready-toggle">READY</button>
-                            <button class="start-btn" id="btn-start-game" style="display: none;">START</button>
-                            <button class="leave-btn" id="btn-leave-lobby">LEAVE</button>
+                            <button class="ready-btn" id="btn-ready-toggle" data-locale="btn_ready">READY</button>
+                            <button class="start-btn" id="btn-start-game" style="display: none;" data-locale="btn_start">START</button>
+                            <button class="leave-btn" id="btn-leave-lobby" data-locale="btn_leave">LEAVE</button>
+                            <button class="close-btn start-btn" id="btn-close-lobby" style="display: none; background: var(--danger);" data-locale="btn_close">CLOSE LOBBY</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Countdown Overlay -->
+        <div id="big-countdown" style="display: none;">10</div>
     </div>
 
-    <!-- HUD (Will be hidden/shown based on script) -->
+    <!-- HUD -->
     <div id="game-hud" style="display: none;">
-        <!-- HUD content will be handled later as per user instructions -->
+        <div class="hud-top-right">
+            <div class="hud-timer-box">
+                <i class="fa-solid fa-clock"></i>
+                <span id="hud-timer">00:00</span>
+            </div>
+            <div class="hud-tdm-score" id="hud-tdm-score" style="display: none;">
+                <span class="score-blue">0</span>
+                <span class="score-divider">:</span>
+                <span class="score-red">0</span>
+            </div>
+        </div>
+        <div class="hud-bottom-right">
+            <div class="hud-stats">
+                <div class="stat-item"><span data-locale="kills">KILLS</span>: <span id="hud-kills">0</span></div>
+                <div class="stat-item"><span data-locale="deaths">DEATHS</span>: <span id="hud-deaths">0</span></div>
+            </div>
+            <div class="hud-weapons">
+                <div id="hud-ammo">0 / 0</div>
+            </div>
+            <div class="hud-status-bars">
+                <div class="bar-container health-bar">
+                    <div id="hud-health" class="bar-fill"></div>
+                </div>
+                <div class="bar-container armor-bar">
+                    <div id="hud-armor" class="bar-fill"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Winner Screen -->
     <div id="winner-screen" class="overlay" style="display: none;">
         <div class="winner-card">
-            <h1 id="winner-title">MATCH ENDED</h1>
+            <h1 id="winner-title" data-locale="game_ended">MATCH ENDED</h1>
             <h2 id="winner-name">PLAYER WINS!</h2>
             <div id="match-stats-table"></div>
 
+            <div class="map-voting" id="map-voting-section">
+                <h3 data-locale="vote_next_map">VOTE NEXT MAP</h3>
+                <div class="vote-maps-grid" id="vote-maps-container"></div>
+            </div>
+
             <div class="btn-group">
-                <button class="confirm-btn" id="btn-back-to-lobby">BACK TO LOBBY</button>
-                <button class="cancel-btn" id="btn-back-to-menu">MAIN MENU</button>
+                <button class="confirm-btn" id="btn-back-to-lobby" data-locale="btn_back_lobby">BACK TO LOBBY</button>
+                <button class="cancel-btn" id="btn-back-to-menu" data-locale="btn_menu">MAIN MENU</button>
             </div>
         </div>
     </div>
