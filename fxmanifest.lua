@@ -14,12 +14,11 @@ shared_scripts {
 client_scripts {
     'client/cl_main.lua',
     'client/cl_lobby.lua',
-    'client/cl_gameplay.lua',
-    'client/cl_nui.lua'
+    'client/cl_gameplay.lua'
 }
 
 server_scripts {
-    '@mysql-async/lib/MySQL.lua', -- Standard for many ESX setups, or use oxmysql
+    '@oxmysql/lib/MySQL.lua',
     'server/sv_main.lua',
     'server/sv_lobby.lua',
     'server/sv_stats.lua'
@@ -31,8 +30,8 @@ files {
     'html/index.html',
     'html/style.css',
     'html/script.js',
-    'html/assets/*.png',
-    'html/assets/*.mp3'
+    'html/assets/*.mp3',
+    'html/assets/maps/*.png'
 }
 
 lua54 'yes'
