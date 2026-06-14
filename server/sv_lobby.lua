@@ -179,13 +179,55 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
-        for _, pid in ipairs(lobby.players) do
-            TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+        if lobby then
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+            end
         end
     end
 end)
 
-RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
+-- Event: Lobby schließen (nur durch Host)
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            -- Alle Spieler aus der Lobby entfernen
+            local players = {}
+            for _, pid in ipairs(lobby.players) do table.insert(players, pid) end
+
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+            end
+
+            Lobbies[state.lobbyId] = nil
+        end
+    end
+end)
+
+-- Event: Einstellungen speichern & synchronisieren
+RegisterServerEvent('ffa:saveSettings')
+AddEventHandler('ffa:saveSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.roundTime = settings.roundTime
+            lobby.maxPlayers = settings.maxPlayers
+            lobby.respawnTime = settings.respawnTime
+            lobby.killLimit = settings.killLimit
+            lobby.vehiclesAllowed = settings.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire
+
+            -- Clients synchronisieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:syncSettings', pid, lobby)
+            end
+        end
+    end
+end)
 
 -- Event: Bereit-Status umschalten
 RegisterServerEvent('ffa:toggleReady')
@@ -211,13 +253,14 @@ end)
 RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
-    local filterTab = data and data.tab or 'ffa'
+    local filterTab = 'ffa'
+    if data and data.tab then filterTab = data.tab end
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
         if filterTab == 'ffa' then
             if lobby.isPersistent then isMatch = true end
-        else
+        elseif filterTab == 'list' then
             if not lobby.isPersistent then isMatch = true end
         end
 
@@ -225,7 +268,6 @@ AddEventHandler('ffa:fetchLobbies', function(data)
             -- Status Bestimmung für UI
             local displayStatus = 'waiting'
             if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
 
             table.insert(list, {
                 id = id,

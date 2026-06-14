@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -34,6 +35,12 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
 
     playerState.isInGame = false
     currentLobby = nil
+
+    -- Fahrzeug entfernen falls vorhanden
+    if playerVehicle and DoesEntityExist(playerVehicle) then
+        DeleteEntity(playerVehicle)
+        playerVehicle = nil
+    end
 
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
@@ -84,15 +91,31 @@ Citizen.CreateThread(function()
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+            if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
+                ammo = GetAmmoInPedWeapon(ped, currentWeapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = math.max(0, health),
                 armor = armor,
                 ammo = ammo
             })
         end
         Wait(500)
     end
+end)
+
+-- Sound-Event vom Server
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(sound)
+    SendNUIMessage({ action = 'playSound', sound = sound })
+end)
+
+-- Team-Sync
+RegisterNetEvent('ffa:syncTeam')
+AddEventHandler('ffa:syncTeam', function(team)
+    playerState.team = team
 end)

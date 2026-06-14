@@ -22,26 +22,84 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     -- Waffen austeilen
     GiveLoadout(lobby.loadout)
 
+    -- Fahrzeug spawnen falls erlaubt
+    if lobby.vehiclesAllowed then
+        SpawnLobbyVehicle()
+    end
+
+    -- Anti-Teamkill Setup
+    if lobby.mode == 'tdm' and not lobby.friendlyFire then
+        SetupTeamRelationships()
+    end
+
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
-        isPersistent = lobby.isPersistent
+        isPersistent = lobby.isPersistent,
+        mode = lobby.mode
     })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
+
+function SpawnLobbyVehicle()
+    local ped = PlayerPedId()
+    local coords = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+    local model = GetHashKey(Config.DefaultSettings.defaultVehicle or 'bati')
+
+    RequestModel(model)
+    while not HasModelLoaded(model) do Wait(10) end
+
+    if playerVehicle and DoesEntityExist(playerVehicle) then
+        DeleteEntity(playerVehicle)
+    end
+
+    playerVehicle = CreateVehicle(model, coords.x, coords.y, coords.z, heading, true, false)
+    SetPedIntoVehicle(ped, playerVehicle, -1)
+    SetEntityAsMissionEntity(playerVehicle, true, true)
+end
+
+function SetupTeamRelationships()
+    local blueGroup = AddRelationshipGroup('FFA_BLUE')
+    local redGroup = AddRelationshipGroup('FFA_RED')
+
+    if playerState.team == 'blue' then
+        SetPedRelationshipGroupHash(PlayerPedId(), blueGroup)
+    elseif playerState.team == 'red' then
+        SetPedRelationshipGroupHash(PlayerPedId(), redGroup)
+    end
+
+    -- Like-Beziehung zu Teamkameraden (1 = Like)
+    SetRelationshipBetweenGroups(1, blueGroup, blueGroup)
+    SetRelationshipBetweenGroups(1, redGroup, redGroup)
+
+    -- Hate-Beziehung zu Gegnern (5 = Hate)
+    SetRelationshipBetweenGroups(5, blueGroup, redGroup)
+    SetRelationshipBetweenGroups(5, redGroup, blueGroup)
+end
 
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
 function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    local function grant(key)
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
+    end
+
+    if type(loadoutKey) == 'table' then
+        for _, key in ipairs(loadoutKey) do
+            grant(key)
+        end
+    else
+        grant(loadoutKey)
     end
 end
 
@@ -67,14 +125,25 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+
+                    local function check(key)
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    return true
+                                end
                             end
                         end
+                        return false
+                    end
+
+                    if type(currentLobby.loadout) == 'table' then
+                        for _, key in ipairs(currentLobby.loadout) do
+                            if check(key) then allowed = true; break end
+                        end
+                    else
+                        allowed = check(currentLobby.loadout)
                     end
 
                     if not allowed then
@@ -175,8 +244,7 @@ AddEventHandler('ffa:updateHUDStats', function(kills, deaths)
     SendNUIMessage({
         action = 'updateHUD',
         kills = kills,
-        deaths = deaths,
-        mode = currentLobby.mode
+        deaths = deaths
     })
 end)
 

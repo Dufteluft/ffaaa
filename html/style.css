@@ -123,35 +123,23 @@ body {
     overflow: hidden;
 }
 
-/* Sidebar / Filters */
-.sidebar {
-    width: 280px;
-    background: rgba(0, 0, 0, 0.2);
-    border-right: 1px solid var(--border);
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
+/* Browser Filters */
+.browser-header {
+    padding: 10px 0 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
 }
 
-.filter-group {
+.filter-item {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 10px;
 }
 
-.filter-group label {
-    font-size: 12px;
-    font-weight: 900;
+.filter-item label {
+    font-size: 14px;
+    font-weight: 700;
     color: var(--text-muted);
-    letter-spacing: 1px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.filter-group label i {
-    font-size: 10px;
 }
 
 select {
@@ -172,21 +160,58 @@ select:hover {
     border-color: rgba(255,255,255,0.2);
 }
 
-.create-btn {
-    margin-top: auto;
-    background: var(--primary);
-    color: #000;
-    border: none;
-    padding: 15px;
-    font-weight: 900;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+option {
+    background: var(--bg-gradient-start);
+    color: #fff;
 }
 
-.create-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+/* Create Lobby Tab */
+.create-lobby-container {
+    padding: 40px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.full-width { grid-column: span 2; }
+
+.input-group select[multiple] {
+    height: auto;
+    padding: 5px;
+}
+
+.toggle-group {
+    grid-column: span 2;
+    display: flex;
+    gap: 40px;
+    background: var(--surface);
+    padding: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.toggle-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.toggle-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.form-actions {
+    grid-column: span 2;
+    margin-top: 20px;
 }
 
 /* Lobby Browser */
@@ -326,6 +351,87 @@ select:hover {
 .status-active { color: var(--success); }
 .status-waiting { color: var(--text-muted); }
 
+/* HUD Styles */
+#game-hud {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40px;
+}
+
+.hud-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.hud-item {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 25px;
+    border-radius: 4px;
+    font-weight: 900;
+    font-size: 24px;
+    letter-spacing: 1px;
+    border-bottom: 3px solid var(--primary);
+}
+
+#hud-tdm-score {
+    font-size: 20px;
+    border-bottom-color: var(--warning);
+}
+
+.score-blue { color: #2196f3; }
+.score-red { color: #f44336; }
+
+.hud-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.hud-stats, .hud-player-state {
+    display: flex;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 15px 30px;
+    border-radius: 4px;
+    border-top: 3px solid var(--primary);
+}
+
+.stat-item, .state-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.stat-item i, .state-item i {
+    font-size: 16px;
+    color: var(--primary);
+}
+
+/* Countdown */
+#big-countdown {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 150px;
+    font-weight: 900;
+    font-family: 'Impact';
+    text-shadow: 0 0 30px rgba(0,0,0,1);
+    animation: pulseScale 1s infinite;
+}
+
+@keyframes pulseScale {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; }
+}
+
 /* Action Buttons */
 .action-btn {
     width: 140px;
@@ -398,15 +504,9 @@ select:hover {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* Form Elements In Modal */
-.modal-content h2 {
-    margin-bottom: 30px;
-    font-family: 'Impact', sans-serif;
-    letter-spacing: 1px;
-}
-
+/* Form Elements */
 .input-group { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
-.input-group label { font-size: 11px; font-weight: 900; color: var(--text-muted); }
+.input-group label { font-size: 11px; font-weight: 900; color: var(--text-muted); text-transform: uppercase; }
 input[type="text"], input[type="range"] {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -414,8 +514,6 @@ input[type="text"], input[type="range"] {
     padding: 12px;
     border-radius: 4px;
 }
-
-.input-row { display: flex; gap: 20px; }
 
 .btn-group { display: flex; gap: 15px; margin-top: 30px; }
 .confirm-btn { flex: 1; background: var(--success); color: #000; border: none; padding: 15px; font-weight: 900; border-radius: 4px; cursor: pointer; }
@@ -427,7 +525,7 @@ input[type="text"], input[type="range"] {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-/* Lobby Waiting Area (Reusing some styles but adjusted) */
+/* Lobby Waiting Area */
 .lobby-card {
     width: 1000px;
     height: 700px;
@@ -468,6 +566,7 @@ input[type="text"], input[type="range"] {
 .lobby-actions { display: flex; gap: 10px; }
 .ready-btn { background: var(--warning); color: #000; border: none; padding: 12px 25px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 .start-btn { background: var(--success); color: #000; border: none; padding: 12px 25px; font-weight: 900; border-radius: 4px; cursor: pointer; }
+.close-btn { background: #555; color: #fff; border: none; padding: 12px 25px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 .leave-btn { background: var(--danger); color: #fff; border: none; padding: 12px 25px; font-weight: 900; border-radius: 4px; cursor: pointer; }
 
 /* Winner Card */
