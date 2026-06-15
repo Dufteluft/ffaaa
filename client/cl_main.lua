@@ -1,6 +1,6 @@
 ESX = exports['es_extended']:getSharedObject()
 
--- Globale Variablen für den Zugriff aus allen Client-Skripten
+-- Globale Variablen
 playerState = {
     kills = 0,
     deaths = 0,
@@ -8,17 +8,25 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+playerVehicle = nil
 
--- Globaler Countdown-Handler für alle Spieler
+-- Initialisierung von Relationship Groups
+Citizen.CreateThread(function()
+    local _, blueGroup = AddRelationshipGroup('FFA_BLUE')
+    local _, redGroup = AddRelationshipGroup('FFA_RED')
+
+    SetRelationshipBetweenGroups(1, blueGroup, blueGroup)
+    SetRelationshipBetweenGroups(1, redGroup, redGroup)
+    SetRelationshipBetweenGroups(5, blueGroup, redGroup)
+    SetRelationshipBetweenGroups(5, redGroup, blueGroup)
+end)
+
+-- Globaler Countdown
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
-            SendNUIMessage({
-                action = 'countdown',
-                seconds = seconds
-            })
+            SendNUIMessage({ action = 'countdown', seconds = seconds })
             if seconds == 0 then
-                -- Spieler nach Countdown freigeben
                 FreezeEntityPosition(PlayerPedId(), false)
             end
             Citizen.Wait(1000)
@@ -27,39 +35,7 @@ function StartCountdown(seconds)
     end)
 end
 
--- Event: Stellt den Spieler-Status wieder her (nach Verlassen der Lobby)
-RegisterNetEvent('ffa:restoreState')
-AddEventHandler('ffa:restoreState', function(oldCoords)
-    local ped = PlayerPedId()
-
-    playerState.isInGame = false
-    currentLobby = nil
-
-    -- Alle Waffen entfernen
-    RemoveAllPedWeapons(ped, true)
-
-    -- ESX Loadout wiederherstellen (falls vorhanden)
-    TriggerEvent('esx:restoreLoadout')
-
-    -- Zur alten Position teleportieren
-    DoScreenFadeOut(500)
-    while not IsScreenFadedOut() do Wait(0) end
-
-    if oldCoords then
-        SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
-    end
-
-    Wait(500)
-    DoScreenFadeIn(500)
-    FreezeEntityPosition(ped, false)
-
-    -- HUD und Menü ausblenden
-    SendNUIMessage({ action = 'hideHUD' })
-    SendNUIMessage({ action = 'close' })
-    SetNuiFocus(false, false)
-end)
-
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Teleport-Handler
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -73,26 +49,64 @@ function TeleportToMap(mapId)
 
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        FreezeEntityPosition(ped, true)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- Event: Zustand wiederherstellen
+RegisterNetEvent('ffa:restoreState')
+AddEventHandler('ffa:restoreState', function(oldCoords)
+    local ped = PlayerPedId()
+    playerState.isInGame = false
+    currentLobby = nil
+
+    if playerVehicle and DoesEntityExist(playerVehicle) then
+        DeleteVehicle(playerVehicle)
+        playerVehicle = nil
+    end
+
+    RemoveAllPedWeapons(ped, true)
+    SetPedRelationshipGroupHash(ped, `PLAYER`)
+    TriggerEvent('esx:restoreLoadout')
+
+    DoScreenFadeOut(500)
+    while not IsScreenFadedOut() do Wait(0) end
+    if oldCoords then
+        SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z)
+    end
+    Wait(500)
+    DoScreenFadeIn(500)
+    FreezeEntityPosition(ped, false)
+
+    SendNUIMessage({ action = 'hideHUD' })
+    SendNUIMessage({ action = 'close' })
+    SetNuiFocus(false, false)
+end)
+
+-- HUD Updater
 Citizen.CreateThread(function()
     while true do
-        if playerState and playerState.isInGame then
+        if playerState.isInGame then
             local ped = PlayerPedId()
-            local health = GetEntityHealth(ped) - 100
+            local health = (GetEntityHealth(ped) - 100)
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local weapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weapon)
+            local totalAmmo = GetAmmoInPedWeapon(ped, weapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
                 health = health,
                 armor = armor,
-                ammo = ammo
+                ammo = string.format("%d / %d", ammo, totalAmmo - ammo)
             })
         end
         Wait(500)
     end
+end)
+
+-- Audio-Trigger vom Server
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(sound)
+    SendNUIMessage({ action = 'playSound', sound = sound })
 end)
