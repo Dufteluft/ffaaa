@@ -1,7 +1,7 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Default key for the main menu (e.g. F1, F5, F6)
 
 Config.DefaultSettings = {
     roundTime = 15, -- minutes
@@ -9,7 +9,8 @@ Config.DefaultSettings = {
     respawnTime = 5, -- seconds
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    defaultVehicle = 'bati' -- Default motorcycle if vehicles are allowed
 }
 
 Config.WeaponLoadouts = {
@@ -52,7 +53,8 @@ Config.Maps = {
             vector4(167.0, -929.0, 30.6, 180.0),
             vector4(185.0, -912.0, 30.6, 90.0),
             vector4(203.0, -930.0, 30.6, 0.0),
-            vector4(185.0, -948.0, 30.6, 270.0)
+            vector4(185.0, -948.0, 30.6, 270.0),
+            vector4(185.0, -930.0, 30.6, 45.0)
         }
     },
     {
@@ -102,18 +104,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -123,6 +113,7 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
@@ -140,6 +131,7 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_close_lobby'] = 'Lobby schließen',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -147,17 +139,25 @@ Config.Locales = {
         ['waiting_for_players'] = 'Warte auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
-        ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = ' GEWINNT!',
+        ['draw'] = 'Unentschieden',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['pistol'] = 'Pistole',
+        ['smg'] = 'SMG',
+        ['assault'] = 'Sturmgewehr',
+        ['sniper'] = 'Sniper',
+        ['shotgun'] = 'Shotgun',
+        ['all_weapons'] = 'Alle Waffen'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
@@ -175,6 +175,7 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_close_lobby'] = 'Close Lobby',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -182,11 +183,18 @@ Config.Locales = {
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
-        ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = ' WINS!',
+        ['draw'] = 'Draw',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['pistol'] = 'Pistol',
+        ['smg'] = 'SMG',
+        ['assault'] = 'Assault Rifle',
+        ['sniper'] = 'Sniper',
+        ['shotgun'] = 'Shotgun',
+        ['all_weapons'] = 'All Weapons'
     }
 }
 
