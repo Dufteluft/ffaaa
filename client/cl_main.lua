@@ -1,6 +1,6 @@
 ESX = exports['es_extended']:getSharedObject()
 
--- Globale Variablen für den Zugriff aus allen Client-Skripten
+-- Global variables for access from all client scripts
 playerState = {
     kills = 0,
     deaths = 0,
@@ -9,7 +9,14 @@ playerState = {
 }
 currentLobby = nil
 
--- Globaler Countdown-Handler für alle Spieler
+-- Key mapping for the main menu
+RegisterKeyMapping('openffamenu', 'Open FFA Menu', 'keyboard', Config.MenuKey)
+
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
+
+-- Global countdown handler
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
@@ -18,7 +25,6 @@ function StartCountdown(seconds)
                 seconds = seconds
             })
             if seconds == 0 then
-                -- Spieler nach Countdown freigeben
                 FreezeEntityPosition(PlayerPedId(), false)
             end
             Citizen.Wait(1000)
@@ -27,21 +33,27 @@ function StartCountdown(seconds)
     end)
 end
 
--- Event: Stellt den Spieler-Status wieder her (nach Verlassen der Lobby)
+-- Event: Restore state when leaving lobby
 RegisterNetEvent('ffa:restoreState')
 AddEventHandler('ffa:restoreState', function(oldCoords)
     local ped = PlayerPedId()
 
     playerState.isInGame = false
     currentLobby = nil
+    playerState.team = 'none'
 
-    -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
-
-    -- ESX Loadout wiederherstellen (falls vorhanden)
     TriggerEvent('esx:restoreLoadout')
 
-    -- Zur alten Position teleportieren
+    -- Cleanup spawned vehicles if any
+    if currentVehicle then
+        DeleteEntity(currentVehicle)
+        currentVehicle = nil
+    end
+
+    -- Reset relationship groups
+    SetPedRelationshipGroupHash(ped, GetHashKey('PLAYER'))
+
     DoScreenFadeOut(500)
     while not IsScreenFadedOut() do Wait(0) end
 
@@ -53,13 +65,11 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
 
-    -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
     SendNUIMessage({ action = 'close' })
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -73,16 +83,17 @@ function TeleportToMap(mapId)
 
         Wait(500)
         DoScreenFadeIn(500)
-        FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        FreezeEntityPosition(ped, true)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD details updater
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
+            if health < 0 then health = 0 end
             local armor = GetPedArmour(ped)
             local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
 
@@ -95,4 +106,13 @@ Citizen.CreateThread(function()
         end
         Wait(500)
     end
+end)
+
+-- Play sound event
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(sound)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = sound
+    })
 end)
