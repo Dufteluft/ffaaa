@@ -1,3 +1,5 @@
+ESX = exports['es_extended']:getSharedObject()
+
 -- Funktion: Aktualisiert Spieler-Statistiken in der Datenbank
 function UpdatePlayerStats(playerId, kills, deaths, isWin)
     local xPlayer = ESX.GetPlayerFromId(playerId)
@@ -17,7 +19,8 @@ end
 -- Event: Statistiken für UI abrufen
 RegisterServerEvent('ffa:getStats')
 AddEventHandler('ffa:getStats', function()
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
@@ -26,7 +29,15 @@ AddEventHandler('ffa:getStats', function()
         ['@id'] = identifier
     }, function(result)
         if result and result[1] then
-            TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+            TriggerClientEvent('ffa:receiveStats', src, result[1])
+        else
+            -- Falls keine Statistiken existieren, sende Standardwerte
+            TriggerClientEvent('ffa:receiveStats', src, {
+                kills = 0,
+                deaths = 0,
+                games_played = 0,
+                wins = 0
+            })
         end
     end)
 end)

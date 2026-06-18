@@ -20,6 +20,7 @@ function StartCountdown(seconds)
             if seconds == 0 then
                 -- Spieler nach Countdown freigeben
                 FreezeEntityPosition(PlayerPedId(), false)
+                TriggerEvent('ffa:playSound', 'start')
             end
             Citizen.Wait(1000)
             seconds = seconds - 1
@@ -40,6 +41,15 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
 
     -- ESX Loadout wiederherstellen (falls vorhanden)
     TriggerEvent('esx:restoreLoadout')
+
+    -- Fahrzeuge löschen falls vorhanden
+    if spawnedVehicle then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
+
+    -- Relationship Groups zurücksetzen
+    SetPedRelationshipGroupHash(ped, GetHashKey('PLAYER'))
 
     -- Zur alten Position teleportieren
     DoScreenFadeOut(500)
@@ -84,7 +94,12 @@ Citizen.CreateThread(function()
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local weapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+
+            if weapon ~= GetHashKey('WEAPON_UNARMED') then
+                _, ammo = GetAmmoInClip(ped, weapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
@@ -95,4 +110,13 @@ Citizen.CreateThread(function()
         end
         Wait(500)
     end
+end)
+
+-- Sound Event
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(sound)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = sound
+    })
 end)
