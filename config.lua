@@ -1,15 +1,16 @@
 Config = {}
 
 Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    defaultVehicle = 'bati' -- Standardfahrzeug falls aktiviert
 }
 
 Config.WeaponLoadouts = {
@@ -123,6 +124,7 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
@@ -140,6 +142,7 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_close_lobby'] = 'Lobby schließen',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -148,16 +151,24 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['draw'] = 'Unentschieden',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['free_slots_only'] = 'Nur Lobbys mit freien Plätzen',
+        ['wins_suffix'] = 'GEWINNT!',
+        ['hud_health'] = 'LEBEN',
+        ['hud_armor'] = 'RÜSTUNG',
+        ['hud_ammo'] = 'MUNITION',
+        ['hud_time'] = 'ZEIT'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
@@ -175,6 +186,7 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_close_lobby'] = 'Close Lobby',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -183,16 +195,24 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['draw'] = 'Draw',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['free_slots_only'] = 'Free slots only',
+        ['wins_suffix'] = 'WINS!',
+        ['hud_health'] = 'HEALTH',
+        ['hud_armor'] = 'ARMOR',
+        ['hud_ammo'] = 'AMMO',
+        ['hud_time'] = 'TIME'
     }
 }
 
 function _U(str, ...)
-    if Config.Locales[Config.Locale] and Config.Locales[Config.Locale][str] then
-        return string.format(Config.Locales[Config.Locale][str], ...)
+    local locales = Config.Locales[Config.Locale] or Config.Locales['en']
+    if locales and locales[str] then
+        return string.format(locales[str], ...)
     else
         return 'Translation [' .. Config.Locale .. '][' .. str .. '] not found'
     end
