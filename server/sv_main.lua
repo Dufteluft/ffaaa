@@ -101,7 +101,7 @@ function EndGame(lobbyId, reason)
             winnerName = _U('team_red')
             winnerTeam = 'red'
         else
-            winnerName = 'Unentschieden'
+            winnerName = _U('draw')
         end
     -- Sieg-Logik für FFA
     else

@@ -38,7 +38,8 @@ function OpenMainMenu()
         action = 'open',
         config = Config,
         maps = Config.Maps,
-        isInGame = playerState.isInGame
+        isInGame = playerState.isInGame,
+        myId = GetPlayerServerId(PlayerId())
     })
 end
 
@@ -48,6 +49,25 @@ RegisterNUICallback('closeUI', function(data, cb)
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
     cb('ok')
+end)
+
+RegisterNUICallback('saveSettings', function(data, cb)
+    TriggerServerEvent('ffa:saveSettings', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('closeLobby', function(data, cb)
+    TriggerServerEvent('ffa:closeLobby')
+    cb('ok')
+end)
+
+RegisterNetEvent('ffa:syncSettings')
+AddEventHandler('ffa:syncSettings', function(lobby)
+    currentLobby = lobby
+    SendNUIMessage({
+        action = 'lobbyJoined', -- Re-use to refresh UI
+        lobby = lobby
+    })
 end)
 
 -- Befehl zum Verlassen der FFA Lobby

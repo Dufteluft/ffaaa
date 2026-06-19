@@ -330,7 +330,8 @@ end)
 
 -- Event: Spieler aus Lobby kicken
 RegisterServerEvent('ffa:kickPlayer')
-AddEventHandler('ffa:kickPlayer', function(targetId)
+AddEventHandler('ffa:kickPlayer', function(data)
+    local targetId = data.id
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
@@ -338,6 +339,59 @@ AddEventHandler('ffa:kickPlayer', function(targetId)
             LeaveLobby(targetId)
             -- Dem gekickten Spieler mitteilen
             TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
+        end
+    end
+end)
+
+-- Event: Lobby-Einstellungen speichern
+RegisterServerEvent('ffa:saveSettings')
+AddEventHandler('ffa:saveSettings', function(settings)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.name = settings.name or lobby.name
+            lobby.mapId = settings.mapId or lobby.mapId
+            local map = Utils.GetMapById(lobby.mapId)
+            if map then lobby.mapLabel = map.label end
+
+            lobby.mode = settings.mode or lobby.mode
+            lobby.loadout = settings.loadout or lobby.loadout
+            lobby.roundTime = settings.roundTime or lobby.roundTime
+            lobby.maxPlayers = settings.maxPlayers or lobby.maxPlayers
+            lobby.vehiclesAllowed = settings.vehiclesAllowed ~= nil and settings.vehiclesAllowed or lobby.vehiclesAllowed
+            lobby.friendlyFire = settings.friendlyFire ~= nil and settings.friendlyFire or lobby.friendlyFire
+            lobby.respawnTime = settings.respawnTime or lobby.respawnTime
+            lobby.killLimit = settings.killLimit or lobby.killLimit
+
+            -- Synchronisiere mit allen Spielern
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:syncSettings', pid, lobby)
+            end
+        end
+    end
+end)
+
+-- Event: Lobby schließen
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby and lobby.host == source then
+            -- Alle Spieler rauswerfen
+            local players = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(players, pid)
+            end
+
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+            end
+
+            Lobbies[lobbyId] = nil
         end
     end
 end)
