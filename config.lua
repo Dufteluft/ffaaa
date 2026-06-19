@@ -151,7 +151,11 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['name'] = 'Name',
+        ['tab_players'] = 'Spielerliste',
+        ['draw'] = 'Unentschieden',
+        ['wins_suffix'] = 'GEWINNT!'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -186,7 +190,11 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['name'] = 'Name',
+        ['tab_players'] = 'Player List',
+        ['draw'] = 'Draw',
+        ['wins_suffix'] = 'WINS!'
     }
 }
 

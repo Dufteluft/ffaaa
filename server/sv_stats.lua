@@ -8,8 +8,8 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
     -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
     MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
         ['@id'] = identifier,
-        ['@k'] = kills,
-        ['@d'] = deaths,
+        ['@k'] = kills or 0,
+        ['@d'] = deaths or 0,
         ['@w'] = isWin and 1 or 0
     })
 end
