@@ -38,8 +38,14 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
+
+    -- Fahrzeuge löschen falls vorhanden
+    if DoesEntityExist(spawnedVehicle) then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
 
     -- Zur alten Position teleportieren
     DoScreenFadeOut(500)
@@ -53,13 +59,16 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
 
+    -- Relationship Groups zurücksetzen
+    SetPedRelationshipGroupHash(ped, GetHashKey('PLAYER'))
+
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
     SendNUIMessage({ action = 'close' })
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -77,7 +86,7 @@ function TeleportToMap(mapId)
     end
 end
 
--- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD-Updater
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
@@ -88,11 +97,20 @@ Citizen.CreateThread(function()
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
-                health = health,
+                health = math.max(0, health),
                 armor = armor,
                 ammo = ammo
             })
         end
         Wait(500)
     end
+end)
+
+-- Sounds abspielen via Server
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(soundName)
+    SendNUIMessage({
+        action = 'playSound',
+        sound = soundName
+    })
 end)
