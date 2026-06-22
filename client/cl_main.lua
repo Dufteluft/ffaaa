@@ -8,6 +8,14 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+spawnedVehicle = nil
+
+-- Menü-Befehl und Key-Mapping
+RegisterCommand('openffamenu', function()
+    OpenMainMenu()
+end, false)
+
+RegisterKeyMapping('openffamenu', 'FFA Lobby Menü öffnen', 'keyboard', Config.MenuKey)
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -19,7 +27,9 @@ function StartCountdown(seconds)
             })
             if seconds == 0 then
                 -- Spieler nach Countdown freigeben
-                FreezeEntityPosition(PlayerPedId(), false)
+                local ped = PlayerPedId()
+                FreezeEntityPosition(ped, false)
+                SetEntityInvincible(ped, false)
             end
             Citizen.Wait(1000)
             seconds = seconds - 1
@@ -35,6 +45,12 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
+    -- Fahrzeug löschen falls vorhanden
+    if spawnedVehicle and DoesEntityExist(spawnedVehicle) then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
+
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
@@ -49,9 +65,13 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
         SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
     end
 
+    -- Reset Relationship Group
+    SetPedRelationshipGroupHash(ped, GetHashKey('PLAYER'))
+
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)
+    SetEntityInvincible(ped, false)
 
     -- HUD und Menü ausblenden
     SendNUIMessage({ action = 'hideHUD' })
@@ -74,6 +94,7 @@ function TeleportToMap(mapId)
         Wait(500)
         DoScreenFadeIn(500)
         FreezeEntityPosition(ped, true) -- Eingefroren bis Countdown endet
+        SetEntityInvincible(ped, true)
     end
 end
 
@@ -84,7 +105,9 @@ Citizen.CreateThread(function()
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
@@ -95,4 +118,9 @@ Citizen.CreateThread(function()
         end
         Wait(500)
     end
+end)
+
+RegisterNetEvent('ffa:playSound')
+AddEventHandler('ffa:playSound', function(soundName)
+    SendNUIMessage({ action = 'playSound', sound = soundName })
 end)

@@ -17,7 +17,8 @@ end
 -- Event: Statistiken für UI abrufen
 RegisterServerEvent('ffa:getStats')
 AddEventHandler('ffa:getStats', function()
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
 
     local identifier = xPlayer.getIdentifier()
@@ -26,7 +27,7 @@ AddEventHandler('ffa:getStats', function()
         ['@id'] = identifier
     }, function(result)
         if result and result[1] then
-            TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+            TriggerClientEvent('ffa:receiveStats', src, result[1])
         end
     end)
 end)
