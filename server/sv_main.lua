@@ -56,25 +56,27 @@ end)
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
     local lobby = Lobbies[lobbyId]
-    if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
+    if not lobby then return end
+    if lobby.roundTime == 0 and not lobby.isPersistent then return end
+    if lobby.isPersistent and lobby.timer <= 0 then lobby.timer = 3600 end -- Default 1h for persistent
 
     Citizen.CreateThread(function()
         while Lobbies[lobbyId] and Lobbies[lobbyId].status == 'playing' do
             Citizen.Wait(1000)
-            local lobby = Lobbies[lobbyId]
-            if not lobby then break end
+            local l = Lobbies[lobbyId]
+            if not l then break end
 
-            lobby.timer = lobby.timer - 1
+            l.timer = l.timer - 1
 
-            if lobby.timer <= 0 then
+            if l.timer <= 0 then
                 EndGame(lobbyId, 'Zeit abgelaufen')
                 break
             end
 
             -- Timer mit Clients synchronisieren
-            for _, pid in ipairs(lobby.players) do
-                local mins = math.floor(lobby.timer / 60)
-                local secs = lobby.timer % 60
+            for _, pid in ipairs(l.players) do
+                local mins = math.floor(l.timer / 60)
+                local secs = l.timer % 60
                 TriggerClientEvent('ffa:updateTimer', pid, string.format('%02d:%02d', mins, secs))
             end
         end

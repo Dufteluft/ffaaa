@@ -151,6 +151,57 @@ AddEventHandler('ffa:leaveLobby', function()
     LeaveLobby(source)
 end)
 
+-- Event: Lobby schließen (nur Host)
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            local players = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(players, pid)
+            end
+
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+            end
+
+            Lobbies[state.lobbyId] = nil
+        end
+    end
+end)
+
+-- Event: Einstellungen speichern (nur Host)
+RegisterServerEvent('ffa:saveSettings')
+AddEventHandler('ffa:saveSettings', function(data)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.name = data.name or lobby.name
+            lobby.mapId = data.mapId or lobby.mapId
+            local map = Utils.GetMapById(lobby.mapId)
+            if map then lobby.mapLabel = map.label end
+
+            lobby.mode = data.mode or lobby.mode
+            lobby.loadout = data.loadout or lobby.loadout
+            lobby.roundTime = data.roundTime or lobby.roundTime
+            lobby.maxPlayers = data.maxPlayers or lobby.maxPlayers
+            lobby.vehiclesAllowed = data.vehiclesAllowed
+            lobby.friendlyFire = data.friendlyFire
+            lobby.respawnTime = data.respawnTime or lobby.respawnTime
+            lobby.killLimit = data.killLimit or lobby.killLimit
+
+            -- Clients informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:syncSettings', pid, lobby)
+            end
+        end
+    end
+end)
+
 -- Funktion: Aktualisiert die Spielerliste für alle in der Lobby
 function UpdateLobbyPlayers(lobbyId)
     local lobby = Lobbies[lobbyId]
@@ -249,6 +300,19 @@ AddEventHandler('playerDropped', function()
     LeaveLobby(source)
 end)
 
+-- Automatische Bereinigung leerer Lobbys
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(60000) -- Alle 60 Sekunden
+        for id, lobby in pairs(Lobbies) do
+            if not lobby.isPersistent and #lobby.players == 0 then
+                Lobbies[id] = nil
+                Utils.Print('Leere Lobby gelöscht: ' .. id)
+            end
+        end
+    end
+end)
+
 -- Automatische Initialisierung der persistenten Lobbys beim Server-Start
 MySQL.ready(function()
     Citizen.Wait(1000)
@@ -264,7 +328,7 @@ MySQL.ready(function()
             mapLabel = map.label,
             mode = 'ffa',
             loadout = 'all',
-            roundTime = 0, -- 0 bedeutet unendlich/kein Timer
+            roundTime = 60,
             maxPlayers = 32,
             vehiclesAllowed = false,
             friendlyFire = false,
@@ -272,11 +336,12 @@ MySQL.ready(function()
             killLimit = 0,
             players = {},
             status = 'playing',
-            timer = 0,
+            timer = 3600,
             scoreBlue = 0,
             scoreRed = 0
         }
         Utils.Print('Persistente FFA Lobby initialisiert: ' .. map.label)
+        StartGameTimer(lobbyId)
     end
 end)
 

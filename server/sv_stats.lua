@@ -27,6 +27,14 @@ AddEventHandler('ffa:getStats', function()
     }, function(result)
         if result and result[1] then
             TriggerClientEvent('ffa:receiveStats', xPlayer.source, result[1])
+        else
+            -- Platzhalter-Stats senden, wenn noch keine existieren
+            TriggerClientEvent('ffa:receiveStats', xPlayer.source, {
+                kills = 0,
+                deaths = 0,
+                wins = 0,
+                games_played = 0
+            })
         end
     end)
 end)
