@@ -49,6 +49,11 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
         SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
     end
 
+    if spawnedVehicle then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
+
     Wait(500)
     DoScreenFadeIn(500)
     FreezeEntityPosition(ped, false)

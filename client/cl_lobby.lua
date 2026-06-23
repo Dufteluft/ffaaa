@@ -34,13 +34,26 @@ function OpenMainMenu()
 
     isMenuOpen = true
     SetNuiFocus(true, true)
+
+    -- Statistiken abrufen
+    TriggerServerEvent('ffa:getStats')
+
     SendNUIMessage({
         action = 'open',
+        myId = GetPlayerServerId(PlayerId()),
         config = Config,
         maps = Config.Maps,
         isInGame = playerState.isInGame
     })
 end
+
+RegisterNetEvent('ffa:receiveStats')
+AddEventHandler('ffa:receiveStats', function(stats)
+    SendNUIMessage({
+        action = 'updateStats',
+        stats = stats
+    })
+end)
 
 -- Callback: UI schließen (vom JS aufgerufen)
 RegisterNUICallback('closeUI', function(data, cb)
@@ -132,6 +145,15 @@ AddEventHandler('ffa:addChatMessage', function(name, message)
     })
 end)
 
+RegisterNetEvent('ffa:syncSettings')
+AddEventHandler('ffa:syncSettings', function(lobby)
+    currentLobby = lobby
+    SendNUIMessage({
+        action = 'syncSettings',
+        lobby = lobby
+    })
+end)
+
 -- Weitere Steuerungs-Callbacks
 RegisterNUICallback('toggleReady', function(data, cb)
     TriggerServerEvent('ffa:toggleReady')
@@ -150,6 +172,16 @@ end)
 
 RegisterNUICallback('leaveLobby', function(data, cb)
     TriggerServerEvent('ffa:leaveLobby')
+    cb('ok')
+end)
+
+RegisterNUICallback('closeLobby', function(data, cb)
+    TriggerServerEvent('ffa:closeLobby')
+    cb('ok')
+end)
+
+RegisterNUICallback('saveSettings', function(data, cb)
+    TriggerServerEvent('ffa:saveSettings', data)
     cb('ok')
 end)
 

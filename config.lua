@@ -9,7 +9,8 @@ Config.DefaultSettings = {
     respawnTime = 5, -- seconds
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    defaultVehicle = 'bati'
 }
 
 Config.WeaponLoadouts = {
@@ -102,18 +103,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -123,13 +112,16 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
+        ['tab_settings'] = 'Einstellungen',
+        ['tab_stats'] = 'Statistiken',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
         ['round_time'] = 'Rundenzeit (Min)',
         ['max_players'] = 'Max. Spieler',
-        ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
+        ['vehicles_allowed'] = 'Fahrzeuge erlaubt?',
         ['friendly_fire'] = 'Freundliches Feuer',
         ['respawn_time'] = 'Respawn-Zeit (Sek)',
         ['kill_limit'] = 'Kill-Limit zum Sieg',
@@ -138,7 +130,7 @@ Config.Locales = {
         ['btn_join'] = 'Beitreten',
         ['btn_ready'] = 'Bereit',
         ['btn_start'] = 'Spiel starten',
-        ['btn_leave'] = 'Lobby verlassen',
+        ['btn_leave'] = 'Verlassen',
         ['btn_kick'] = 'Kicken',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
@@ -148,23 +140,33 @@ Config.Locales = {
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
         ['winner'] = 'Gewinner: %s',
+        ['wins_suffix'] = 'GEWINNT!',
+        ['player'] = 'Spieler',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
+        ['wins'] = 'Siege',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['vote_next_map'] = 'NÄCHSTE MAP WÄHLEN',
+        ['btn_back_lobby'] = 'Zurück zur Lobby',
+        ['btn_back_menu'] = 'Hauptmenü',
+        ['draw'] = 'Unentschieden'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
+        ['tab_settings'] = 'Settings',
+        ['tab_stats'] = 'Statistics',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
         ['round_time'] = 'Round Time (Min)',
         ['max_players'] = 'Max Players',
-        ['vehicles_allowed'] = 'Vehicles Allowed',
+        ['vehicles_allowed'] = 'Vehicles Allowed?',
         ['friendly_fire'] = 'Friendly Fire',
         ['respawn_time'] = 'Respawn Time (Sec)',
         ['kill_limit'] = 'Kill Limit to Win',
@@ -173,7 +175,7 @@ Config.Locales = {
         ['btn_join'] = 'Join',
         ['btn_ready'] = 'Ready',
         ['btn_start'] = 'Start Game',
-        ['btn_leave'] = 'Leave Lobby',
+        ['btn_leave'] = 'Leave',
         ['btn_kick'] = 'Kick',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
@@ -183,10 +185,17 @@ Config.Locales = {
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
         ['winner'] = 'Winner: %s',
+        ['wins_suffix'] = 'WINS!',
+        ['player'] = 'Player',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
+        ['wins'] = 'Wins',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['vote_next_map'] = 'VOTE NEXT MAP',
+        ['btn_back_lobby'] = 'Back to Lobby',
+        ['btn_back_menu'] = 'Main Menu',
+        ['draw'] = 'Draw'
     }
 }
 
