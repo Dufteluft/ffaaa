@@ -38,7 +38,8 @@ function OpenMainMenu()
         action = 'open',
         config = Config,
         maps = Config.Maps,
-        isInGame = playerState.isInGame
+        isInGame = playerState.isInGame,
+        myId = GetPlayerServerId(PlayerId())
     })
 end
 
@@ -99,12 +100,12 @@ RegisterNUICallback('createLobby', function(data, cb)
 end)
 
 RegisterNUICallback('joinLobby', function(data, cb)
-    TriggerServerEvent('ffa:joinLobby', data.lobbyId)
+    TriggerServerEvent('ffa:joinLobby', data)
     cb('ok')
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -159,12 +160,12 @@ RegisterNUICallback('quickJoin', function(data, cb)
 end)
 
 RegisterNUICallback('kickPlayer', function(data, cb)
-    TriggerServerEvent('ffa:kickPlayer', data.id)
+    TriggerServerEvent('ffa:kickPlayer', data)
     cb('ok')
 end)
 
 RegisterNUICallback('voteMap', function(data, cb)
-    TriggerServerEvent('ffa:voteMap', data.mapId)
+    TriggerServerEvent('ffa:voteMap', data)
     cb('ok')
 end)
 
