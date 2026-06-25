@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+spawnedVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -35,6 +36,15 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
+    -- Cleanup vehicles
+    if DoesEntityExist(spawnedVehicle) then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
+
+    -- Reset relationships
+    SetPedRelationshipGroupHash(ped, `PLAYER`)
+
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
@@ -57,6 +67,11 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     SendNUIMessage({ action = 'hideHUD' })
     SendNUIMessage({ action = 'close' })
     SetNuiFocus(false, false)
+end)
+
+RegisterNetEvent('ffa:syncTeam')
+AddEventHandler('ffa:syncTeam', function(team)
+    playerState.team = team
 end)
 
 -- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge

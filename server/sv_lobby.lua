@@ -1,5 +1,13 @@
 ESX = exports['es_extended']:getSharedObject()
 
+function _U(key)
+    local locale = Config.Locale or 'de'
+    if Config.Locales[locale] and Config.Locales[locale][key] then
+        return Config.Locales[locale][key]
+    end
+    return key
+end
+
 Lobbies = {} -- Speichert alle aktiven Lobbys
 PlayerStates = {} -- Speichert den Status jedes Spielers (Lobby-ID, Team, Kills, etc.)
 
@@ -98,11 +106,19 @@ end
 
 -- Event: Lobby beitreten
 RegisterServerEvent('ffa:joinLobby')
-AddEventHandler('ffa:joinLobby', function(lobbyId)
+AddEventHandler('ffa:joinLobby', function(data)
+    local lobbyId = data.lobbyId
     if JoinLobby(source, lobbyId) then
-        TriggerClientEvent('ffa:lobbyJoined', source, Lobbies[lobbyId])
+        local lobby = Lobbies[lobbyId]
+        TriggerClientEvent('ffa:lobbyJoined', source, lobby)
+
+        -- Wenn das Spiel bereits läuft (z.B. Beitritt in laufendes Match)
+        if lobby.status == 'playing' then
+            PlayerStates[source].team = 'ffa' -- Standard für Beitritt
+            TriggerClientEvent('ffa:gameStarting', source, lobby)
+        end
     else
-        -- Nachricht an Spieler: Lobby voll oder existiert nicht
+        TriggerClientEvent('esx:showNotification', source, 'Lobby voll oder existiert nicht.')
     end
 end)
 
@@ -179,8 +195,10 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     local state = PlayerStates[source]
     if state and state.lobbyId then
         local lobby = Lobbies[state.lobbyId]
-        for _, pid in ipairs(lobby.players) do
-            TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+        if lobby then
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:addChatMessage', pid, state.name, data.message)
+            end
         end
     end
 end)
@@ -207,11 +225,58 @@ AddEventHandler('ffa:setTeam', function(team)
     end
 end)
 
+-- Event: Einstellungen speichern (durch Host)
+RegisterServerEvent('ffa:saveSettings')
+AddEventHandler('ffa:saveSettings', function(data)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            lobby.name = data.name or lobby.name
+            lobby.mapId = data.mapId or lobby.mapId
+            local map = Utils.GetMapById(lobby.mapId)
+            if map then lobby.mapLabel = map.label end
+            lobby.mode = data.mode or lobby.mode
+            lobby.loadout = data.loadout or lobby.loadout
+            lobby.roundTime = tonumber(data.roundTime) or lobby.roundTime
+            lobby.maxPlayers = tonumber(data.maxPlayers) or lobby.maxPlayers
+            lobby.vehiclesAllowed = data.vehiclesAllowed
+            lobby.friendlyFire = data.friendlyFire
+            lobby.respawnTime = tonumber(data.respawnTime) or lobby.respawnTime
+            lobby.killLimit = tonumber(data.killLimit) or lobby.killLimit
+
+            -- Alle Spieler in der Lobby über Änderungen informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:syncSettings', pid, lobby)
+            end
+        end
+    end
+end)
+
+-- Event: Lobby schließen (durch Host)
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            -- Alle Spieler aus der Lobby entfernen
+            local players = {table.unpack(lobby.players)}
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+            end
+            Lobbies[state.lobbyId] = nil
+        end
+    end
+end)
+
 -- Event: Lobbyliste für UI abrufen
 RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
-    local filterTab = data and data.tab or 'ffa'
+    local filterTab = 'ffa'
+    if data and data.tab then filterTab = data.tab end
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
@@ -225,7 +290,6 @@ AddEventHandler('ffa:fetchLobbies', function(data)
             -- Status Bestimmung für UI
             local displayStatus = 'waiting'
             if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
 
             table.insert(list, {
                 id = id,
@@ -263,7 +327,7 @@ MySQL.ready(function()
             mapId = map.id,
             mapLabel = map.label,
             mode = 'ffa',
-            loadout = 'all',
+            loadout = {'all'},
             roundTime = 0, -- 0 bedeutet unendlich/kein Timer
             maxPlayers = 32,
             vehiclesAllowed = false,
@@ -308,7 +372,7 @@ AddEventHandler('ffa:quickJoin', function(mapId)
             name = "FFA " .. map.label,
             mapId = mapId,
             mode = 'ffa',
-            loadout = 'all',
+            loadout = {'all'},
             roundTime = 60, -- Lange Laufzeit für persistente Lobbys
             maxPlayers = 32,
             vehiclesAllowed = false,

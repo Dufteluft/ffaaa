@@ -86,6 +86,15 @@ AddEventHandler('ffa:updateLobbyPlayers', function(players)
     })
 end)
 
+RegisterNetEvent('ffa:syncSettings')
+AddEventHandler('ffa:syncSettings', function(lobby)
+    currentLobby = lobby
+    SendNUIMessage({
+        action = 'syncSettings',
+        settings = lobby
+    })
+end)
+
 RegisterNetEvent('ffa:leftLobby')
 AddEventHandler('ffa:leftLobby', function()
     currentLobby = nil
@@ -99,12 +108,12 @@ RegisterNUICallback('createLobby', function(data, cb)
 end)
 
 RegisterNUICallback('joinLobby', function(data, cb)
-    TriggerServerEvent('ffa:joinLobby', data.lobbyId)
+    TriggerServerEvent('ffa:joinLobby', data)
     cb('ok')
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -168,9 +177,32 @@ RegisterNUICallback('voteMap', function(data, cb)
     cb('ok')
 end)
 
+RegisterNetEvent('ffa:receiveStats')
+AddEventHandler('ffa:receiveStats', function(stats)
+    SendNUIMessage({
+        action = 'receiveStats',
+        stats = stats
+    })
+end)
+
+RegisterNUICallback('getStats', function(data, cb)
+    TriggerServerEvent('ffa:getStats')
+    cb('ok')
+end)
+
 RegisterNUICallback('closeWinnerScreen', function(data, cb)
     isMenuOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
+    cb('ok')
+end)
+
+RegisterNUICallback('saveSettings', function(data, cb)
+    TriggerServerEvent('ffa:saveSettings', data)
+    cb('ok')
+end)
+
+RegisterNUICallback('closeLobby', function(data, cb)
+    TriggerServerEvent('ffa:closeLobby')
     cb('ok')
 end)
