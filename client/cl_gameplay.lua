@@ -25,7 +25,8 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     -- HUD einblenden
     SendNUIMessage({
         action = 'showHUD',
-        isPersistent = lobby.isPersistent
+        isPersistent = lobby.isPersistent,
+        mode = lobby.mode
     })
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
@@ -33,15 +34,25 @@ end)
 -- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
-function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
+function GiveLoadout(loadoutData)
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    local function applyLoadout(key)
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
+    end
+
+    if type(loadoutData) == 'table' then
+        for _, key in ipairs(loadoutData) do
+            applyLoadout(key)
+        end
+    else
+        applyLoadout(loadoutData)
     end
 end
 
@@ -67,14 +78,28 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
+
+                    local function checkAllowed(key)
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    return true
+                                end
+                            end
+                        end
+                        return false
+                    end
+
+                    if type(currentLobby.loadout) == 'table' then
+                        for _, key in ipairs(currentLobby.loadout) do
+                            if checkAllowed(key) then
                                 allowed = true
                                 break
                             end
                         end
+                    else
+                        allowed = checkAllowed(currentLobby.loadout)
                     end
 
                     if not allowed then
@@ -159,6 +184,64 @@ AddEventHandler('ffa:spectatePlayer', function(targetId)
     local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
     if DoesEntityExist(targetPed) then
         NetworkSetInSpectatorMode(true, targetPed)
+    end
+end)
+
+-- Vehicle Spawning logic
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(5000)
+        if playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local ped = PlayerPedId()
+            local coords = GetEntityCoords(ped)
+
+            -- Only spawn if no vehicle nearby
+            if not DoesEntityExist(spawnedVehicle) or #(coords - GetEntityCoords(spawnedVehicle)) > 50.0 then
+                local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 30.0, 0, 71)
+                if vehicle == 0 then
+                    local spawnPos = GetOffsetFromEntityInWorldCoords(ped, 0.0, 10.0, 0.0)
+                    local model = GetHashKey(Config.DefaultVehicle or 'bati')
+
+                    RequestModel(model)
+                    while not HasModelLoaded(model) do Wait(0) end
+
+                    spawnedVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(ped), true, false)
+                    SetVehicleOnGroundProperly(spawnedVehicle)
+                    SetEntityAsMissionEntity(spawnedVehicle, true, true)
+                    SetModelAsNoLongerNeeded(model)
+                end
+            end
+        end
+    end
+end)
+
+-- Anti-Teamkill Logic via Relationship Groups
+local blueGroup = AddRelationshipGroup('FFA_BLUE')
+local redGroup = AddRelationshipGroup('FFA_RED')
+local ffaGroup = AddRelationshipGroup('FFA_ALL')
+
+Citizen.CreateThread(function()
+    while true do
+        if playerState.isInGame and currentLobby and currentLobby.mode == 'tdm' then
+            local ped = PlayerPedId()
+            if playerState.team == 'blue' then
+                SetPedRelationshipGroupHash(ped, blueGroup)
+            elseif playerState.team == 'red' then
+                SetPedRelationshipGroupHash(ped, redGroup)
+            end
+
+            -- Freundliches Feuer aus: Gruppen mögen sich
+            local relationship = currentLobby.friendlyFire and 5 or 1
+            SetRelationshipBetweenGroups(relationship, blueGroup, blueGroup)
+            SetRelationshipBetweenGroups(relationship, redGroup, redGroup)
+
+            -- Gegner hassen sich immer
+            SetRelationshipBetweenGroups(5, blueGroup, redGroup)
+            SetRelationshipBetweenGroups(5, redGroup, blueGroup)
+        elseif playerState.isInGame then
+            SetPedRelationshipGroupHash(PlayerPedId(), ffaGroup)
+        end
+        Wait(2000)
     end
 end)
 

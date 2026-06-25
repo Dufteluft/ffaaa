@@ -36,8 +36,11 @@ AddEventHandler('ffa:startGame', function()
             else
                 pState.team = 'ffa'
             end
+        end
 
+        for _, pid in ipairs(lobby.players) do
             TriggerClientEvent('ffa:gameStarting', pid, lobby)
+            TriggerClientEvent('ffa:syncTeam', pid, PlayerStates[pid].team)
         end
 
         -- Team-Synchronisation für alle Spieler in der Lobby
@@ -56,7 +59,10 @@ end)
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
     local lobby = Lobbies[lobbyId]
-    if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
+    if not lobby then return end
+    if lobby.roundTime == 0 then
+        lobby.timer = 3600 -- Default 1 hour for persistent if 0
+    end
 
     Citizen.CreateThread(function()
         while Lobbies[lobbyId] and Lobbies[lobbyId].status == 'playing' do
@@ -101,7 +107,8 @@ function EndGame(lobbyId, reason)
             winnerName = _U('team_red')
             winnerTeam = 'red'
         else
-            winnerName = 'Unentschieden'
+            winnerName = _U('draw')
+            winnerTeam = 'none'
         end
     -- Sieg-Logik für FFA
     else
@@ -152,6 +159,7 @@ function EndGame(lobbyId, reason)
                     PlayerStates[pid].kills = 0
                     PlayerStates[pid].deaths = 0
                     TriggerClientEvent('ffa:gameStarting', pid, lobby)
+                    TriggerClientEvent('ffa:syncTeam', pid, 'ffa')
                 end
             end)
         end
