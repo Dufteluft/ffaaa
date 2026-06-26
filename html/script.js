@@ -2,12 +2,9 @@ let currentLobby = null;
 let isHost = false;
 let myPlayerId = null;
 let currentTab = 'ffa';
+let config = {};
+let maps = [];
 
-// Maps and Config from Server
-let serverMaps = [];
-let serverConfig = {};
-
-// Audio setup
 const sounds = {
     click: new Audio('assets/click.mp3'),
     join: new Audio('assets/join.mp3'),
@@ -23,79 +20,55 @@ function playSound(name) {
     }
 }
 
-// Tab Switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (btn.dataset.tab === currentTab) return;
-        playSound('click');
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const container = document.getElementById('lobby-list-container');
-        container.classList.add('switching');
-
-        setTimeout(() => {
-            currentTab = btn.dataset.tab;
-            fetchLobbies();
-            container.classList.remove('switching');
-        }, 300);
-    });
-});
-
-// Modal Controls
-document.getElementById('open-create-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'flex';
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('create-lobby-modal').style.display = 'none';
-});
-
-// Slider Sync
-const setupSlider = (id) => {
-    const slider = document.getElementById(id);
-    const span = document.getElementById(id + '-val');
-    if (slider && span) {
-        slider.addEventListener('input', () => {
-            span.innerText = slider.value;
-        });
-    }
-};
-setupSlider('round-time');
-setupSlider('max-players');
-
-// NUI Message Handling
+// NUI Message Router
 window.addEventListener('message', (event) => {
     const data = event.data;
 
     switch (data.action) {
         case 'open':
+            myPlayerId = data.myId;
+            setupConfig(data.config, data.maps);
             document.getElementById('app').style.display = 'flex';
-            setupInitialData(data.config, data.maps);
-            fetchLobbies();
+            switchTab(currentTab);
             break;
         case 'close':
             document.getElementById('app').style.display = 'none';
             break;
         case 'updateLobbies':
-            renderLobbyList(data.lobbies);
+            renderLobbies(data.lobbies);
             break;
         case 'lobbyCreated':
         case 'lobbyJoined':
-            document.getElementById('create-lobby-modal').style.display = 'none';
-            showLobbyArea(data.lobby, data.action === 'lobbyCreated');
+            enterLobby(data.lobby);
             break;
         case 'updateLobbyPlayers':
-            renderPlayerList(data.players);
+            renderPlayers(data.players);
+            break;
+        case 'addChatMessage':
+            addChatMessage(data.name, data.message);
+            break;
+        case 'syncSettings':
+            syncLobbySettings(data.lobby);
+            break;
+        case 'countdown':
+            handleCountdown(data.seconds);
             break;
         case 'gameStarting':
             document.getElementById('app').style.display = 'none';
             document.getElementById('lobby-waiting-area').style.display = 'none';
             break;
         case 'showHUD':
-            // HUD implementation handled separately as per instructions
+            document.getElementById('hud').style.display = 'block';
+            document.getElementById('hud-tdm-score').style.display = data.mode === 'tdm' ? 'flex' : 'none';
+            break;
+        case 'hideHUD':
+            document.getElementById('hud').style.display = 'none';
+            break;
+        case 'updateHUD':
+            updateHUD(data);
+            break;
+        case 'updateHUDDetails':
+            updateHUDDetails(data);
             break;
         case 'showWinner':
             showWinnerScreen(data);
@@ -103,120 +76,133 @@ window.addEventListener('message', (event) => {
     }
 });
 
-function setupInitialData(config, maps) {
-    serverConfig = config;
-    serverMaps = maps;
+function setupConfig(srvConfig, srvMaps) {
+    config = srvConfig;
+    maps = srvMaps;
 
-    const mapSelect = document.getElementById('map-select');
-    mapSelect.innerHTML = '';
-    maps.forEach(map => {
-        const opt = document.createElement('option');
-        opt.value = map.id;
-        opt.innerText = map.label.toUpperCase();
-        mapSelect.appendChild(opt);
+    // Localize UI
+    const locale = config.Locales[config.Locale];
+    document.querySelectorAll('[data-locale]').forEach(el => {
+        const key = el.getAttribute('data-locale');
+        if (locale[key]) el.innerText = locale[key];
     });
 
-    const loadoutSelect = document.getElementById('loadout-select');
-    loadoutSelect.innerHTML = '';
-    for (let key in config.WeaponLoadouts) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.innerText = key.toUpperCase();
-        loadoutSelect.appendChild(opt);
+    // Populate Map Selects
+    const populateMaps = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '';
+        maps.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.innerText = m.label;
+            el.appendChild(opt);
+        });
+    };
+    populateMaps('map-select-input');
+
+    // Populate Loadout Selects
+    const populateLoadouts = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '';
+        for (const key in config.WeaponLoadouts) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.innerText = key.toUpperCase();
+            el.appendChild(opt);
+        }
+    };
+    populateLoadouts('loadout-select-input');
+}
+
+// Tab Switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        playSound('click');
+        switchTab(btn.dataset.tab);
+    });
+});
+
+function switchTab(tabId) {
+    currentTab = tabId;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+
+    if (tabId === 'create') {
+        document.getElementById('tab-browser').style.display = 'none';
+        document.getElementById('tab-create').style.display = 'block';
+    } else {
+        document.getElementById('tab-browser').style.display = 'block';
+        document.getElementById('tab-create').style.display = 'none';
+        fetchLobbies(tabId);
     }
 }
 
-function fetchLobbies() {
+function fetchLobbies(tab) {
     fetch(`https://${GetParentResourceName()}/fetchLobbies`, {
         method: 'POST',
-        body: JSON.stringify({ tab: currentTab })
+        body: JSON.stringify({ tab: tab })
     });
 }
 
-function renderLobbyList(lobbies) {
+function renderLobbies(lobbies) {
     const container = document.getElementById('lobby-list-container');
     container.innerHTML = '';
 
-    lobbies.forEach((lobby, index) => {
-        const item = document.createElement('div');
-        item.className = 'lobby-item';
-        item.style.animationDelay = `${index * 0.05}s`;
-
-        const playerCount = lobby.playerCount || 0;
-        const maxPlayers = lobby.maxPlayers || 16;
-        const percent = (playerCount / maxPlayers) * 100;
-
-        let status = lobby.status || 'waiting';
-        let strokeColor = '#00ff88'; // Success
-        if (status === 'joining') strokeColor = '#00d4ff'; // Primary
-        else if (percent > 80) strokeColor = '#ff9500'; // Warning
-
-        const radius = 25;
-        const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (percent / 100) * circumference;
-
-        // Simplified Map Image URLs (using placeholders for now)
-        const mapImg = lobby.mapImage || `https://via.placeholder.com/140x80/0f1419/ffffff?text=${lobby.mapLabel}`;
-
-        item.innerHTML = `
-            <div class="lobby-map-preview">
-                <img src="${mapImg}" alt="${lobby.mapLabel}">
-            </div>
-            <div class="lobby-info-main">
-                <div class="match-type">${lobby.mode === 'tdm' ? 'Team Deathmatch' : 'Free-for-All'}</div>
-                <div class="map-name-row">
-                    <i class="fa-solid fa-location-dot"></i> ${lobby.mapLabel}
+    lobbies.forEach(lobby => {
+        const div = document.createElement('div');
+        div.className = 'lobby-item';
+        div.innerHTML = `
+            <div class="lobby-main-info">
+                <h4>${lobby.name}</h4>
+                <div class="lobby-sub-info">
+                    <span><i class="fa-solid fa-crown"></i> ${lobby.hostName}</span>
+                    <span><i class="fa-solid fa-map"></i> ${lobby.mapLabel}</span>
+                    <span><i class="fa-solid fa-gamepad"></i> ${lobby.mode.toUpperCase()}</span>
                 </div>
             </div>
-            <div class="player-counter-wrapper">
-                <svg class="player-counter-svg">
-                    <circle class="circle-bg" cx="30" cy="30" r="${radius}"></circle>
-                    <circle class="circle-progress" cx="30" cy="30" r="${radius}"
-                        style="stroke: ${strokeColor}; stroke-dasharray: ${circumference}; stroke-dashoffset: ${offset};">
-                    </circle>
-                </svg>
-                <div class="player-count-text">${playerCount}/${maxPlayers}</div>
-            </div>
-            <div class="mode-icon">
-                <i class="fa-solid fa-user"></i>
-            </div>
-            <div class="status-badge status-${status.toLowerCase()}">${status}</div>
-            <div class="action-area">
-                ${renderActionButton(lobby)}
+            <div class="lobby-meta">
+                <span class="lobby-status-badge status-${lobby.status.toLowerCase()}">${lobby.status}</span>
+                <span style="margin: 0 15px;">${lobby.playerCount} / ${lobby.maxPlayers}</span>
+                <button class="create-btn" onclick="joinLobby('${lobby.id}', '${lobby.mapId}')">${config.Locales[config.Locale].btn_join}</button>
             </div>
         `;
-        container.appendChild(item);
+        container.appendChild(div);
     });
 }
 
-function renderActionButton(lobby) {
-    if (lobby.playerCount >= lobby.maxPlayers) {
-        return `<button class="action-btn btn-disabled" disabled>FULL</button>`;
+function joinLobby(lobbyId, mapId) {
+    playSound('click');
+    if (currentTab === 'ffa') {
+        fetch(`https://${GetParentResourceName()}/quickJoin`, {
+            method: 'POST',
+            body: JSON.stringify({ mapId: mapId })
+        });
+    } else {
+        fetch(`https://${GetParentResourceName()}/joinLobby`, {
+            method: 'POST',
+            body: JSON.stringify({ lobbyId: lobbyId })
+        });
     }
-    if (lobby.status === 'ACTIVE') {
-        return `<button class="action-btn btn-spectate" onclick="joinLobby('${lobby.id}', true)">SPECTATE</button>`;
-    }
-    const pulsingClass = lobby.status === 'joining' ? 'pulsing' : '';
-    return `<button class="action-btn btn-join ${pulsingClass}" onclick="joinLobby('${lobby.id}')">JOIN</button>`;
 }
 
-function joinLobby(lobbyId, isSpectator = false) {
+// Create Lobby Logic
+document.getElementById('btn-submit-create').addEventListener('click', () => {
     playSound('click');
-    fetch(`https://${GetParentResourceName()}/joinLobby`, {
-        method: 'POST',
-        body: JSON.stringify({ lobbyId, isSpectator })
-    });
-}
+    const loadoutSelect = document.getElementById('loadout-select-input');
+    const selectedLoadouts = Array.from(loadoutSelect.selectedOptions).map(option => option.value);
 
-document.getElementById('btn-create-lobby').addEventListener('click', () => {
-    playSound('click');
     const settings = {
-        name: document.getElementById('lobby-name').value || 'CUSTOM LOBBY',
-        mapId: document.getElementById('map-select').value,
-        mode: document.getElementById('mode-select').value,
-        loadout: document.getElementById('loadout-select').value,
-        roundTime: parseInt(document.getElementById('round-time').value),
-        maxPlayers: parseInt(document.getElementById('max-players').value),
+        name: document.getElementById('lobby-name-input').value || 'FFA Match',
+        mapId: document.getElementById('map-select-input').value,
+        mode: document.getElementById('mode-select-input').value,
+        loadout: selectedLoadouts.length > 0 ? selectedLoadouts : ['all'],
+        roundTime: parseInt(document.getElementById('round-time-input').value),
+        maxPlayers: parseInt(document.getElementById('max-players-input').value),
+        vehiclesAllowed: document.getElementById('vehicles-input').checked,
+        friendlyFire: document.getElementById('ff-input').checked,
+        respawnTime: parseInt(document.getElementById('respawn-time-input').value),
+        killLimit: parseInt(document.getElementById('kill-limit-input').value)
     };
 
     fetch(`https://${GetParentResourceName()}/createLobby`, {
@@ -225,62 +211,167 @@ document.getElementById('btn-create-lobby').addEventListener('click', () => {
     });
 });
 
-function showLobbyArea(lobby, asHost) {
+document.getElementById('btn-cancel-create').addEventListener('click', () => {
+    playSound('click');
+    switchTab('ffa');
+});
+
+// Sync Sliders
+function setupSlider(inputId, valId) {
+    const input = document.getElementById(inputId);
+    const val = document.getElementById(valId);
+    if (!input || !val) return;
+    input.addEventListener('input', () => {
+        val.innerText = input.value;
+    });
+}
+setupSlider('round-time-input', 'round-time-val');
+setupSlider('max-players-input', 'max-players-val');
+setupSlider('respawn-time-input', 'respawn-time-val');
+setupSlider('kill-limit-input', 'kill-limit-val');
+
+// Lobby Waiting Area
+function enterLobby(lobby) {
     currentLobby = lobby;
-    isHost = asHost;
+    isHost = (myPlayerId == lobby.host);
     playSound('join');
 
-    document.getElementById('lobby-title').innerText = lobby.name.toUpperCase();
+    document.getElementById('main-menu').style.display = 'none';
     document.getElementById('lobby-waiting-area').style.display = 'flex';
-    document.getElementById('btn-start-game').style.display = asHost ? 'block' : 'none';
+    document.getElementById('lobby-display-name').innerText = lobby.name.toUpperCase();
 
-    document.getElementById('lobby-info-summary').innerHTML = `
-        <p>MAP: ${lobby.mapLabel}</p>
-        <p>MODE: ${lobby.mode.toUpperCase()}</p>
-        <p>TIME: ${lobby.roundTime} MIN</p>
-    `;
+    document.getElementById('btn-start').style.display = isHost ? 'block' : 'none';
+    document.getElementById('btn-close-lobby').style.display = isHost ? 'block' : 'none';
+
+    renderSettingsEditor();
+    syncLobbySettings(lobby);
 }
 
-function renderPlayerList(players) {
-    const list = document.getElementById('player-list');
-    list.innerHTML = '';
-    players.forEach(p => {
-        const div = document.createElement('div');
-        div.className = `player-item ${p.ready ? 'ready' : ''}`;
-        div.innerHTML = `
-            <span>${p.name.toUpperCase()} ${p.isHost ? '(HOST)' : ''}</span>
-            <span>${p.team.toUpperCase()}</span>
-            ${isHost && !p.isHost ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')"><i class="fa-solid fa-xmark"></i></button>` : ''}
-        `;
-        list.appendChild(div);
-    });
+function renderSettingsEditor() {
+    const editor = document.getElementById('host-settings-editor');
+    const view = document.getElementById('player-settings-view');
 
-    if (isHost) {
-        document.getElementById('btn-start-game').disabled = players.length < (currentLobby.minPlayers || 2);
+    if (isHost && !currentLobby.isPersistent) {
+        editor.style.display = 'block';
+        view.style.display = 'none';
+
+        editor.innerHTML = `
+            <div class="edit-group">
+                <label>MAP</label>
+                <select id="edit-map"></select>
+            </div>
+            <div class="edit-row">
+                <div class="edit-group">
+                    <label>MODE</label>
+                    <select id="edit-mode">
+                        <option value="ffa">FFA</option>
+                        <option value="tdm">TDM</option>
+                    </select>
+                </div>
+                <div class="edit-group">
+                    <label>TIME</label>
+                    <input type="number" id="edit-time" min="5" max="60">
+                </div>
+            </div>
+            <button class="create-btn" style="width: 100%; margin-top: 10px;" id="btn-save-settings">SAVE SETTINGS</button>
+        `;
+
+        const mapSelect = document.getElementById('edit-map');
+        maps.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.innerText = m.label;
+            if (m.id === currentLobby.mapId) opt.selected = true;
+            mapSelect.appendChild(opt);
+        });
+
+        document.getElementById('edit-mode').value = currentLobby.mode;
+        document.getElementById('edit-time').value = currentLobby.roundTime;
+
+        document.getElementById('btn-save-settings').onclick = () => {
+            playSound('click');
+            const newSettings = {
+                mapId: document.getElementById('edit-map').value,
+                mode: document.getElementById('edit-mode').value,
+                roundTime: parseInt(document.getElementById('edit-time').value)
+            };
+            fetch(`https://${GetParentResourceName()}/saveSettings`, {
+                method: 'POST',
+                body: JSON.stringify(newSettings)
+            });
+        };
+    } else {
+        editor.style.display = 'none';
+        view.style.display = 'block';
     }
 }
 
-document.getElementById('btn-ready-toggle').addEventListener('click', () => {
+function syncLobbySettings(lobby) {
+    currentLobby = lobby;
+    document.getElementById('view-map').innerText = lobby.mapLabel;
+    document.getElementById('view-mode').innerText = lobby.mode.toUpperCase();
+    document.getElementById('view-loadout').innerText = Array.isArray(lobby.loadout) ? lobby.loadout.join(', ').toUpperCase() : lobby.loadout.toUpperCase();
+    document.getElementById('lobby-status-tag').innerText = lobby.status.toUpperCase();
+    document.getElementById('lobby-display-name').innerText = lobby.name.toUpperCase();
+}
+
+function renderPlayers(players) {
+    const container = document.getElementById('waiting-player-list');
+    container.innerHTML = '';
+
+    players.forEach(p => {
+        const div = document.createElement('div');
+        div.className = `player-item ready-${p.ready}`;
+        div.innerHTML = `
+            <div class="p-info">
+                <strong>${p.name}</strong>
+                <span style="font-size: 11px; margin-left: 10px; color: var(--text-muted)">${p.team.toUpperCase()}</span>
+            </div>
+            <div class="p-actions">
+                ${isHost && p.id != myPlayerId ? `<button class="kick-btn" onclick="kickPlayer('${p.id}')"><i class="fa-solid fa-user-minus"></i></button>` : ''}
+                <i class="fa-solid ${p.ready ? 'fa-check-circle' : 'fa-clock'}" style="color: ${p.ready ? 'var(--success)' : 'var(--warning)'}"></i>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+
+    if (isHost) {
+        document.getElementById('btn-start').disabled = (players.length < 2 && currentLobby.mode === 'tdm');
+    }
+}
+
+function kickPlayer(id) {
+    fetch(`https://${GetParentResourceName()}/kickPlayer`, {
+        method: 'POST',
+        body: JSON.stringify({ id: id })
+    });
+}
+
+document.getElementById('btn-ready').addEventListener('click', () => {
     playSound('click');
     fetch(`https://${GetParentResourceName()}/toggleReady`, { method: 'POST' });
 });
 
-document.getElementById('btn-start-game').addEventListener('click', () => {
+document.getElementById('btn-start').addEventListener('click', () => {
     playSound('start');
     fetch(`https://${GetParentResourceName()}/startGame`, { method: 'POST' });
 });
 
-document.getElementById('btn-leave-lobby').addEventListener('click', () => {
+document.getElementById('btn-leave').addEventListener('click', () => {
     playSound('click');
     document.getElementById('lobby-waiting-area').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'flex';
     fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
+});
+
+document.getElementById('btn-close-lobby').addEventListener('click', () => {
+    playSound('click');
+    fetch(`https://${GetParentResourceName()}/closeLobby`, { method: 'POST' });
 });
 
 document.querySelectorAll('.team-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         playSound('click');
-        document.querySelectorAll('.team-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
         fetch(`https://${GetParentResourceName()}/setTeam`, {
             method: 'POST',
             body: JSON.stringify({ team: btn.dataset.team })
@@ -288,10 +379,11 @@ document.querySelectorAll('.team-btn').forEach(btn => {
     });
 });
 
-document.getElementById('chat-input').addEventListener('keypress', (e) => {
+// Chat
+document.getElementById('chat-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const msg = e.target.value;
-        if (msg.trim().length > 0) {
+        if (msg.trim()) {
             fetch(`https://${GetParentResourceName()}/sendLobbyChat`, {
                 method: 'POST',
                 body: JSON.stringify({ message: msg })
@@ -301,44 +393,106 @@ document.getElementById('chat-input').addEventListener('keypress', (e) => {
     }
 });
 
-function showWinnerScreen(data) {
-    playSound('win');
-    document.getElementById('winner-screen').style.display = 'flex';
-    document.getElementById('winner-name').innerText = data.winnerName.toUpperCase() + " WINS!";
-
-    const statsTable = document.getElementById('match-stats-table');
-    let html = `<table><thead><tr><th>NAME</th><th>KILLS</th><th>DEATHS</th><th>K/D</th></tr></thead><tbody>`;
-    data.stats.forEach(s => {
-        html += `<tr><td>${s.name.toUpperCase()}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.kd}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-    statsTable.innerHTML = html;
+function addChatMessage(name, msg) {
+    const container = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML = `<span class="chat-author">${name}:</span> <span class="chat-text">${msg}</span>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
 }
 
-document.getElementById('btn-back-to-menu').addEventListener('click', () => {
-    playSound('click');
-    document.getElementById('winner-screen').style.display = 'none';
-    fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
-});
+// Gameplay HUD & Countdown
+function handleCountdown(seconds) {
+    const el = document.getElementById('big-countdown');
+    const num = document.getElementById('countdown-num');
 
-document.getElementById('btn-back-to-lobby').addEventListener('click', () => {
+    if (seconds > 0) {
+        el.style.display = 'block';
+        num.innerText = seconds;
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+function updateHUD(data) {
+    if (data.time) document.getElementById('hud-timer').innerText = data.time;
+    if (data.kills !== undefined) document.getElementById('hud-kills').innerText = data.kills;
+    if (data.deaths !== undefined) document.getElementById('hud-deaths').innerText = data.deaths;
+
+    if (data.mode === 'tdm') {
+        document.getElementById('hud-tdm-score').style.display = 'flex';
+        document.querySelector('.score-blue').innerText = data.scoreBlue || 0;
+        document.querySelector('.score-red').innerText = data.scoreRed || 0;
+    }
+}
+
+function updateHUDDetails(data) {
+    document.getElementById('hud-health').style.width = `${data.health}%`;
+    document.getElementById('hud-armor').style.width = `${data.armor}%`;
+    document.getElementById('hud-ammo').innerText = data.ammo;
+}
+
+// Winner Screen
+function showWinnerScreen(data) {
+    playSound('win');
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('winner-screen').style.display = 'flex';
+    document.getElementById('winner-name-display').innerText = data.winnerName.toUpperCase() + ' ' + config.Locales[config.Locale].wins_suffix;
+
+    const statsContainer = document.getElementById('winner-stats-container');
+    let html = '<table><tr><th>NAME</th><th>KILLS</th><th>DEATHS</th><th>K/D</th></tr>';
+    data.stats.forEach(s => {
+        html += `<tr><td>${s.name}</td><td>${s.kills}</td><td>${s.deaths}</td><td>${s.kd}</td></tr>`;
+    });
+    html += '</table>';
+    statsContainer.innerHTML = html;
+
+    // Map Voting
+    const voteContainer = document.getElementById('vote-options-container');
+    voteContainer.innerHTML = '';
+    maps.slice(0, 3).forEach(m => {
+        const btn = document.createElement('button');
+        btn.className = 'vote-btn';
+        btn.innerText = m.label;
+        btn.onclick = () => {
+            playSound('click');
+            fetch(`https://${GetParentResourceName()}/voteMap`, { method: 'POST', body: JSON.stringify({ mapId: m.id }) });
+        };
+        voteContainer.appendChild(btn);
+    });
+}
+
+document.getElementById('btn-winner-lobby').addEventListener('click', () => {
     playSound('click');
     document.getElementById('winner-screen').style.display = 'none';
     document.getElementById('lobby-waiting-area').style.display = 'flex';
     fetch(`https://${GetParentResourceName()}/closeWinnerScreen`, { method: 'POST' });
 });
 
-window.addEventListener('keyup', (e) => {
-    if (e.key === 'Escape') {
-        fetch(`https://${GetParentResourceName()}/closeUI`, { method: 'POST' });
-    }
+document.getElementById('btn-winner-menu').addEventListener('click', () => {
+    playSound('click');
+    document.getElementById('winner-screen').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'flex';
+    fetch(`https://${GetParentResourceName()}/leaveLobby`, { method: 'POST' });
 });
 
 // Auto-Refresh
 setInterval(() => {
     if (document.getElementById('app').style.display === 'flex' &&
-        document.getElementById('lobby-waiting-area').style.display === 'none' &&
-        document.getElementById('winner-screen').style.display === 'none') {
-        fetchLobbies();
+        document.getElementById('main-menu').style.display === 'flex') {
+        fetchLobbies(currentTab);
     }
 }, 5000);
+
+window.onkeyup = function(data) {
+    if (data.key === 'Escape') {
+        fetch(`https://${GetParentResourceName()}/closeUI`, { method: 'POST' });
+    }
+};
+
+RegisterNUICallback('saveSettings', function(data, cb) {
+    TriggerServerEvent('ffa:saveSettings', data)
+    cb('ok')
+})
