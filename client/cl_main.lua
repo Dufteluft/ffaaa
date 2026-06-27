@@ -1,5 +1,3 @@
-ESX = exports['es_extended']:getSharedObject()
-
 -- Globale Variablen für den Zugriff aus allen Client-Skripten
 playerState = {
     kills = 0,
@@ -9,7 +7,7 @@ playerState = {
 }
 currentLobby = nil
 
--- Globaler Countdown-Handler für alle Spieler
+-- Globaler Countdown-Handler: Friert Spieler ein und zeigt Timer im NUI
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
@@ -38,16 +36,19 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen (Wird von ESX Legacy bereitgestellt)
     TriggerEvent('esx:restoreLoadout')
 
-    -- Zur alten Position teleportieren
+    -- Zur alten Position teleportieren mit sanftem Ausfaden
     DoScreenFadeOut(500)
     while not IsScreenFadedOut() do Wait(0) end
 
     if oldCoords then
         SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
     end
+
+    -- Falls noch im Spectator-Modus, diesen beenden
+    NetworkSetInSpectatorMode(false, ped)
 
     Wait(500)
     DoScreenFadeIn(500)
