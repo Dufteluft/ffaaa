@@ -30,8 +30,6 @@ AddEventHandler('ffa:gameStarting', function(lobby)
     TriggerEvent('ffa:updateHUDStats', 0, 0)
 end)
 
--- Redundante Funktionen entfernt, nutzen jetzt cl_main.lua (StartCountdown & TeleportToMap)
-
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
 function GiveLoadout(loadoutKey)
     local loadout = Config.WeaponLoadouts[loadoutKey]
@@ -45,11 +43,74 @@ function GiveLoadout(loadoutKey)
     end
 end
 
--- Map-Grenzprüfung und Waffen-Validierung
+-- Fahrzeug-Spawn Logik
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(1000)
-        if playerState.isInGame and currentLobby then
+        Citizen.Wait(5000)
+        if playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local playerPed = PlayerPedId()
+            local coords = GetEntityCoords(playerPed)
+
+            if not spawnedVehicle or not DoesEntityExist(spawnedVehicle) then
+                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                local model = GetHashKey(Config.DefaultSettings.defaultVehicle or 'bati')
+
+                RequestModel(model)
+                while not HasModelLoaded(model) do Wait(10) end
+
+                spawnedVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                SetVehicleOnGroundProperly(spawnedVehicle)
+                SetEntityAsMissionEntity(spawnedVehicle, true, true)
+                SetModelAsNoLongerNeeded(model)
+            end
+        end
+    end
+end)
+
+-- Native Anti-Teamkill via Relationship Groups
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myId = GetPlayerServerId(PlayerId())
+    local myTeam = teams[myId]
+    if not myTeam or myTeam == 'none' then return end
+
+    AddRelationshipGroup('BLUE_TEAM')
+    AddRelationshipGroup('RED_TEAM')
+    AddRelationshipGroup('FFA_PLAYERS')
+
+    local ped = PlayerPedId()
+
+    if currentLobby.mode == 'tdm' then
+        if myTeam == 'blue' then
+            SetPedRelationshipGroupHash(ped, GetHashKey('BLUE_TEAM'))
+        elseif myTeam == 'red' then
+            SetPedRelationshipGroupHash(ped, GetHashKey('RED_TEAM'))
+        end
+
+        SetRelationshipBetweenGroups(1, GetHashKey('BLUE_TEAM'), GetHashKey('BLUE_TEAM')) -- 1 = Like
+        SetRelationshipBetweenGroups(1, GetHashKey('RED_TEAM'), GetHashKey('RED_TEAM'))
+        SetRelationshipBetweenGroups(5, GetHashKey('BLUE_TEAM'), GetHashKey('RED_TEAM')) -- 5 = Hate
+        SetRelationshipBetweenGroups(5, GetHashKey('RED_TEAM'), GetHashKey('BLUE_TEAM'))
+
+        -- Friendly Fire Deaktivierung
+        if not currentLobby.friendlyFire then
+            NetworkSetFriendlyFireOption(false)
+            SetCanAttackFriendly(ped, false, false)
+        else
+            NetworkSetFriendlyFireOption(true)
+            SetCanAttackFriendly(ped, true, false)
+        end
+    else
+        SetPedRelationshipGroupHash(ped, GetHashKey('FFA_PLAYERS'))
+        NetworkSetFriendlyFireOption(true)
+    end
+end)
+
+-- Map-Grenzprüfung und Waffen-Validierung (Anti-Cheat)
+Citizen.CreateThread(function()
+    while true do
+         Citizen.Wait(1000)
+         if playerState.isInGame and currentLobby then
             local ped = PlayerPedId()
             local coords = GetEntityCoords(ped)
             local map = Utils.GetMapById(currentLobby.mapId)
@@ -83,11 +144,11 @@ Citizen.CreateThread(function()
                     end
                 end
             end
-        end
+         end
     end
 end)
 
--- Kill-Erkennung: Prüft ständig auf Tod des Spielers
+-- Kill-Erkennung
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
@@ -97,31 +158,26 @@ Citizen.CreateThread(function()
                 local killerId = GetPedKiller(ped)
                 local killerServerId = -1
 
-                -- Ermitteln der Server-ID des Killers
                 if IsEntityAPed(killerId) and IsPedAPlayer(killerId) then
                     killerServerId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(killerId))
                 end
 
                 TriggerServerEvent('ffa:playerKilled', killerServerId)
-
-                -- Kill-Cam und Respawn-Logik ausführen
                 HandleDeath(killerId)
 
-                -- Warten bis Spieler wieder lebt
                 while IsEntityDead(ped) do Citizen.Wait(100) end
             end
         end
     end
 end)
 
--- Funktion: Behandelt Tod, Kill-Cam und Respawn
 -- Funktion: Behandelt Tod, Kill-Cam/Zuschauen und Respawn
 function HandleDeath(killerPed)
     Citizen.CreateThread(function()
-        local killerCoords = GetEntityCoords(killerPed)
         local playerPed = PlayerPedId()
+        local killerCoords = GetEntityCoords(killerPed)
 
-        -- Kill-Cam: Fokus für 3 Sek auf den Mörder
+        -- Kill-Cam
         local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
         SetCamCoord(cam, GetEntityCoords(playerPed))
         PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z)
@@ -129,12 +185,11 @@ function HandleDeath(killerPed)
 
         Wait(3000)
 
-        -- Wenn Respawn noch nicht fällig, wechsle in Zuschauer-Modus
+        -- Spectator Modus während Respawn-Zeit
         if currentLobby.respawnTime > 3 then
             RenderScriptCams(false, true, 500, true, true)
             DestroyCam(cam, true)
 
-            -- Automatisch auf Killer oder zufälligen Spieler schauen
             if killerPed and DoesEntityExist(killerPed) and killerPed ~= playerPed then
                 NetworkSetInSpectatorMode(true, killerPed)
             end
@@ -146,23 +201,14 @@ function HandleDeath(killerPed)
             DestroyCam(cam, true)
         end
 
-        -- Wiederbelebung an zufälligem Punkt auf der Map
+        -- Respawn
         local spawn = Utils.GetRandomSpawn(currentLobby.mapId)
         NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.w, true, false)
         GiveLoadout(currentLobby.loadout)
     end)
 end
 
--- Zuschauer-Modus (Fixiert Kamera auf Zielspieler)
-RegisterNetEvent('ffa:spectatePlayer')
-AddEventHandler('ffa:spectatePlayer', function(targetId)
-    local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
-    if DoesEntityExist(targetPed) then
-        NetworkSetInSpectatorMode(true, targetPed)
-    end
-end)
-
--- HUD-Aktualisierungen vom Server
+-- HUD-Events
 RegisterNetEvent('ffa:updateTimer')
 AddEventHandler('ffa:updateTimer', function(time)
     SendNUIMessage({ action = 'updateHUD', time = time })
@@ -190,16 +236,15 @@ AddEventHandler('ffa:updateTDMScore', function(blue, red)
     })
 end)
 
--- Event: Spielende (Sieg-Anzeige und Sperren)
+-- Event: Spielende
 RegisterNetEvent('ffa:gameEnded')
 AddEventHandler('ffa:gameEnded', function(data)
     playerState.isInGame = false
-    FreezeEntityPosition(PlayerPedId(), true) -- Spieler am Platz halten
+    FreezeEntityPosition(PlayerPedId(), true)
     SendNUIMessage({
         action = 'showWinner',
-        winnerName = data.winnerName
+        winnerName = data.winnerName,
+        stats = data.stats
     })
-
-    -- Waffen entfernen am Rundenende
     RemoveAllPedWeapons(PlayerPedId(), true)
 end)

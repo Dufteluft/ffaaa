@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+spawnedVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -35,11 +36,20 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
+    -- Fahrzeug löschen
+    if spawnedVehicle and DoesEntityExist(spawnedVehicle) then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
+
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
     -- ESX Loadout wiederherstellen (falls vorhanden)
     TriggerEvent('esx:restoreLoadout')
+
+    -- Relationship Groups zurücksetzen
+    SetPedRelationshipGroupHash(ped, GetHashKey('PLAYER'))
 
     -- Zur alten Position teleportieren
     DoScreenFadeOut(500)
@@ -84,7 +94,9 @@ Citizen.CreateThread(function()
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
