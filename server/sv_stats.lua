@@ -5,7 +5,7 @@ function UpdatePlayerStats(playerId, kills, deaths, isWin)
 
     local identifier = xPlayer.getIdentifier()
 
-    -- Nutzt ON DUPLICATE KEY UPDATE für performante Speicherung
+    -- Nutzt ON DUPLICATE KEY UPDATE für kompatible oxmysql/mysql-async Performance
     MySQL.Async.execute('INSERT INTO ffa_stats (identifier, kills, deaths, games_played, wins) VALUES (@id, @k, @d, 1, @w) ON DUPLICATE KEY UPDATE kills = kills + @k, deaths = deaths + @d, games_played = games_played + 1, wins = wins + @w', {
         ['@id'] = identifier,
         ['@k'] = kills,
