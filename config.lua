@@ -9,7 +9,8 @@ Config.DefaultSettings = {
     respawnTime = 5, -- seconds
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    defaultVehicle = 'bati'
 }
 
 Config.WeaponLoadouts = {
@@ -123,6 +124,7 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
+        ['tab_players'] = 'Spielerliste',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
@@ -151,13 +153,18 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['system'] = 'SYSTEM',
+        ['draw'] = 'Unentschieden',
+        ['wins_suffix'] = 'GEWINNT!',
+        ['vote_map'] = 'Wähle die nächste Map'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Create Lobby',
         ['tab_list'] = 'Open Lobbies',
+        ['tab_players'] = 'Player List',
         ['lobby_name'] = 'Lobby Name',
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
@@ -186,7 +193,11 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['system'] = 'SYSTEM',
+        ['draw'] = 'Draw',
+        ['wins_suffix'] = 'WINS!',
+        ['vote_map'] = 'Vote for the next map'
     }
 }
 
