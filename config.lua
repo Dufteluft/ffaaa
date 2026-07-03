@@ -9,7 +9,8 @@ Config.DefaultSettings = {
     respawnTime = 5, -- seconds
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    defaultVehicle = 'bati'
 }
 
 Config.WeaponLoadouts = {
@@ -102,18 +103,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -127,11 +116,11 @@ Config.Locales = {
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
-        ['round_time'] = 'Rundenzeit (Min)',
+        ['round_time'] = 'Rundenzeit',
         ['max_players'] = 'Max. Spieler',
         ['vehicles_allowed'] = 'Fahrzeuge erlaubt',
         ['friendly_fire'] = 'Freundliches Feuer',
-        ['respawn_time'] = 'Respawn-Zeit (Sek)',
+        ['respawn_time'] = 'Respawn-Zeit',
         ['kill_limit'] = 'Kill-Limit zum Sieg',
         ['btn_create'] = 'Lobby erstellen',
         ['btn_cancel'] = 'Abbrechen',
@@ -140,6 +129,9 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_close'] = 'Lobby schließen',
+        ['btn_back_lobby'] = 'ZURÜCK ZUR LOBBY',
+        ['btn_back_menu'] = 'HAUPTMENÜ',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
@@ -147,7 +139,7 @@ Config.Locales = {
         ['waiting_for_players'] = 'Warte auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
-        ['winner'] = 'Gewinner: %s',
+        ['winner'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
@@ -162,11 +154,11 @@ Config.Locales = {
         ['map_select'] = 'Select Map',
         ['mode_select'] = 'Game Mode',
         ['loadout_select'] = 'Weapon Loadout',
-        ['round_time'] = 'Round Time (Min)',
+        ['round_time'] = 'Round Time',
         ['max_players'] = 'Max Players',
         ['vehicles_allowed'] = 'Vehicles Allowed',
         ['friendly_fire'] = 'Friendly Fire',
-        ['respawn_time'] = 'Respawn Time (Sec)',
+        ['respawn_time'] = 'Respawn Time',
         ['kill_limit'] = 'Kill Limit to Win',
         ['btn_create'] = 'Create Lobby',
         ['btn_cancel'] = 'Cancel',
@@ -175,6 +167,9 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_close'] = 'Close Lobby',
+        ['btn_back_lobby'] = 'BACK TO LOBBY',
+        ['btn_back_menu'] = 'MAIN MENU',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -182,7 +177,7 @@ Config.Locales = {
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
-        ['winner'] = 'Winner: %s',
+        ['winner'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',

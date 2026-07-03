@@ -1,11 +1,10 @@
 ESX = exports['es_extended']:getSharedObject()
 
 local isMenuOpen = false
--- currentLobby und playerState wurden nach cl_main.lua verschoben (global)
 
--- Menü-Steuerung (F5 öffnet/schließt Menü)
+-- Thread: Überwacht Tastendruck zum Öffnen des Menüs
 Citizen.CreateThread(function()
-    -- Dynamische Tastenbelegung aus der Konfiguration
+    -- Tasten-Mapping basierend auf Config
     local key = 166 -- Standard F5
     if Config.MenuKey == 'F1' then key = 288
     elseif Config.MenuKey == 'F2' then key = 289
@@ -22,10 +21,9 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Funktion: Hauptmenü öffnen
+-- Funktion: Hauptmenü öffnen und Daten an NUI senden
 function OpenMainMenu()
     if isMenuOpen then
-        -- Menü schließen wenn bereits offen
         isMenuOpen = false
         SetNuiFocus(false, false)
         SendNUIMessage({ action = 'close' })
@@ -36,13 +34,14 @@ function OpenMainMenu()
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'open',
+        myId = GetPlayerServerId(PlayerId()),
         config = Config,
         maps = Config.Maps,
         isInGame = playerState.isInGame
     })
 end
 
--- Callback: UI schließen (vom JS aufgerufen)
+-- NUI Callbacks
 RegisterNUICallback('closeUI', function(data, cb)
     isMenuOpen = false
     SetNuiFocus(false, false)
@@ -50,7 +49,12 @@ RegisterNUICallback('closeUI', function(data, cb)
     cb('ok')
 end)
 
--- Befehl zum Verlassen der FFA Lobby
+RegisterNUICallback('closeLobby', function(data, cb)
+    TriggerServerEvent('ffa:closeLobby')
+    cb('ok')
+end)
+
+-- Befehl zum schnellen Verlassen der Lobby
 RegisterCommand('quitffa', function()
     if playerState.isInGame then
         TriggerServerEvent('ffa:leaveLobby')
@@ -63,27 +67,18 @@ end, false)
 RegisterNetEvent('ffa:lobbyCreated')
 AddEventHandler('ffa:lobbyCreated', function(lobby)
     currentLobby = lobby
-    SendNUIMessage({
-        action = 'lobbyCreated',
-        lobby = lobby
-    })
+    SendNUIMessage({ action = 'lobbyCreated', lobby = lobby })
 end)
 
 RegisterNetEvent('ffa:lobbyJoined')
 AddEventHandler('ffa:lobbyJoined', function(lobby)
     currentLobby = lobby
-    SendNUIMessage({
-        action = 'lobbyJoined',
-        lobby = lobby
-    })
+    SendNUIMessage({ action = 'lobbyJoined', lobby = lobby })
 end)
 
 RegisterNetEvent('ffa:updateLobbyPlayers')
 AddEventHandler('ffa:updateLobbyPlayers', function(players)
-    SendNUIMessage({
-        action = 'updateLobbyPlayers',
-        players = players
-    })
+    SendNUIMessage({ action = 'updateLobbyPlayers', players = players })
 end)
 
 RegisterNetEvent('ffa:leftLobby')
@@ -92,32 +87,27 @@ AddEventHandler('ffa:leftLobby', function()
     playerState.isInGame = false
 end)
 
--- NUI Callbacks für Menü-Aktionen
+-- NUI Interaktionen
 RegisterNUICallback('createLobby', function(data, cb)
     TriggerServerEvent('ffa:createLobby', data)
     cb('ok')
 end)
 
 RegisterNUICallback('joinLobby', function(data, cb)
-    TriggerServerEvent('ffa:joinLobby', data.lobbyId)
+    TriggerServerEvent('ffa:joinLobby', data)
     cb('ok')
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
--- Lobbyliste aktualisieren
 RegisterNetEvent('ffa:updateLobbies')
 AddEventHandler('ffa:updateLobbies', function(lobbies)
-    SendNUIMessage({
-        action = 'updateLobbies',
-        lobbies = lobbies
-    })
+    SendNUIMessage({ action = 'updateLobbies', lobbies = lobbies })
 end)
 
--- Lobby-Chat Event-Handling
 RegisterNUICallback('sendLobbyChat', function(data, cb)
     TriggerServerEvent('ffa:sendLobbyChat', data)
     cb('ok')
@@ -125,14 +115,9 @@ end)
 
 RegisterNetEvent('ffa:addChatMessage')
 AddEventHandler('ffa:addChatMessage', function(name, message)
-    SendNUIMessage({
-        action = 'addChatMessage',
-        name = name,
-        message = message
-    })
+    SendNUIMessage({ action = 'addChatMessage', name = name, message = message })
 end)
 
--- Weitere Steuerungs-Callbacks
 RegisterNUICallback('toggleReady', function(data, cb)
     TriggerServerEvent('ffa:toggleReady')
     cb('ok')
@@ -153,18 +138,13 @@ RegisterNUICallback('leaveLobby', function(data, cb)
     cb('ok')
 end)
 
-RegisterNUICallback('quickJoin', function(data, cb)
-    TriggerServerEvent('ffa:quickJoin', data.mapId)
-    cb('ok')
-end)
-
 RegisterNUICallback('kickPlayer', function(data, cb)
     TriggerServerEvent('ffa:kickPlayer', data.id)
     cb('ok')
 end)
 
 RegisterNUICallback('voteMap', function(data, cb)
-    TriggerServerEvent('ffa:voteMap', data.mapId)
+    TriggerServerEvent('ffa:voteMap', data)
     cb('ok')
 end)
 
