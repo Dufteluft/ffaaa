@@ -57,6 +57,12 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     SendNUIMessage({ action = 'hideHUD' })
     SendNUIMessage({ action = 'close' })
     SetNuiFocus(false, false)
+
+    -- Fahrzeug löschen falls vorhanden
+    if spawnedVehicle and DoesEntityExist(spawnedVehicle) then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
 end)
 
 -- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
@@ -78,13 +84,16 @@ function TeleportToMap(mapId)
 end
 
 -- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- HUD-Updater: Sendet alle 500ms Leben, Rüstung und Munition an das NUI
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
+            -- Normalisierung der Gesundheit (GTA nutzt 100-200 für Spieler)
             local health = GetEntityHealth(ped) - 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local currentWeapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, currentWeapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',

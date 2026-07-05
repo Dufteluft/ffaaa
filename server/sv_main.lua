@@ -56,7 +56,10 @@ end)
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
     local lobby = Lobbies[lobbyId]
-    if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
+    if not lobby then return end
+
+    -- Wenn roundTime 0 ist (persistent), setzen wir einen sehr langen Timer für die Match-Logik
+    if lobby.roundTime == 0 then lobby.timer = 3600 end
 
     Citizen.CreateThread(function()
         while Lobbies[lobbyId] and Lobbies[lobbyId].status == 'playing' do
@@ -66,16 +69,18 @@ function StartGameTimer(lobbyId)
 
             lobby.timer = lobby.timer - 1
 
-            if lobby.timer <= 0 then
+            if lobby.timer <= 0 and not lobby.isPersistent then
                 EndGame(lobbyId, 'Zeit abgelaufen')
                 break
+            elseif lobby.timer <= 0 and lobby.isPersistent then
+                lobby.timer = 3600 -- Timer für persistente Lobbys zurücksetzen
             end
 
             -- Timer mit Clients synchronisieren
             for _, pid in ipairs(lobby.players) do
                 local mins = math.floor(lobby.timer / 60)
                 local secs = lobby.timer % 60
-                TriggerClientEvent('ffa:updateTimer', pid, string.format('%02d:%02d', mins, secs))
+                TriggerClientEvent('ffa:updateTimer', pid, lobby.isPersistent and '--:--' or string.format('%02d:%02d', mins, secs))
             end
         end
     end)
@@ -154,6 +159,23 @@ function EndGame(lobbyId, reason)
                     TriggerClientEvent('ffa:gameStarting', pid, lobby)
                 end
             end)
+    else
+        -- Für normale Lobbys: Status zurück auf Waiting nach 10 Sek
+        Citizen.CreateThread(function()
+            Citizen.Wait(10000)
+            if Lobbies[lobbyId] and Lobbies[lobbyId].status == 'ended' then
+                Lobbies[lobbyId].status = 'waiting'
+                Lobbies[lobbyId].scoreBlue = 0
+                Lobbies[lobbyId].scoreRed = 0
+                for _, playerPid in ipairs(Lobbies[lobbyId].players) do
+                    if PlayerStates[playerPid] then
+                        PlayerStates[playerPid].kills = 0
+                        PlayerStates[playerPid].deaths = 0
+                        TriggerClientEvent('ffa:lobbyJoined', playerPid, Lobbies[lobbyId])
+                    end
+                end
+            end
+        end)
         end
     end
 

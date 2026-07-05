@@ -4,12 +4,13 @@ Config.Locale = 'de' -- 'de' or 'en'
 Config.MenuKey = 'F5' -- Default key for the main menu
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    defaultVehicle = 'bati'
 }
 
 Config.WeaponLoadouts = {
@@ -151,7 +152,12 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['btn_close_lobby'] = 'Lobby schließen',
+        ['back_to_lobby'] = 'Zurück zur Lobby',
+        ['back_to_menu'] = 'Hauptmenü',
+        ['wins_suffix'] = 'GEWINNT!',
+        ['system_name'] = 'SYSTEM'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -186,7 +192,12 @@ Config.Locales = {
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['btn_close_lobby'] = 'Close Lobby',
+        ['back_to_lobby'] = 'Back to Lobby',
+        ['back_to_menu'] = 'Main Menu',
+        ['wins_suffix'] = 'WINS!',
+        ['system_name'] = 'SYSTEM'
     }
 }
 
