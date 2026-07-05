@@ -185,6 +185,53 @@ AddEventHandler('ffa:sendLobbyChat', function(data)
     end
 end)
 
+-- Event: Lobby-Einstellungen speichern (durch Host)
+RegisterServerEvent('ffa:saveSettings')
+AddEventHandler('ffa:saveSettings', function(data)
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobby = Lobbies[state.lobbyId]
+        if lobby and lobby.host == source then
+            if data.mapId then
+                lobby.mapId = data.mapId
+                local map = Utils.GetMapById(data.mapId)
+                if map then lobby.mapLabel = map.label end
+            end
+            if data.mode then lobby.mode = data.mode end
+
+            -- Clients in der Lobby über Änderungen informieren
+            for _, pid in ipairs(lobby.players) do
+                TriggerClientEvent('ffa:syncSettings', pid, lobby)
+                TriggerClientEvent('ffa:addChatMessage', pid, 'SYSTEM', 'Lobby-Einstellungen wurden aktualisiert.')
+            end
+        end
+    end
+end)
+
+-- Event: Lobby schließen (durch Host)
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby and lobby.host == source and not lobby.isPersistent then
+            -- Alle Spieler aus der Lobby werfen
+            local playersToKick = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(playersToKick, pid)
+            end
+
+            for _, pid in ipairs(playersToKick) do
+                LeaveLobby(pid)
+                TriggerClientEvent('esx:showNotification', pid, 'Die Lobby wurde vom Host geschlossen.')
+            end
+
+            Lobbies[lobbyId] = nil
+        end
+    end
+end)
+
 RegisterNetEvent('ffa:addChatMessage') -- Client-seitig implementiert
 
 -- Event: Bereit-Status umschalten
@@ -247,6 +294,19 @@ end)
 -- Wenn Spieler den Server verlässt
 AddEventHandler('playerDropped', function()
     LeaveLobby(source)
+end)
+
+-- Cleanup Thread: Entfernt leere Lobbys alle 60 Sekunden (Sicherheitscheck)
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(60000)
+        for id, lobby in pairs(Lobbies) do
+            if not lobby.isPersistent and #lobby.players == 0 then
+                Lobbies[id] = nil
+                Utils.Print('Leere Lobby automatisch entfernt: ' .. id)
+            end
+        end
+    end
 end)
 
 -- Automatische Initialisierung der persistenten Lobbys beim Server-Start
