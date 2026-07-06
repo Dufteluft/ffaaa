@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+spawnedVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -35,10 +36,16 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     playerState.isInGame = false
     currentLobby = nil
 
+    -- Fahrzeug löschen falls vorhanden
+    if spawnedVehicle and DoesEntityExist(spawnedVehicle) then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
+
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen
     TriggerEvent('esx:restoreLoadout')
 
     -- Zur alten Position teleportieren
@@ -48,6 +55,9 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     if oldCoords then
         SetEntityCoords(ped, oldCoords.x, oldCoords.y, oldCoords.z, false, false, false, true)
     end
+
+    -- Beziehungsgruppen zurücksetzen
+    SetPedRelationshipGroupHash(ped, GetHashKey('PLAYER'))
 
     Wait(500)
     DoScreenFadeIn(500)
@@ -59,7 +69,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     SetNuiFocus(false, false)
 end)
 
--- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Globaler Teleport-Handler mit Screen-Fade
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -84,7 +94,12 @@ Citizen.CreateThread(function()
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+            local weapon = GetSelectedPedWeapon(ped)
+            local ammo = 0
+
+            if weapon ~= GetHashKey('WEAPON_UNARMED') then
+                _, ammo = GetAmmoInClip(ped, weapon)
+            end
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
@@ -94,5 +109,43 @@ Citizen.CreateThread(function()
             })
         end
         Wait(500)
+    end
+end)
+
+-- Event: Spielstart-Vorbereitung (Verschoben von cl_gameplay für bessere Struktur)
+RegisterNetEvent('ffa:gameStarting')
+AddEventHandler('ffa:gameStarting', function(lobby)
+    currentLobby = lobby
+    playerState.isInGame = true
+    playerState.kills = 0
+    playerState.deaths = 0
+
+    -- UI ausblenden
+    SendNUIMessage({ action = 'gameStarting' })
+    SetNuiFocus(false, false)
+
+    -- Auf Karte teleportieren
+    TeleportToMap(lobby.mapId)
+
+    if lobby.isPersistent then
+        FreezeEntityPosition(PlayerPedId(), false)
+        SendNUIMessage({ action = 'countdown', seconds = 0 })
+    else
+        StartCountdown(10)
+    end
+
+    -- Waffen austeilen
+    GiveLoadout(lobby.loadout)
+
+    -- HUD einblenden
+    SendNUIMessage({
+        action = 'showHUD',
+        isPersistent = lobby.isPersistent
+    })
+
+    -- Initiale HUD Werte
+    TriggerEvent('ffa:updateHUDStats', 0, 0)
+    if lobby.mode == 'tdm' then
+        TriggerEvent('ffa:updateTDMScore', 0, 0)
     end
 end)
