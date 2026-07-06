@@ -1,15 +1,16 @@
 Config = {}
 
-Config.Locale = 'de' -- 'de' or 'en'
-Config.MenuKey = 'F5' -- Default key for the main menu
+Config.Locale = 'de' -- 'de' oder 'en'
+Config.MenuKey = 'F5' -- Standardtaste für das Hauptmenü
 
 Config.DefaultSettings = {
-    roundTime = 15, -- minutes
+    roundTime = 15, -- Minuten
     maxPlayers = 16,
-    respawnTime = 5, -- seconds
+    respawnTime = 5, -- Sekunden
     killLimit = 30,
     friendlyFire = false,
-    vehiclesAllowed = false
+    vehiclesAllowed = false,
+    defaultVehicle = 'bati' -- Standard-Fahrzeug wenn aktiviert
 }
 
 Config.WeaponLoadouts = {
@@ -47,7 +48,7 @@ Config.Maps = {
         id = 'legion',
         label = 'Würfelpark',
         center = vector3(185.0, -930.0, 30.6),
-        radius = 100.0,
+        radius = 80.0,
         spawns = {
             vector4(167.0, -929.0, 30.6, 180.0),
             vector4(185.0, -912.0, 30.6, 90.0),
@@ -59,7 +60,7 @@ Config.Maps = {
         id = 'sandyshores',
         label = 'Sandy Shores',
         center = vector3(1850.0, 3680.0, 34.0),
-        radius = 150.0,
+        radius = 120.0,
         spawns = {
             vector4(1820.0, 3680.0, 34.0, 90.0),
             vector4(1880.0, 3680.0, 34.0, 270.0),
@@ -71,7 +72,7 @@ Config.Maps = {
         id = 'airport',
         label = 'Flughafen',
         center = vector3(-1037.0, -2737.0, 20.1),
-        radius = 200.0,
+        radius = 150.0,
         spawns = {
             vector4(-1060.0, -2730.0, 20.1, 90.0),
             vector4(-1010.0, -2730.0, 20.1, 270.0),
@@ -83,7 +84,7 @@ Config.Maps = {
         id = 'vinewood',
         label = 'Vinewood',
         center = vector3(630.0, 560.0, 128.0),
-        radius = 120.0,
+        radius = 100.0,
         spawns = {
             vector4(610.0, 560.0, 128.0, 90.0),
             vector4(650.0, 560.0, 128.0, 270.0),
@@ -102,18 +103,6 @@ Config.Maps = {
             vector4(770.0, -2950.0, 6.0, 0.0),
             vector4(770.0, -3010.0, 6.0, 180.0)
         }
-    },
-    {
-        id = 'paleto',
-        label = 'Paleto Bay',
-        center = vector3(-110.0, 6450.0, 31.0),
-        radius = 120.0,
-        spawns = {
-            vector4(-100.0, 6440.0, 31.0, 90.0),
-            vector4(-120.0, 6460.0, 31.0, 270.0),
-            vector4(-110.0, 6430.0, 31.0, 0.0),
-            vector4(-110.0, 6470.0, 31.0, 180.0)
-        }
     }
 }
 
@@ -123,7 +112,7 @@ Config.Locales = {
         ['tab_ffa'] = 'FFA Lobby',
         ['tab_create'] = 'Lobby erstellen',
         ['tab_list'] = 'Offene Lobbys',
-        ['lobby_name'] = 'Lobby Name',
+        ['lobby_name'] = 'Lobby-Name',
         ['map_select'] = 'Map auswählen',
         ['mode_select'] = 'Spielmodus',
         ['loadout_select'] = 'Waffen-Loadout',
@@ -140,18 +129,23 @@ Config.Locales = {
         ['btn_start'] = 'Spiel starten',
         ['btn_leave'] = 'Lobby verlassen',
         ['btn_kick'] = 'Kicken',
+        ['btn_close_lobby'] = 'Lobby schließen',
         ['team_blue'] = 'Team Blau',
         ['team_red'] = 'Team Rot',
         ['spectator'] = 'Zuschauer',
         ['random'] = 'Zufall',
-        ['waiting_for_players'] = 'Warte auf Spieler...',
+        ['waiting_for_players'] = 'Warten auf Spieler...',
         ['countdown'] = 'Start in %s Sekunden',
         ['game_ended'] = 'Runde beendet!',
-        ['winner'] = 'Gewinner: %s',
+        ['winner_suffix'] = 'GEWINNT!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Tode',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['system_msg'] = 'SYSTEM',
+        ['map_changed'] = 'Die Map wurde auf %s geändert.',
+        ['back_to_lobby'] = 'Zurück zur Lobby',
+        ['main_menu'] = 'Hauptmenü'
     },
     ['en'] = {
         ['menu_title'] = 'FFA LOBBY SYSTEM',
@@ -175,6 +169,7 @@ Config.Locales = {
         ['btn_start'] = 'Start Game',
         ['btn_leave'] = 'Leave Lobby',
         ['btn_kick'] = 'Kick',
+        ['btn_close_lobby'] = 'Close Lobby',
         ['team_blue'] = 'Team Blue',
         ['team_red'] = 'Team Red',
         ['spectator'] = 'Spectator',
@@ -182,11 +177,15 @@ Config.Locales = {
         ['waiting_for_players'] = 'Waiting for players...',
         ['countdown'] = 'Starting in %s seconds',
         ['game_ended'] = 'Game Ended!',
-        ['winner'] = 'Winner: %s',
+        ['winner_suffix'] = 'WINS!',
         ['kills'] = 'Kills',
         ['deaths'] = 'Deaths',
         ['kd_ratio'] = 'K/D',
-        ['score'] = 'Score'
+        ['score'] = 'Score',
+        ['system_msg'] = 'SYSTEM',
+        ['map_changed'] = 'The map was changed to %s.',
+        ['back_to_lobby'] = 'Back to Lobby',
+        ['main_menu'] = 'Main Menu'
     }
 }
 
