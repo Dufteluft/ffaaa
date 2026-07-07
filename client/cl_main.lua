@@ -8,6 +8,7 @@ playerState = {
     isInGame = false
 }
 currentLobby = nil
+spawnedVehicle = nil
 
 -- Globaler Countdown-Handler für alle Spieler
 function StartCountdown(seconds)
@@ -34,6 +35,15 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
 
     playerState.isInGame = false
     currentLobby = nil
+
+    -- Fahrzeug löschen falls vorhanden
+    if spawnedVehicle and DoesEntityExist(spawnedVehicle) then
+        DeleteEntity(spawnedVehicle)
+        spawnedVehicle = nil
+    end
+
+    -- Relationship Groups zurücksetzen
+    SetPedRelationshipGroupHash(ped, GetHashKey('PLAYER'))
 
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)

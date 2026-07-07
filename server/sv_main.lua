@@ -56,7 +56,13 @@ end)
 -- Funktion: Startet den Runden-Timer
 function StartGameTimer(lobbyId)
     local lobby = Lobbies[lobbyId]
-    if not lobby or lobby.roundTime == 0 then return end -- Kein Timer für unendliche Lobbys
+    if not lobby then return end
+
+    if lobby.roundTime == 0 then
+        lobby.timer = 3600 -- Default 1 Stunde für persistente Lobbys
+    else
+        lobby.timer = lobby.roundTime * 60
+    end
 
     Citizen.CreateThread(function()
         while Lobbies[lobbyId] and Lobbies[lobbyId].status == 'playing' do
@@ -157,12 +163,19 @@ function EndGame(lobbyId, reason)
         end
     end
 
+    -- Lobby für Restart vorbereiten (für persistente und Custom Lobbys nach dem Ende)
+    lobby.status = 'waiting'
+    lobby.scoreBlue = 0
+    lobby.scoreRed = 0
+
     if lobby.isPersistent then
-        lobby.timer = lobby.roundTime * 60
-        lobby.status = 'playing'
-        lobby.scoreBlue = 0
-        lobby.scoreRed = 0
-        StartGameTimer(lobbyId)
+        Citizen.CreateThread(function()
+            Citizen.Wait(11000) -- Etwas länger als die Anzeigezeit
+            if Lobbies[lobbyId] then
+                Lobbies[lobbyId].status = 'playing'
+                StartGameTimer(lobbyId)
+            end
+        end)
     end
 end
 
