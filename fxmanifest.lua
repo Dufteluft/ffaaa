@@ -14,8 +14,7 @@ shared_scripts {
 client_scripts {
     'client/cl_main.lua',
     'client/cl_lobby.lua',
-    'client/cl_gameplay.lua',
-    'client/cl_nui.lua'
+    'client/cl_gameplay.lua'
 }
 
 server_scripts {

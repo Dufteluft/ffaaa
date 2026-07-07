@@ -34,14 +34,24 @@ end)
 
 -- Funktion: Teilt das gewählte Loadout an den Spieler aus
 function GiveLoadout(loadoutKey)
-    local loadout = Config.WeaponLoadouts[loadoutKey]
     local ped = PlayerPedId()
-
     RemoveAllPedWeapons(ped, true)
-    if loadout then
-        for _, weapon in ipairs(loadout) do
-            GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+
+    local function applyLoadout(key)
+        local loadout = Config.WeaponLoadouts[key]
+        if loadout then
+            for _, weapon in ipairs(loadout) do
+                GiveWeaponToPed(ped, GetHashKey(weapon.name), weapon.ammo, false, true)
+            end
         end
+    end
+
+    if type(loadoutKey) == "table" then
+        for _, key in ipairs(loadoutKey) do
+            applyLoadout(key)
+        end
+    else
+        applyLoadout(loadoutKey)
     end
 end
 
@@ -67,19 +77,30 @@ Citizen.CreateThread(function()
                 local currentWeapon = GetSelectedPedWeapon(ped)
                 if currentWeapon ~= GetHashKey('WEAPON_UNARMED') then
                     local allowed = false
-                    local loadout = Config.WeaponLoadouts[currentLobby.loadout]
-                    if loadout then
-                        for _, w in ipairs(loadout) do
-                            if GetHashKey(w.name) == currentWeapon then
-                                allowed = true
-                                break
+
+                    local function checkWeapon(key)
+                        local loadout = Config.WeaponLoadouts[key]
+                        if loadout then
+                            for _, w in ipairs(loadout) do
+                                if GetHashKey(w.name) == currentWeapon then
+                                    return true
+                                end
                             end
                         end
+                        return false
+                    end
+
+                    if type(currentLobby.loadout) == "table" then
+                        for _, key in ipairs(currentLobby.loadout) do
+                            if checkWeapon(key) then allowed = true; break end
+                        end
+                    else
+                        allowed = checkWeapon(currentLobby.loadout)
                     end
 
                     if not allowed then
                         RemoveWeaponFromPed(ped, currentWeapon)
-                        ESX.ShowNotification('~r~Diese Waffe ist in dieser Lobby nicht erlaubt!')
+                        ESX.ShowNotification(_U('notif_weapon_not_allowed'))
                     end
                 end
             end
@@ -159,6 +180,62 @@ AddEventHandler('ffa:spectatePlayer', function(targetId)
     local targetPed = GetPlayerPed(GetPlayerFromServerId(targetId))
     if DoesEntityExist(targetPed) then
         NetworkSetInSpectatorMode(true, targetPed)
+    end
+end)
+
+-- Native Anti-Teamkill via Relationship Groups
+RegisterNetEvent('ffa:syncTeams')
+AddEventHandler('ffa:syncTeams', function(teams)
+    local myTeam = teams[tostring(GetPlayerServerId(PlayerId()))]
+    if not myTeam then return end
+
+    local _, blueGroup = AddRelationshipGroup('BLUE_TEAM')
+    local _, redGroup = AddRelationshipGroup('RED_TEAM')
+
+    if myTeam == 'blue' then
+        SetPedRelationshipGroupHash(PlayerPedId(), blueGroup)
+    elseif myTeam == 'red' then
+        SetPedRelationshipGroupHash(PlayerPedId(), redGroup)
+    end
+
+    SetRelationshipBetweenGroups(1, blueGroup, blueGroup) -- 1 = Like
+    SetRelationshipBetweenGroups(1, redGroup, redGroup)
+    SetRelationshipBetweenGroups(5, blueGroup, redGroup) -- 5 = Hate
+    SetRelationshipBetweenGroups(5, redGroup, blueGroup)
+
+    -- Friendly Fire Option setzen
+    if currentLobby and not currentLobby.friendlyFire then
+        NetworkSetFriendlyFireOption(false)
+        SetCanAttackFriendly(PlayerPedId(), false, false)
+    else
+        NetworkSetFriendlyFireOption(true)
+        SetCanAttackFriendly(PlayerPedId(), true, false)
+    end
+end)
+
+-- Fahrzeug-Spawn Logik
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(5000)
+        if playerState and playerState.isInGame and currentLobby and currentLobby.vehiclesAllowed then
+            local playerPed = PlayerPedId()
+            local coords = GetEntityCoords(playerPed)
+
+            if not spawnedVehicle or not DoesEntityExist(spawnedVehicle) then
+                local spawnPos = GetOffsetFromEntityInWorldCoords(playerPed, 0.0, 5.0, 0.0)
+                local model = GetHashKey(Config.DefaultVehicle or 'bati')
+
+                RequestModel(model)
+                while not HasModelLoaded(model) do Wait(10) end
+
+                spawnedVehicle = CreateVehicle(model, spawnPos.x, spawnPos.y, spawnPos.z, GetEntityHeading(playerPed), true, false)
+                SetVehicleOnGroundProperly(spawnedVehicle)
+                SetEntityAsMissionEntity(spawnedVehicle, true, true)
+                SetModelAsNoLongerNeeded(model)
+
+                ESX.ShowNotification('Fahrzeug gespawnt!')
+            end
+        end
     end
 end)
 

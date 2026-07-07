@@ -36,6 +36,7 @@ function OpenMainMenu()
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'open',
+        myId = GetPlayerServerId(PlayerId()),
         config = Config,
         maps = Config.Maps,
         isInGame = playerState.isInGame
@@ -104,7 +105,7 @@ RegisterNUICallback('joinLobby', function(data, cb)
 end)
 
 RegisterNUICallback('fetchLobbies', function(data, cb)
-    TriggerServerEvent('ffa:fetchLobbies')
+    TriggerServerEvent('ffa:fetchLobbies', data)
     cb('ok')
 end)
 
@@ -160,6 +161,11 @@ end)
 
 RegisterNUICallback('kickPlayer', function(data, cb)
     TriggerServerEvent('ffa:kickPlayer', data.id)
+    cb('ok')
+end)
+
+RegisterNUICallback('closeLobby', function(data, cb)
+    TriggerServerEvent('ffa:closeLobby')
     cb('ok')
 end)
 

@@ -212,6 +212,9 @@ RegisterServerEvent('ffa:fetchLobbies')
 AddEventHandler('ffa:fetchLobbies', function(data)
     local list = {}
     local filterTab = data and data.tab or 'ffa'
+    local filterMap = data and data.map or 'all'
+    local filterWeapon = data and data.weapon or 'all'
+    local filterPlayers = data and data.players or 'all'
 
     for id, lobby in pairs(Lobbies) do
         local isMatch = false
@@ -222,10 +225,32 @@ AddEventHandler('ffa:fetchLobbies', function(data)
         end
 
         if isMatch then
+            -- Map Filter
+            if filterMap ~= 'all' and lobby.mapId ~= filterMap then isMatch = false end
+
+            -- Weapon/Loadout Filter
+            if isMatch and filterWeapon ~= 'all' then
+                local hasWeapon = false
+                if type(lobby.loadout) == "table" then
+                    for _, l in ipairs(lobby.loadout) do
+                        if l == filterWeapon then hasWeapon = true; break end
+                    end
+                else
+                    if lobby.loadout == filterWeapon then hasWeapon = true end
+                end
+                if not hasWeapon then isMatch = false end
+            end
+
+            -- Players Filter
+            if isMatch and filterPlayers == 'not-full' and #lobby.players >= lobby.maxPlayers then
+                isMatch = false
+            end
+        end
+
+        if isMatch then
             -- Status Bestimmung für UI
             local displayStatus = 'waiting'
             if lobby.status == 'playing' then displayStatus = 'ACTIVE' end
-            -- Wir könnten auch 'joining' setzen wenn die Lobby gerade erst erstellt wurde oder kurz vor Start steht
 
             table.insert(list, {
                 id = id,
@@ -337,7 +362,42 @@ AddEventHandler('ffa:kickPlayer', function(targetId)
         if lobby and lobby.host == source then
             LeaveLobby(targetId)
             -- Dem gekickten Spieler mitteilen
-            TriggerClientEvent('esx:showNotification', targetId, 'Du wurdest aus der Lobby gekickt.')
+            TriggerClientEvent('esx:showNotification', targetId, _U('notif_kicked'))
+        end
+    end
+end)
+
+RegisterServerEvent('ffa:closeLobby')
+AddEventHandler('ffa:closeLobby', function()
+    local state = PlayerStates[source]
+    if state and state.lobbyId then
+        local lobbyId = state.lobbyId
+        local lobby = Lobbies[lobbyId]
+        if lobby and lobby.host == source then
+            -- Alle Spieler aus der Lobby entfernen
+            local players = {}
+            for _, pid in ipairs(lobby.players) do
+                table.insert(players, pid)
+            end
+
+            for _, pid in ipairs(players) do
+                LeaveLobby(pid)
+            end
+
+            Lobbies[lobbyId] = nil
+        end
+    end
+end)
+
+-- Hintergrund-Thread: Löscht leere Custom-Lobbys nach 60 Sekunden Inaktivität
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(60000) -- Alle 60 Sekunden prüfen
+        for id, lobby in pairs(Lobbies) do
+            if not lobby.isPersistent and #lobby.players == 0 then
+                Lobbies[id] = nil
+                Utils.Print('Leere Lobby automatisch gelöscht: ' .. id)
+            end
         end
     end
 end)
