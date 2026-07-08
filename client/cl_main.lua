@@ -1,3 +1,4 @@
+-- ESX Shared Object abrufen
 ESX = exports['es_extended']:getSharedObject()
 
 -- Globale Variablen für den Zugriff aus allen Client-Skripten
@@ -10,6 +11,7 @@ playerState = {
 currentLobby = nil
 
 -- Globaler Countdown-Handler für alle Spieler
+-- Zeigt einen Countdown im NUI an und friert den Spieler ein, bis er abgelaufen ist.
 function StartCountdown(seconds)
     Citizen.CreateThread(function()
         while seconds >= 0 do
@@ -28,6 +30,7 @@ function StartCountdown(seconds)
 end
 
 -- Event: Stellt den Spieler-Status wieder her (nach Verlassen der Lobby)
+-- Setzt Position, Waffen und HUD zurück.
 RegisterNetEvent('ffa:restoreState')
 AddEventHandler('ffa:restoreState', function(oldCoords)
     local ped = PlayerPedId()
@@ -38,10 +41,10 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
     -- Alle Waffen entfernen
     RemoveAllPedWeapons(ped, true)
 
-    -- ESX Loadout wiederherstellen (falls vorhanden)
+    -- ESX Loadout wiederherstellen (via Event)
     TriggerEvent('esx:restoreLoadout')
 
-    -- Zur alten Position teleportieren
+    -- Zur alten Position teleportieren mit sanftem Ausblenden
     DoScreenFadeOut(500)
     while not IsScreenFadedOut() do Wait(0) end
 
@@ -60,6 +63,7 @@ AddEventHandler('ffa:restoreState', function(oldCoords)
 end)
 
 -- Globaler Teleport-Handler mit Screen-Fade für weiche Übergänge
+-- Teleportiert den Spieler an einen zufälligen Spawn-Punkt der gewählten Karte.
 function TeleportToMap(mapId)
     local map = Utils.GetMapById(mapId)
     if map then
@@ -78,13 +82,16 @@ function TeleportToMap(mapId)
 end
 
 -- HUD-Updater: Alle 500ms Leben, Rüstung und Munition an NUI senden
+-- Aktualisiert die Fortschrittsbalken und Munitionsanzeige im Gameplay-HUD.
 Citizen.CreateThread(function()
     while true do
         if playerState and playerState.isInGame then
             local ped = PlayerPedId()
             local health = GetEntityHealth(ped) - 100
             local armor = GetPedArmour(ped)
-            local _, ammo = GetAmmoInClip(ped, GetSelectedPedWeapon(ped))
+
+            local weapon = GetSelectedPedWeapon(ped)
+            local _, ammo = GetAmmoInClip(ped, weapon)
 
             SendNUIMessage({
                 action = 'updateHUDDetails',
